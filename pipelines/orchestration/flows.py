@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from prefect import flow, task
 
@@ -8,6 +8,7 @@ from pipelines.common.settings import get_settings
 from pipelines.embeddings.export_colab import export_snapshot
 from pipelines.embeddings.import_colab import validate_and_register
 from pipelines.ingestion.service import run_incremental
+from pipelines.publish.dashboard_feeds import build_dashboard_feeds
 
 
 @task(retries=2, retry_delay_seconds=60)
@@ -34,10 +35,12 @@ def _import_snapshot_task(snapshot_id: str) -> dict[str, int | str]:
 
 
 @flow(name="daily_ingestion_flow")
-def daily_ingestion_flow(as_of_iso: str | None = None, taxonomy: str | None = None) -> dict[str, int | str]:
+def daily_ingestion_flow(
+    as_of_iso: str | None = None, taxonomy: str | None = None
+) -> dict[str, int | str]:
     settings = get_settings()
-    as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(timezone.utc)
-    as_of = as_of.astimezone(timezone.utc)
+    as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else datetime.now(datetime.UTC)
+    as_of = as_of.astimezone(datetime.UTC)
     taxonomy_tokens = (
         [token.strip() for token in taxonomy.split(",") if token.strip()]
         if taxonomy
@@ -66,8 +69,12 @@ def embedding_exchange_flow(
 
 
 @flow(name="analytics_publish_flow")
-def analytics_publish_flow(snapshot_id: str) -> dict[str, str]:
+def analytics_publish_flow(snapshot_id: str) -> dict[str, int | str]:
+    result = build_dashboard_feeds(snapshot_id=snapshot_id)
     return {
-        "snapshot_id": snapshot_id,
-        "status": "reserved_for_phase_1_analytics_step",
+        "snapshot_id": result.snapshot_id,
+        "status": "dashboard_feeds_published",
+        "records_used": result.records_used,
+        "clusters": result.clusters,
+        "output_dir": str(result.output_dir),
     }

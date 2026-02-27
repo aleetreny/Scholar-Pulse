@@ -4,6 +4,6 @@ WORKDIR /workspace
 COPY pyproject.toml README.md ./
 COPY pipelines ./pipelines
 COPY apps ./apps
-RUN pip install --no-cache-dir -e .
+RUN pip install --no-cache-dir -e '.[dashboard]'
 
 CMD ["python", "-m", "apps.dashboard.app"]

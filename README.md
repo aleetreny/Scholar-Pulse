@@ -36,3 +36,15 @@ The platform maps scientific frontier dynamics using embedding-space geometry, d
 - `python -m pipelines.ingestion.cli kaggle-bootstrap ...` as the primary historical bootstrap path.
 - `python -m pipelines.ingestion.cli incremental ...` for ongoing API delta sync after bootstrap.
 - `python -m pipelines.ingestion.cli backfill ...` as a slower fallback historical API path.
+
+## Dashboard Publish Path
+
+After embedding import completes for a snapshot:
+
+1. `python -m pipelines.publish.dashboard_feeds --snapshot-id <snapshot_id>`
+2. `python -m apps.dashboard.app`
+
+The publish step writes canonical dashboard feeds to:
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/metrics.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/frontier_candidates.parquet`

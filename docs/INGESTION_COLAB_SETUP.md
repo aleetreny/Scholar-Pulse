@@ -4,7 +4,7 @@
 
 ```bash
 cp .env.example .env
-python -m pip install -e .[dev,embeddings]
+python -m pip install -e '.[dev,embeddings,dashboard,kaggle]'
 ```
 
 ## 2) Start local services
@@ -109,4 +109,21 @@ Core commands:
 ```bash
 python -m pipelines.embeddings.export_colab --snapshot-id <snapshot_id>
 python -m pipelines.embeddings.import_colab --snapshot-id <snapshot_id>
+```
+
+## 6) Build dashboard feeds from imported embeddings
+
+```bash
+python -m pipelines.publish.dashboard_feeds --snapshot-id <snapshot_id>
+```
+
+Output artifacts:
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/metrics.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/frontier_candidates.parquet`
+
+## 7) Run dashboard
+
+```bash
+python -m apps.dashboard.app
 ```
