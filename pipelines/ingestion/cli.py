@@ -7,6 +7,7 @@ from pipelines.common.logging_utils import configure_logging
 from pipelines.common.settings import get_settings
 from pipelines.db.base import Base
 from pipelines.db.session import get_engine
+from pipelines.ingestion.kaggle_import import _resolve_metadata_path, run_kaggle_bootstrap
 from pipelines.ingestion.service import run_backfill, run_incremental, run_latest_seed
 
 
@@ -38,6 +39,23 @@ def _parser() -> argparse.ArgumentParser:
     latest = subparsers.add_parser("latest", help="Seed latest papers without date window")
     latest.add_argument("--taxonomy", default="")
     latest.add_argument("--max-records", type=int, default=200)
+
+    kaggle = subparsers.add_parser(
+        "kaggle-bootstrap",
+        help="Bootstrap ingestion from Kaggle arXiv metadata (faster historical load)",
+    )
+    kaggle.add_argument("--dataset", default="Cornell-University/arxiv")
+    kaggle.add_argument(
+        "--source-path",
+        default="",
+        help="Path to local metadata file or directory. If omitted, download via kagglehub.",
+    )
+    kaggle.add_argument("--taxonomy", default="")
+    kaggle.add_argument("--from-year", type=int, default=1991)
+    kaggle.add_argument("--to-year", type=int, default=datetime.now(timezone.utc).year)
+    kaggle.add_argument("--max-records", type=int, default=0)
+    kaggle.add_argument("--commit-every", type=int, default=2000)
+    kaggle.add_argument("--show-path-only", action="store_true")
 
     return parser
 
@@ -93,6 +111,27 @@ def main() -> None:
         print(
             f"Latest seed completed run_id={stats.run_id} processed={stats.processed_entries} "
             f"inserted_versions={stats.inserted_versions} updated_versions={stats.updated_versions}"
+        )
+        return
+
+    if args.command == "kaggle-bootstrap":
+        metadata_path = _resolve_metadata_path(args.source_path, args.dataset)
+        if args.show_path_only:
+            print(f"Resolved metadata path: {metadata_path}")
+            return
+
+        stats = run_kaggle_bootstrap(
+            metadata_path=metadata_path,
+            taxonomy_tokens=taxonomy,
+            from_year=args.from_year,
+            to_year=args.to_year,
+            max_records=(args.max_records if args.max_records > 0 else None),
+            commit_every=max(args.commit_every, 100),
+        )
+        print(
+            f"Kaggle bootstrap completed run_id={stats.run_id} processed={stats.processed_entries} "
+            f"inserted_versions={stats.inserted_versions} updated_versions={stats.updated_versions} "
+            f"source={stats.raw_records_path}"
         )
         return
 

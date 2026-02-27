@@ -20,6 +20,12 @@ __pycache__/
 # Prefect
 .prefect/
 
+# Runtime logs
+/logs/*.log
+/logs/*.out
+/logs/*.jsonl
+!/logs/.gitkeep
+
 # Jupyter / Quarto
 .ipynb_checkpoints/
 research/quarto-study/.quarto/

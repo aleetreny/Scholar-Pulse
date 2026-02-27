@@ -28,17 +28,20 @@ def _record(abstract: str) -> ArxivRecord:
 
 
 def test_upsert_record_is_idempotent() -> None:
-    inserted, updated = _upsert_record(_record("alpha"))
-    assert inserted is True
-    assert updated is False
+    with session_scope() as session:
+        inserted, updated = _upsert_record(session, _record("alpha"))
+        assert inserted is True
+        assert updated is False
 
-    inserted2, updated2 = _upsert_record(_record("alpha"))
-    assert inserted2 is False
-    assert updated2 is False
+    with session_scope() as session:
+        inserted2, updated2 = _upsert_record(session, _record("alpha"))
+        assert inserted2 is False
+        assert updated2 is False
 
-    inserted3, updated3 = _upsert_record(_record("beta"))
-    assert inserted3 is False
-    assert updated3 is True
+    with session_scope() as session:
+        inserted3, updated3 = _upsert_record(session, _record("beta"))
+        assert inserted3 is False
+        assert updated3 is True
 
     with session_scope() as session:
         count = session.scalar(select(func.count(PaperVersion.id)))

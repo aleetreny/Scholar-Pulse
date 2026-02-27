@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: install install-dev lint format typecheck test test-unit test-integration test-e2e db-up db-down up down run-dashboard render-quarto
+.PHONY: install install-dev lint format typecheck test test-unit test-integration test-e2e db-up db-down up down run-dashboard render-quarto progress quality kaggle-path kaggle-bootstrap
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -46,3 +46,15 @@ run-dashboard:
 
 render-quarto:
 	cd research/quarto-study && quarto render
+
+progress:
+	$(PYTHON) -m pipelines.ingestion.progress --watch --interval 20
+
+quality:
+	$(PYTHON) -m pipelines.ingestion.quality_report
+
+kaggle-path:
+	$(PYTHON) -m pipelines.ingestion.cli kaggle-bootstrap --show-path-only
+
+kaggle-bootstrap:
+	$(PYTHON) -m pipelines.ingestion.cli kaggle-bootstrap --from-year 1991 --to-year $(shell date -u +%Y) --taxonomy cs,stat,physics

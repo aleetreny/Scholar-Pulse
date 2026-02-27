@@ -30,3 +30,9 @@ The platform maps scientific frontier dynamics using embedding-space geometry, d
 2. Initialize Quarto project files (`_quarto.yml`, report skeletons).
 3. Initialize dashboard framework and plotting baseline.
 4. Add first end-to-end flow: ArXiv metadata -> embeddings -> clustering -> dashboard + report artifact.
+
+## Ingestion Paths
+
+- `python -m pipelines.ingestion.cli kaggle-bootstrap ...` as the primary historical bootstrap path.
+- `python -m pipelines.ingestion.cli incremental ...` for ongoing API delta sync after bootstrap.
+- `python -m pipelines.ingestion.cli backfill ...` as a slower fallback historical API path.

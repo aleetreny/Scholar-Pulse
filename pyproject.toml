@@ -41,6 +41,9 @@ analytics = [
   "bertopic>=0.16.3",
   "scipy>=1.14",
 ]
+kaggle = [
+  "kagglehub[pandas-datasets]>=0.3",
+]
 embeddings = [
   "torch>=2.4",
   "transformers>=4.44",
