@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: scholarpulse-postgres
+    environment:
+      POSTGRES_USER: scholarpulse
+      POSTGRES_PASSWORD: scholarpulse
+      POSTGRES_DB: scholarpulse
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  prefect:
+    image: prefecthq/prefect:2-python3.11
+    container_name: scholarpulse-prefect
+    command: prefect server start --host 0.0.0.0
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_API_URL: http://localhost:4200/api
+    ports:
+      - "4200:4200"
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: scholarpulse-dashboard
+    env_file:
+      - .env
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    command: python -m apps.dashboard.app
+    ports:
+      - "8050:8050"
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

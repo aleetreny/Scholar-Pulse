@@ -1,0 +1,15 @@
+name: scholarpulse
+prefect-version: 2.19.8
+deployments:
+  - name: daily-ingestion
+    entrypoint: pipelines/orchestration/flows.py:daily_ingestion_flow
+    schedule:
+      cron: "0 2 * * *"
+      timezone: "UTC"
+    parameters: {}
+  - name: embedding-exchange
+    entrypoint: pipelines/orchestration/flows.py:embedding_exchange_flow
+    parameters: {}
+  - name: analytics-publish
+    entrypoint: pipelines/orchestration/flows.py:analytics_publish_flow
+    parameters: {}

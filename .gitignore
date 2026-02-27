@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.DS_Store
+
+# Data artifacts
+/data/raw/**
+/data/interim/**
+/data/processed/**
+/data/*.sqlite
+!/data/raw/.gitkeep
+!/data/interim/.gitkeep
+!/data/processed/.gitkeep
+
+# Prefect
+.prefect/
+
+# Jupyter / Quarto
+.ipynb_checkpoints/
+research/quarto-study/.quarto/
+research/quarto-study/reports/_site/
