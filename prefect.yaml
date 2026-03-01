@@ -13,3 +13,13 @@ deployments:
   - name: analytics-publish
     entrypoint: pipelines/orchestration/flows.py:analytics_publish_flow
     parameters: {}
+  - name: weekly-local-refresh
+    entrypoint: pipelines/orchestration/flows.py:weekly_local_refresh_flow
+    schedule:
+      cron: "0 2 * * 0"
+      timezone: "UTC"
+    parameters:
+      batch_size: 16
+      chunk_size: 10
+      cluster_count: 16
+      max_docs: 10000

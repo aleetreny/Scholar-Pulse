@@ -8,6 +8,7 @@ from pipelines.common.settings import get_settings
 from pipelines.embeddings.export_colab import export_snapshot
 from pipelines.embeddings.import_colab import validate_and_register
 from pipelines.ingestion.service import run_incremental
+from pipelines.orchestration.local_refresh import run_weekly_local_refresh
 from pipelines.publish.dashboard_feeds import build_dashboard_feeds
 
 
@@ -77,4 +78,37 @@ def analytics_publish_flow(snapshot_id: str) -> dict[str, int | str]:
         "records_used": result.records_used,
         "clusters": result.clusters,
         "output_dir": str(result.output_dir),
+    }
+
+
+@flow(name="weekly_local_refresh_flow")
+def weekly_local_refresh_flow(
+    as_of_iso: str | None = None,
+    taxonomy: str | None = None,
+    since_iso: str | None = None,
+    batch_size: int = 16,
+    chunk_size: int = 10,
+    cluster_count: int = 16,
+    max_docs: int = 10000,
+    skip_publish: bool = False,
+) -> dict[str, int | str | None]:
+    as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else None
+    since = datetime.fromisoformat(since_iso) if since_iso else None
+    result = run_weekly_local_refresh(
+        as_of=as_of,
+        taxonomy=taxonomy,
+        since=since,
+        batch_size=batch_size,
+        chunk_size=chunk_size,
+        cluster_count=cluster_count,
+        max_docs=max_docs,
+        skip_publish=skip_publish,
+    )
+    return {
+        "snapshot_id": str(result["snapshot_id"]),
+        "status": str(result["status"]),
+        "document_count": int(result["document_count"]),
+        "vector_count": int(result.get("vector_count", 0)),
+        "ingestion_processed": int(result["ingestion_processed"]),
+        "export_since": (str(result["export_since"]) if result["export_since"] is not None else None),
     }

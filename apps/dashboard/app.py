@@ -171,6 +171,29 @@ def _paper_rows(filtered_map: pd.DataFrame) -> list[dict[str, Any]]:
     return frame[columns].to_dict(orient="records")
 
 
+def _weekly_rows(weekly: pd.DataFrame) -> list[dict[str, Any]]:
+    if weekly.empty:
+        return []
+
+    frame = weekly.copy()
+    frame["categories_text"] = frame["categories"].apply(lambda values: ", ".join(values))
+    frame["submitted_at"] = frame["submitted_at"].astype(str).str.slice(0, 19).str.replace("T", " ")
+    frame = frame.sort_values(["paper_score", "submitted_at"], ascending=[False, False]).head(400)
+
+    columns = [
+        "paper_id",
+        "title",
+        "submitted_at",
+        "cluster_id",
+        "paper_score",
+        "recency_score",
+        "frontier_cluster_score",
+        "novelty_score",
+        "categories_text",
+    ]
+    return frame[columns].to_dict(orient="records")
+
+
 app = dash.Dash(
     __name__,
     assets_folder=str(Path(__file__).with_name("assets")),
@@ -207,6 +230,10 @@ app.layout = html.Div(
                 html.Div(
                     className="kpi",
                     children=[html.Span("Frontier Candidates"), html.Strong(id="kpi-frontier")],
+                ),
+                html.Div(
+                    className="kpi",
+                    children=[html.Span("Weekly Radar"), html.Strong(id="kpi-weekly")],
                 ),
             ],
         ),
@@ -338,6 +365,44 @@ app.layout = html.Div(
                         )
                     ],
                 ),
+                dcc.Tab(
+                    label="Weekly Radar",
+                    value="weekly",
+                    children=[
+                        dash_table.DataTable(
+                            id="weekly-table",
+                            columns=[
+                                {"name": "Paper ID", "id": "paper_id"},
+                                {"name": "Title", "id": "title"},
+                                {"name": "Submitted", "id": "submitted_at"},
+                                {"name": "Cluster", "id": "cluster_id"},
+                                {"name": "Paper Score", "id": "paper_score"},
+                                {"name": "Recency", "id": "recency_score"},
+                                {"name": "Frontier", "id": "frontier_cluster_score"},
+                                {"name": "Novelty", "id": "novelty_score"},
+                                {"name": "Categories", "id": "categories_text"},
+                            ],
+                            data=[],
+                            page_size=15,
+                            sort_action="native",
+                            style_table={"overflowX": "auto"},
+                            style_header={
+                                "backgroundColor": "#eef6f7",
+                                "fontWeight": "700",
+                                "fontFamily": "Manrope, Segoe UI, sans-serif",
+                            },
+                            style_cell={
+                                "textAlign": "left",
+                                "padding": "8px",
+                                "fontFamily": "Manrope, Segoe UI, sans-serif",
+                                "fontSize": "13px",
+                                "maxWidth": "420px",
+                                "overflow": "hidden",
+                                "textOverflow": "ellipsis",
+                            },
+                        )
+                    ],
+                ),
             ],
         ),
     ],
@@ -359,6 +424,7 @@ app.layout = html.Div(
     Output("kpi-docs", "children"),
     Output("kpi-clusters", "children"),
     Output("kpi-frontier", "children"),
+    Output("kpi-weekly", "children"),
     Input("snapshot-dropdown", "value"),
 )
 def refresh_controls(snapshot_id: str | None):
@@ -379,12 +445,14 @@ def refresh_controls(snapshot_id: str | None):
             "0",
             "0",
             "0",
+            "0",
         )
 
     bundle: DashboardBundle = load_bundle(snapshot_id)
     map_points = bundle.map_points
     metrics = bundle.metrics
     frontier = bundle.frontier
+    weekly = bundle.weekly_papers
 
     metric_names = sorted(
         [name for name in metrics["metric_name"].dropna().unique().tolist() if name]
@@ -417,7 +485,8 @@ def refresh_controls(snapshot_id: str | None):
 
     status = (
         f"Snapshot {snapshot_id}: map={len(map_points):,} rows, "
-        f"metrics={len(metrics):,} rows, frontier={len(frontier):,} rows."
+        f"metrics={len(metrics):,} rows, frontier={len(frontier):,} rows, "
+        f"weekly={len(weekly):,} rows."
     )
 
     return (
@@ -435,6 +504,7 @@ def refresh_controls(snapshot_id: str | None):
         f"{len(map_points):,}",
         f"{len(clusters):,}",
         f"{len(frontier):,}",
+        f"{len(weekly):,}",
     )
 
 
@@ -443,6 +513,7 @@ def refresh_controls(snapshot_id: str | None):
     Output("frontier-graph", "figure"),
     Output("map-graph", "figure"),
     Output("papers-table", "data"),
+    Output("weekly-table", "data"),
     Input("snapshot-dropdown", "value"),
     Input("metric-dropdown", "value"),
     Input("cluster-dropdown", "value"),
@@ -460,7 +531,7 @@ def refresh_views(
 ):
     if not snapshot_id:
         empty = _empty_figure("Select a snapshot to start")
-        return empty, empty, empty, []
+        return empty, empty, empty, [], []
 
     bundle = load_bundle(snapshot_id)
     clusters = selected_clusters or []
@@ -499,11 +570,22 @@ def refresh_views(
 
     show_3d = bool(map_mode and "3d" in map_mode)
 
+    weekly = bundle.weekly_papers.copy()
+    if clusters:
+        weekly = weekly[weekly["cluster_id"].isin(clusters)]
+    if year_range and len(year_range) == 2:
+        weekly = weekly[
+            (weekly["year"] >= int(year_range[0])) & (weekly["year"] <= int(year_range[1]))
+        ]
+    if tokens:
+        weekly = weekly[weekly["categories"].apply(lambda values: _taxonomy_match(values, tokens))]
+
     return (
         _overview_figure(metrics=metrics, metric_name=metric_name),
         _frontier_figure(frontier=frontier),
         _map_figure(filtered_map=filtered_map, show_3d=show_3d),
         _paper_rows(filtered_map),
+        _weekly_rows(weekly),
     )
 
 

@@ -35,6 +35,20 @@ FRONTIER_COLUMNS = [
     "doc_id",
     "title",
 ]
+WEEKLY_COLUMNS = [
+    "doc_id",
+    "paper_id",
+    "paper_version_id",
+    "title",
+    "submitted_at",
+    "year",
+    "categories",
+    "cluster_id",
+    "paper_score",
+    "recency_score",
+    "frontier_cluster_score",
+    "novelty_score",
+]
 
 
 @dataclass(frozen=True)
@@ -43,6 +57,7 @@ class DashboardBundle:
     map_points: pd.DataFrame
     metrics: pd.DataFrame
     frontier: pd.DataFrame
+    weekly_papers: pd.DataFrame
 
 
 def _publish_root() -> Path:
@@ -200,6 +215,44 @@ def _normalize_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return normalized[FRONTIER_COLUMNS]
 
 
+def _normalize_weekly(frame: pd.DataFrame) -> pd.DataFrame:
+    normalized = frame.copy()
+    aliases = {
+        "score": "paper_score",
+        "frontier_score": "frontier_cluster_score",
+    }
+    for old_name, new_name in aliases.items():
+        if old_name in normalized.columns and new_name not in normalized.columns:
+            normalized[new_name] = normalized[old_name]
+
+    for column in WEEKLY_COLUMNS:
+        if column not in normalized.columns:
+            normalized[column] = None
+
+    normalized["doc_id"] = normalized["doc_id"].fillna("").astype(str)
+    normalized["paper_id"] = normalized["paper_id"].fillna("").astype(str)
+    normalized["paper_version_id"] = normalized["paper_version_id"].fillna("").astype(str)
+    normalized["title"] = normalized["title"].fillna("").astype(str)
+    normalized["submitted_at"] = normalized["submitted_at"].fillna("").astype(str)
+    normalized["year"] = pd.to_numeric(normalized["year"], errors="coerce").fillna(0).astype(int)
+    normalized["cluster_id"] = normalized["cluster_id"].fillna("unassigned").astype(str)
+    normalized["paper_score"] = (
+        pd.to_numeric(normalized["paper_score"], errors="coerce").fillna(0.0).astype(float)
+    )
+    normalized["recency_score"] = (
+        pd.to_numeric(normalized["recency_score"], errors="coerce").fillna(0.0).astype(float)
+    )
+    normalized["frontier_cluster_score"] = (
+        pd.to_numeric(normalized["frontier_cluster_score"], errors="coerce").fillna(0.0).astype(float)
+    )
+    normalized["novelty_score"] = (
+        pd.to_numeric(normalized["novelty_score"], errors="coerce").fillna(0.0).astype(float)
+    )
+    normalized["categories"] = normalized["categories"].apply(_normalize_categories)
+
+    return normalized[WEEKLY_COLUMNS]
+
+
 def load_bundle(snapshot_id: str) -> DashboardBundle:
     map_frame = _read_first_existing(
         snapshot_id=snapshot_id,
@@ -216,10 +269,16 @@ def load_bundle(snapshot_id: str) -> DashboardBundle:
         candidates=["frontier_candidates.parquet", "frontier.parquet"],
         required_columns=FRONTIER_COLUMNS,
     )
+    weekly_frame = _read_first_existing(
+        snapshot_id=snapshot_id,
+        candidates=["weekly_new_papers.parquet", "weekly_radar.parquet"],
+        required_columns=WEEKLY_COLUMNS,
+    )
 
     return DashboardBundle(
         snapshot_id=snapshot_id,
         map_points=_normalize_map(map_frame),
         metrics=_normalize_metrics(metrics_frame),
         frontier=_normalize_frontier(frontier_frame),
+        weekly_papers=_normalize_weekly(weekly_frame),
     )

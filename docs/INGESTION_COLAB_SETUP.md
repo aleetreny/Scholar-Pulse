@@ -41,6 +41,9 @@ Daily incremental (recommended after Kaggle bootstrap):
 python -m pipelines.ingestion.cli incremental --as-of 2026-02-27T02:00:00+00:00 --taxonomy cs,stat,physics
 ```
 
+If incremental watermark does not exist yet, the pipeline now auto-resumes from the latest
+`paper_versions.updated_at` in your DB (plus overlap window), so it catches up from your current corpus frontier.
+
 ## 4.1) Primary historical bootstrap (Kaggle mirror)
 
 Install Kaggle dependency once:
@@ -111,6 +114,29 @@ python -m pipelines.embeddings.export_colab --snapshot-id <snapshot_id>
 python -m pipelines.embeddings.import_colab --snapshot-id <snapshot_id>
 ```
 
+Incremental export (only new/updated papers since a timestamp):
+
+```bash
+python -m pipelines.embeddings.export_colab \
+  --snapshot-id <snapshot_id> \
+  --taxonomy cs,stat,physics \
+  --since 2026-03-01T00:00:00+00:00
+```
+
+## 5.1) Local embeddings (no Colab)
+
+If weekly volume is small, run embeddings fully local:
+
+```bash
+make local-embed SNAPSHOT_ID=<snapshot_id> BATCH_SIZE=16 CHUNK_SIZE=10
+```
+
+Then validate:
+
+```bash
+make import-embeddings SNAPSHOT_ID=<snapshot_id>
+```
+
 ## 6) Build dashboard feeds from imported embeddings
 
 ```bash
@@ -126,4 +152,19 @@ Output artifacts:
 
 ```bash
 python -m apps.dashboard.app
+```
+
+## 8) One-command weekly local refresh
+
+Runs: incremental API sync -> delta export -> local embeddings -> import -> publish feeds.
+
+```bash
+make weekly-refresh
+```
+
+Optional overrides:
+
+```bash
+make weekly-refresh TAXONOMY=cs,stat,physics
+make weekly-refresh SINCE=2026-03-01T00:00:00+00:00 BATCH_SIZE=12 CHUNK_SIZE=6 MAX_DOCS=20000
 ```

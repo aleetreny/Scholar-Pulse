@@ -23,6 +23,20 @@ DOCUMENT_COLUMNS = [
 ]
 
 VECTOR_COLUMNS = ["doc_id", "embedding"]
+WEEKLY_PAPER_COLUMNS = [
+    "doc_id",
+    "paper_id",
+    "paper_version_id",
+    "title",
+    "submitted_at",
+    "year",
+    "categories",
+    "cluster_id",
+    "paper_score",
+    "recency_score",
+    "frontier_cluster_score",
+    "novelty_score",
+]
 
 
 @dataclass(frozen=True)
@@ -48,13 +62,39 @@ def _read_sharded_parquet(directory: Path, pattern: str, columns: list[str]) -> 
     return frame[columns]
 
 
-def _load_documents(snapshot_id: str) -> pd.DataFrame:
+def _load_documents(snapshot_id: str, selected_doc_ids: set[str] | None = None) -> pd.DataFrame:
     settings = get_settings()
     export_dir = settings.data_dir / "interim" / "exports" / snapshot_id
-    documents = _read_sharded_parquet(export_dir, "documents_shard_*.parquet", DOCUMENT_COLUMNS)
-    if documents.empty:
+    shards = sorted(export_dir.glob("documents_shard_*.parquet"))
+    if not shards:
         raise FileNotFoundError(f"No export document shards found in {export_dir}")
 
+    target_ids = {str(value) for value in selected_doc_ids} if selected_doc_ids else None
+    remaining_ids = set(target_ids) if target_ids else None
+
+    frames: list[pd.DataFrame] = []
+    for path in shards:
+        frame = pd.read_parquet(path)
+        for column in DOCUMENT_COLUMNS:
+            if column not in frame.columns:
+                frame[column] = None
+        frame = frame[DOCUMENT_COLUMNS]
+        frame["doc_id"] = frame["doc_id"].astype(str)
+
+        if remaining_ids is not None:
+            frame = frame[frame["doc_id"].isin(remaining_ids)]
+            if frame.empty:
+                continue
+            remaining_ids.difference_update(frame["doc_id"].tolist())
+
+        frames.append(frame)
+        if remaining_ids is not None and not remaining_ids:
+            break
+
+    if not frames:
+        raise RuntimeError(f"No matching export document rows found for snapshot {snapshot_id}")
+
+    documents = pd.concat(frames, ignore_index=True)
     documents = documents.drop_duplicates(subset=["doc_id"], keep="last").copy()
     documents["year"] = pd.to_numeric(documents["year"], errors="coerce").fillna(0).astype(int)
     documents["title"] = documents["title"].fillna("").astype(str)
@@ -117,6 +157,67 @@ def _normalize_metric(series: pd.Series) -> pd.Series:
     if spread <= 0.0:
         return pd.Series(np.zeros(len(series), dtype=np.float32), index=series.index)
     return ((series - min_value) / spread).astype(np.float32)
+
+
+def _weekly_ranked_papers(
+    map_points: pd.DataFrame,
+    frontier: pd.DataFrame,
+    lookback_days: int = 7,
+) -> pd.DataFrame:
+    if map_points.empty:
+        return pd.DataFrame(columns=WEEKLY_PAPER_COLUMNS)
+
+    frame = map_points.copy()
+    frame["submitted_at_ts"] = pd.to_datetime(frame["submitted_at"], utc=True, errors="coerce")
+    frame = frame.dropna(subset=["submitted_at_ts"]).copy()
+    if frame.empty:
+        return pd.DataFrame(columns=WEEKLY_PAPER_COLUMNS)
+
+    latest_ts = frame["submitted_at_ts"].max()
+    cutoff = latest_ts - pd.Timedelta(days=max(lookback_days, 1))
+    weekly = frame[frame["submitted_at_ts"] >= cutoff].copy()
+    if weekly.empty:
+        return pd.DataFrame(columns=WEEKLY_PAPER_COLUMNS)
+
+    centroids = (
+        frame.groupby("cluster_id", as_index=False)[["x", "y", "z"]]
+        .mean()
+        .rename(columns={"x": "cx", "y": "cy", "z": "cz"})
+    )
+    weekly = weekly.merge(centroids, on="cluster_id", how="left")
+    weekly["novelty_raw"] = np.sqrt(
+        (weekly["x"] - weekly["cx"]) ** 2
+        + (weekly["y"] - weekly["cy"]) ** 2
+        + (weekly["z"] - weekly["cz"]) ** 2
+    )
+    weekly["novelty_score"] = _normalize_metric(weekly["novelty_raw"]).astype(np.float32)
+
+    if frontier.empty:
+        frontier_by_cluster = pd.Series(dtype=np.float32)
+    else:
+        frontier_by_cluster = frontier.groupby("cluster_id")["frontier_score"].max()
+    weekly["frontier_cluster_score"] = (
+        weekly["cluster_id"].map(frontier_by_cluster).fillna(0.0).astype(np.float32)
+    )
+    weekly["frontier_score_norm"] = _normalize_metric(weekly["frontier_cluster_score"]).astype(np.float32)
+
+    age_days = (latest_ts - weekly["submitted_at_ts"]).dt.total_seconds() / 86400.0
+    weekly["recency_score"] = (
+        1.0 - (age_days / float(max(lookback_days, 1)))
+    ).clip(lower=0.0, upper=1.0)
+    weekly["recency_score"] = weekly["recency_score"].astype(np.float32)
+
+    weekly["paper_score"] = (
+        0.45 * weekly["frontier_score_norm"]
+        + 0.35 * weekly["recency_score"]
+        + 0.20 * weekly["novelty_score"]
+    ).astype(np.float32)
+
+    weekly["categories"] = weekly["categories"].apply(
+        lambda value: sorted(set(value)) if isinstance(value, list) else []
+    )
+    weekly = weekly.sort_values(["paper_score", "submitted_at_ts"], ascending=[False, False])
+    return weekly[WEEKLY_PAPER_COLUMNS].reset_index(drop=True)
 
 
 def _metrics_and_frontier(
@@ -281,21 +382,26 @@ def build_dashboard_feeds(
     seed: int = 42,
 ) -> PublishResult:
     settings = get_settings()
-    documents = _load_documents(snapshot_id=snapshot_id)
     vectors = _load_vectors(snapshot_id=snapshot_id)
 
-    merged = documents.merge(vectors, on="doc_id", how="inner")
-    if merged.empty:
-        raise RuntimeError("No overlapping records between documents and vectors")
+    vectors = vectors.sort_values("doc_id").reset_index(drop=True)
 
-    if max_docs > 0 and len(merged) > max_docs:
-        merged = (
-            merged.sample(n=max_docs, random_state=seed)
+    # Sample vectors first to avoid a full 1M+ row join on local CPU.
+    if max_docs > 0 and len(vectors) > max_docs:
+        vectors = (
+            vectors.sample(n=max_docs, random_state=seed)
             .sort_values("doc_id")
             .reset_index(drop=True)
         )
-    else:
-        merged = merged.sort_values("doc_id").reset_index(drop=True)
+
+    selected_doc_ids = set(vectors["doc_id"].astype(str).tolist())
+    documents = _load_documents(snapshot_id=snapshot_id, selected_doc_ids=selected_doc_ids)
+
+    merged = (
+        documents.merge(vectors, on="doc_id", how="inner").sort_values("doc_id").reset_index(drop=True)
+    )
+    if merged.empty:
+        raise RuntimeError("No overlapping records between selected documents and vectors")
 
     matrix = _to_matrix(merged["embedding"])
     coords_3d = _pca_projection(matrix, dims=3)
@@ -311,12 +417,18 @@ def build_dashboard_feeds(
     )
 
     metrics, frontier = _metrics_and_frontier(merged=map_points, matrix=matrix)
+    weekly_new_papers = _weekly_ranked_papers(
+        map_points=map_points,
+        frontier=frontier,
+        lookback_days=7,
+    )
 
     output_dir = settings.data_dir / "processed" / "publish" / snapshot_id / "dashboard_feeds"
     output_dir.mkdir(parents=True, exist_ok=True)
     map_points.to_parquet(output_dir / "map_points.parquet", index=False)
     metrics.to_parquet(output_dir / "metrics.parquet", index=False)
     frontier.to_parquet(output_dir / "frontier_candidates.parquet", index=False)
+    weekly_new_papers.to_parquet(output_dir / "weekly_new_papers.parquet", index=False)
 
     write_json(
         output_dir / "build_manifest.json",
@@ -327,6 +439,8 @@ def build_dashboard_feeds(
             "cluster_count_requested": int(cluster_count),
             "max_docs": int(max_docs),
             "seed": int(seed),
+            "weekly_candidates": int(len(weekly_new_papers)),
+            "weekly_lookback_days": 7,
         },
     )
 

@@ -108,6 +108,14 @@ def _load_watermark() -> datetime | None:
         return datetime.fromisoformat(state.state_value)
 
 
+def _latest_known_updated_at() -> datetime | None:
+    with session_scope() as session:
+        latest = session.execute(
+            select(PaperVersion.updated_at).order_by(PaperVersion.updated_at.desc()).limit(1)
+        ).scalar_one_or_none()
+    return latest
+
+
 def _save_watermark(value: datetime) -> None:
     with session_scope() as session:
         upsert_row(
@@ -270,7 +278,13 @@ def run_incremental(
     settings = get_settings()
     watermark = _load_watermark()
     if watermark is None:
-        from_date = as_of - timedelta(hours=settings.arxiv_overlap_hours)
+        # If no explicit incremental watermark exists yet, resume from the latest paper
+        # already present in the canonical store.
+        latest_known = _latest_known_updated_at()
+        if latest_known is None:
+            from_date = as_of - timedelta(hours=settings.arxiv_overlap_hours)
+        else:
+            from_date = latest_known - timedelta(hours=settings.arxiv_overlap_hours)
     else:
         from_date = watermark - timedelta(hours=settings.arxiv_overlap_hours)
 
