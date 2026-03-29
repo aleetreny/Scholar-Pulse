@@ -140,13 +140,17 @@ make import-embeddings SNAPSHOT_ID=<snapshot_id>
 ## 6) Build dashboard feeds from imported embeddings
 
 ```bash
-python -m pipelines.publish.dashboard_feeds --snapshot-id <snapshot_id>
+python -m pipelines.space.build --snapshot-id <snapshot_id> --projection pca_umap --sample-points 150000
+python -m pipelines.similarity.build_index --snapshot-id <snapshot_id> --index hnsw --metric cosine
+python -m pipelines.publish.dashboard_feeds --snapshot-id <snapshot_id> --profile minimal
 ```
 
 Output artifacts:
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/metrics.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/frontier_candidates.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_density.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_sample.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_detail_index.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/latest_papers.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/build_manifest.json`
 
 ## 7) Run dashboard
 
@@ -156,7 +160,7 @@ python -m apps.dashboard.app
 
 ## 8) One-command weekly local refresh
 
-Runs: incremental API sync -> delta export -> local embeddings -> import -> publish feeds.
+Runs: incremental API sync -> delta export -> local embeddings -> import -> map-space build -> ANN build -> publish feeds -> enrichment sync.
 
 ```bash
 make weekly-refresh
@@ -166,5 +170,5 @@ Optional overrides:
 
 ```bash
 make weekly-refresh TAXONOMY=cs,stat,physics
-make weekly-refresh SINCE=2026-03-01T00:00:00+00:00 BATCH_SIZE=12 CHUNK_SIZE=6 MAX_DOCS=20000
+make weekly-refresh SINCE=2026-03-01T00:00:00+00:00 BATCH_SIZE=12 CHUNK_SIZE=6 SAMPLE_POINTS=120000
 ```

@@ -121,6 +121,24 @@ def _taxonomy_match(categories: list[str], taxonomy_tokens: list[str]) -> bool:
     return False
 
 
+def _parse_authors(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+
+    text = str(value).strip()
+    if not text:
+        return []
+
+    if text.startswith("[") and text.endswith("]"):
+        try:
+            parsed = json.loads(text)
+            if isinstance(parsed, list):
+                return [str(item).strip() for item in parsed if str(item).strip()]
+        except json.JSONDecodeError:
+            pass
+
+    return [item.strip() for item in text.split(",") if item.strip()]
+
 
 def _iter_json_lines(path: Path) -> Iterator[dict[str, Any]]:
     opener = gzip.open if path.suffix == ".gz" else open
@@ -231,6 +249,13 @@ def run_kaggle_bootstrap(
                 continue
             if not _taxonomy_match(categories, taxonomy_tokens):
                 continue
+            primary_category = categories[0]
+
+            authors = _parse_authors(paper.get("authors", ""))
+            submitter = str(paper.get("submitter", "")).strip() or None
+            comments = str(paper.get("comments", "")).strip() or None
+            journal_ref = str(paper.get("journal-ref", "")).strip() or None
+            doi = str(paper.get("doi", "")).strip() or None
 
             versions_raw = paper.get("versions", [])
             parsed_versions: list[tuple[int, str, datetime]] = []
@@ -267,7 +292,13 @@ def run_kaggle_bootstrap(
                     submitted_at=version_dt,
                     updated_at=version_dt,
                     categories=categories,
+                    authors=authors,
                     raw=paper,
+                    submitter=submitter,
+                    comments=comments,
+                    journal_ref=journal_ref,
+                    doi=doi,
+                    primary_category=primary_category,
                 )
                 inserted, updated = _upsert_record(session, record)
                 processed_entries += 1

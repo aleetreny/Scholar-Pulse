@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
@@ -22,4 +22,10 @@ class ArxivRecord:
     submitted_at: datetime
     updated_at: datetime
     categories: list[str]
-    raw: dict[str, Any]
+    authors: list[str] = field(default_factory=list)
+    raw: dict[str, Any] = field(default_factory=dict)
+    submitter: str | None = None
+    comments: str | None = None
+    journal_ref: str | None = None
+    doi: str | None = None
+    primary_category: str | None = None

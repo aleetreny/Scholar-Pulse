@@ -1,0 +1,9 @@
+from __future__ import annotations
+
+PLOT_TEMPLATE = "plotly_white"
+
+GLOBAL_PREVIEW_CAP = 6000
+FOCUS_DETAIL_CAP = 4000
+
+DEFAULT_YEAR_MIN = 1991
+DEFAULT_YEAR_MAX = 2026

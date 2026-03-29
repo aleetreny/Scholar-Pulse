@@ -15,8 +15,11 @@ from pipelines.db.upsert import upsert_row
 from pipelines.embeddings.export_colab import export_snapshot
 from pipelines.embeddings.import_colab import validate_and_register
 from pipelines.embeddings.local_embed_loop import run_local_embed_loop
+from pipelines.enrichment.sync import run_sync
 from pipelines.ingestion.service import IngestionStats, run_incremental
 from pipelines.publish.dashboard_feeds import PublishResult, build_dashboard_feeds
+from pipelines.similarity.build_index import SimilarityBuildResult, build_hnsw_index
+from pipelines.space.build import SpaceBuildResult, build_space
 
 EMBEDDING_WATERMARK_KEY = "embedding_incremental_watermark_utc"
 
@@ -68,10 +71,7 @@ def _latest_imported_snapshot_timestamp() -> datetime | None:
     return max(timestamps) if timestamps else None
 
 
-def _resolve_export_since(
-    explicit_since: datetime | None,
-    overlap_hours: int,
-) -> datetime | None:
+def _resolve_export_since(explicit_since: datetime | None, overlap_hours: int) -> datetime | None:
     if explicit_since is not None:
         return explicit_since
 
@@ -97,9 +97,15 @@ def run_weekly_local_refresh(
     since: datetime | None = None,
     batch_size: int = 16,
     chunk_size: int = 10,
-    cluster_count: int = 16,
-    max_docs: int = 10_000,
     skip_publish: bool = False,
+    skip_space: bool = False,
+    skip_similarity: bool = False,
+    skip_enrichment: bool = False,
+    sample_points: int | None = None,
+    density_bins: int | None = None,
+    similarity_pca_dim: int | None = None,
+    enrichment_sources: list[str] | None = None,
+    enrichment_max_papers: int | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
     run_ts = (as_of or datetime.now(timezone.utc)).astimezone(timezone.utc)
@@ -166,16 +172,51 @@ def run_weekly_local_refresh(
     result["vector_count"] = int(import_result["vector_count"])
     result["expected_dimension"] = int(import_result["expected_dimension"])
 
+    if not skip_space:
+        space_result: SpaceBuildResult = build_space(
+            snapshot_id=snapshot_id,
+            projection="pca_umap",
+            sample_points=int(sample_points or settings.map_sample_points),
+            density_bins=int(density_bins or settings.map_density_bins),
+        )
+        result["space_output"] = str(space_result.output_dir)
+        result["space_total_docs"] = int(space_result.total_docs)
+
+    if not skip_similarity:
+        similarity_result: SimilarityBuildResult = build_hnsw_index(
+            snapshot_id=snapshot_id,
+            metric="cosine",
+            pca_dim=int(similarity_pca_dim or settings.similarity_pca_dim),
+            ef_construction=settings.similarity_hnsw_ef_construction,
+            ef_search=settings.similarity_hnsw_ef_search,
+            m=settings.similarity_hnsw_m,
+            sample_size=max(int(sample_points or settings.map_sample_points), 50000),
+        )
+        result["similarity_output"] = str(similarity_result.output_dir)
+        result["similarity_indexed_docs"] = int(similarity_result.indexed_docs)
+
     if not skip_publish:
         publish_result: PublishResult = build_dashboard_feeds(
             snapshot_id=snapshot_id,
-            cluster_count=max(cluster_count, 1),
-            max_docs=max(max_docs, 0),
-            seed=settings.random_seed,
+            profile="minimal",
+            projection="pca_umap",
+            sample_points=int(sample_points or settings.map_sample_points),
+            density_bins=int(density_bins or settings.map_density_bins),
         )
         result["publish_output"] = str(publish_result.output_dir)
         result["publish_records_used"] = int(publish_result.records_used)
-        result["publish_clusters"] = int(publish_result.clusters)
+        result["publish_latest_count"] = int(publish_result.latest_count)
+
+    if not skip_enrichment:
+        enrichment_result = run_sync(
+            snapshot_id=snapshot_id,
+            sources=(enrichment_sources or ["openalex", "s2", "crossref"]),
+            mode="incremental",
+            max_papers=int(enrichment_max_papers or settings.enrichment_batch_size),
+        )
+        result["enrichment_selected_papers"] = int(enrichment_result.selected_papers)
+        result["enrichment_updated_records"] = int(enrichment_result.updated_records)
+        result["enrichment_failed_requests"] = int(enrichment_result.failed_requests)
 
     _save_state_timestamp(EMBEDDING_WATERMARK_KEY, run_ts)
     result["status"] = "completed"
@@ -184,16 +225,22 @@ def run_weekly_local_refresh(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Weekly local refresh: incremental ingest -> export -> local embeddings -> import -> publish"
+        description="Weekly local refresh: incremental ingest -> export -> local embeddings -> import -> space -> similarity -> publish -> enrichment"
     )
     parser.add_argument("--as-of", default="", help="UTC ISO datetime (default: now)")
     parser.add_argument("--taxonomy", default="")
     parser.add_argument("--since", default="", help="UTC ISO datetime override for export lower-bound")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--chunk-size", type=int, default=10)
-    parser.add_argument("--cluster-count", type=int, default=16)
-    parser.add_argument("--max-docs", type=int, default=10000)
+    parser.add_argument("--sample-points", type=int, default=0)
+    parser.add_argument("--density-bins", type=int, default=0)
+    parser.add_argument("--similarity-pca-dim", type=int, default=0)
+    parser.add_argument("--enrichment-sources", default="openalex,s2,crossref")
+    parser.add_argument("--enrichment-max-papers", type=int, default=0)
+    parser.add_argument("--skip-space", action="store_true")
+    parser.add_argument("--skip-similarity", action="store_true")
     parser.add_argument("--skip-publish", action="store_true")
+    parser.add_argument("--skip-enrichment", action="store_true")
     return parser.parse_args()
 
 
@@ -205,9 +252,15 @@ def main() -> None:
         since=(_parse_utc_datetime(args.since) if args.since else None),
         batch_size=args.batch_size,
         chunk_size=args.chunk_size,
-        cluster_count=args.cluster_count,
-        max_docs=args.max_docs,
         skip_publish=args.skip_publish,
+        skip_space=args.skip_space,
+        skip_similarity=args.skip_similarity,
+        skip_enrichment=args.skip_enrichment,
+        sample_points=(args.sample_points if args.sample_points > 0 else None),
+        density_bins=(args.density_bins if args.density_bins > 0 else None),
+        similarity_pca_dim=(args.similarity_pca_dim if args.similarity_pca_dim > 0 else None),
+        enrichment_sources=[token.strip() for token in args.enrichment_sources.split(",") if token.strip()],
+        enrichment_max_papers=(args.enrichment_max_papers if args.enrichment_max_papers > 0 else None),
     )
     print(json.dumps(result, ensure_ascii=True, indent=2, sort_keys=True))
 

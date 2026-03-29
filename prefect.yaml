@@ -21,5 +21,7 @@ deployments:
     parameters:
       batch_size: 16
       chunk_size: 10
-      cluster_count: 16
-      max_docs: 10000
+      sample_points: 150000
+      density_bins: 160
+      similarity_pca_dim: 256
+      enrichment_max_papers: 200

@@ -30,6 +30,12 @@ dependencies = [
 dashboard = [
   "dash>=2.18",
   "plotly>=5.24",
+  "duckdb>=1.1",
+]
+dashboard_api = [
+  "fastapi>=0.115",
+  "uvicorn>=0.32",
+  "orjson>=3.10",
 ]
 orchestration = [
   "prefect>=2.19",
@@ -40,6 +46,10 @@ analytics = [
   "hdbscan>=0.8.37",
   "bertopic>=0.16.3",
   "scipy>=1.14",
+]
+similarity = [
+  "hnswlib>=0.8",
+  "scikit-learn>=1.5",
 ]
 kaggle = [
   "kagglehub[pandas-datasets]>=0.3",
@@ -64,11 +74,15 @@ packages = [
   "pipelines.db",
   "pipelines.ingestion",
   "pipelines.embeddings",
+  "pipelines.space",
+  "pipelines.similarity",
+  "pipelines.enrichment",
   "pipelines.clustering",
   "pipelines.metrics",
   "pipelines.publish",
   "pipelines.orchestration",
   "apps.dashboard",
+  "apps.dashboard_api",
 ]
 
 [tool.black]

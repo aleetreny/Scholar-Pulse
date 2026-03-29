@@ -21,10 +21,29 @@ The platform maps scientific frontier dynamics using embedding-space geometry, d
 
 - **Research/Product Separation:** Quarto output remains publication-grade; dashboard remains user-facing and lightweight.
 - **Single Source of Truth:** Pipelines generate canonical artifacts consumed by both Quarto and dashboard.
-- **Deterministic Core:** BERTopic + UMAP + HDBSCAN + metric equations stay reproducible and versioned.
-- **Modular Inference:** Bedrock synthesis is a pluggable final interpretation layer over mathematically detected gaps.
+- **Deterministic Core:** PCA + UMAP map space, ANN index manifests, and feed artifacts are reproducible and versioned.
+- **Scalable UX:** Dashboard uses density + semantic zoom + detail-on-demand instead of loading every point at once.
+- **Modular Inference:** Enrichment and downstream synthesis remain pluggable layers over the deterministic evidence base.
 
 ## Dashboard Visualization
+
+The product dashboard is now split into two apps:
+
+1. `apps/dashboard_api/` — FastAPI backend serving published dashboard feeds and paper detail endpoints.
+2. `apps/dashboard-web/` — Next.js + TypeScript frontend.
+
+Run the Next.js dashboard stack against a published snapshot:
+
+1. `conda activate my_env`
+2. `python -m pip install -e '.[dashboard_api]'`
+3. `make run-dashboard-api`
+4. `cd apps/dashboard-web && npm install && NEXT_PUBLIC_DASHBOARD_API_URL=http://127.0.0.1:8051/api npm run dev`
+
+Open:
+- `http://127.0.0.1:3000`
+
+Legacy Dash frontend remains available with:
+- `make run-dashboard`
 
 Run the dashboard against a published snapshot:
 
@@ -44,46 +63,50 @@ Open:
 Important incremental behavior:
 - If no ingestion watermark exists yet, incremental now starts from the latest paper already stored in DB (plus overlap), so it catches up from your current corpus frontier to now.
 
-## Dashboard Publish Path
+## Minimal Dashboard (v1)
 
-After embedding import completes for a snapshot:
+`v1` ships with only two tabs:
+1. `Research Map`
+2. `Latest Papers (7d)`
 
-1. `python -m pipelines.publish.dashboard_feeds --snapshot-id <snapshot_id>`
-2. `python -m apps.dashboard.app`
+Map pipeline (deterministic):
+- fit map space with `PCA(50) -> UMAP(2D, cosine)` on deterministic sample.
+- generate full-corpus density layer + sample layer + viewport detail layer.
+- support point click + nearest-neighbor lookup through ANN index.
 
-The publish step writes canonical dashboard feeds to:
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/metrics.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/frontier_candidates.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/weekly_new_papers.parquet`
+Similarity pipeline:
+- ANN index uses `HNSW (cosine)` on PCA-compressed vectors.
+- query flow reranks ANN candidates with exact cosine on original embeddings.
 
-Current dashboard views:
-- `Overview`: density/momentum/acceleration/drift/entropy/infiltration time series.
-- `Semantic Map`: 2D/3D PCA map of clustered papers.
-- `Paper Explorer`: searchable table of mapped papers.
-- `Weekly Radar`: scored papers from the most recent 7-day window in the snapshot.
+Publish artifacts:
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_density.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_sample.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_detail_index.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/latest_papers.parquet`
+- `data/processed/publish/<snapshot_id>/dashboard_feeds/build_manifest.json`
 
-Weekly Radar score (deterministic):
-- `paper_score = 0.45 * frontier_cluster_norm + 0.35 * recency + 0.20 * novelty`
+Latest score (deterministic v1):
+- `score = 0.60 * recency + 0.40 * novelty`
 
 ## Local Runbook (Embeddings Already Downloaded)
 
 If you already have Colab outputs in `data/processed/embeddings/<snapshot_id>/`, run:
 
 1. `conda activate my_env`
-2. `python -m pip install -e '.[dashboard]'`
+2. `python -m pip install -e '.[dashboard,analytics,similarity]'`
 3. `docker compose up -d postgres`
 4. `make import-embeddings SNAPSHOT_ID=<snapshot_id>`
-5. `make publish-dashboard SNAPSHOT_ID=<snapshot_id> MAX_DOCS=10000 CLUSTER_COUNT=16`
-6. `make run-dashboard`
+5. `make build-space SNAPSHOT_ID=<snapshot_id>`
+6. `make build-similarity SNAPSHOT_ID=<snapshot_id>`
+7. `make publish-dashboard SNAPSHOT_ID=<snapshot_id>`
+8. `make run-dashboard`
 
 Notes:
 - Embedding generation is the only GPU-heavy phase. Dashboard publish and app runtime can run on CPU.
 - If Postgres is not running, `import-embeddings` validation cannot be registered in DB.
-- You can increase fidelity later with `MAX_DOCS=120000` (heavier CPU/RAM).
 - Use Python `>=3.11` (`conda activate my_env` first). System `python3` on macOS often points to `3.9` and will fail with current SQLAlchemy typing.
 
-## Weekly Local Pipeline (API -> Embeddings -> Dashboard)
+## Weekly Local Pipeline (API -> Embeddings -> Map -> Similarity -> Dashboard -> Enrichment)
 
 This path keeps everything local and only processes newly updated papers:
 
@@ -96,9 +119,13 @@ What `make weekly-refresh` does:
 2. Delta export for embeddings (`--since` inferred from embedding watermark or latest imported snapshot).
 3. Local resumable embedding generation (`BAAI/bge-m3`) over new shards only.
 4. Manifest validation and DB registration.
-5. Dashboard feed publication for the new snapshot.
+5. Deterministic map-space build (`PCA + UMAP`).
+6. ANN similarity index build (`HNSW + exact rerank metadata`).
+7. Minimal dashboard feed publication.
+8. Incremental enrichment sync (OpenAlex + Semantic Scholar + Crossref).
 
 Useful overrides:
 - `make weekly-refresh TAXONOMY=cs,stat,physics`
 - `make weekly-refresh SINCE=2026-03-01T00:00:00+00:00`
-- `make weekly-refresh BATCH_SIZE=12 CHUNK_SIZE=6 MAX_DOCS=20000`
+- `make weekly-refresh BATCH_SIZE=12 CHUNK_SIZE=6 SAMPLE_POINTS=120000`
+- `make weekly-refresh SKIP_ENRICHMENT=1`

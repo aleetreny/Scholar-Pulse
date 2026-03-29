@@ -34,9 +34,36 @@ def parse_timestamp(value: str) -> datetime:
 def normalize_record(entry: dict[str, Any]) -> ArxivRecord:
     parsed_id = parse_arxiv_identifier(str(entry["id"]))
     categories = sorted({str(tag["term"]).strip() for tag in entry.get("tags", []) if "term" in tag})
+    primary_category = None
+    primary = entry.get("arxiv_primary_category")
+    if isinstance(primary, dict):
+        primary_value = str(primary.get("term", "")).strip()
+        primary_category = primary_value or None
+    elif isinstance(primary, str):
+        primary_value = primary.strip()
+        primary_category = primary_value or None
+
+    author_entries = entry.get("authors", [])
+    authors: list[str] = []
+    if isinstance(author_entries, list):
+        for item in author_entries:
+            if isinstance(item, dict):
+                name = str(item.get("name", "")).strip()
+            else:
+                name = str(item).strip()
+            if name:
+                authors.append(name)
+    if not authors:
+        fallback_author = str(entry.get("author", "")).strip()
+        if fallback_author:
+            authors = [fallback_author]
 
     title = " ".join(str(entry.get("title", "")).split())
     abstract = " ".join(str(entry.get("summary", "")).split())
+    submitter = str(entry.get("arxiv_affiliation", "")).strip() or None
+    comments = str(entry.get("arxiv_comment", "")).strip() or None
+    journal_ref = str(entry.get("arxiv_journal_ref", "")).strip() or None
+    doi = str(entry.get("arxiv_doi", "")).strip() or None
 
     published = parse_timestamp(str(entry["published"]))
     updated = parse_timestamp(str(entry.get("updated", entry["published"])))
@@ -50,7 +77,13 @@ def normalize_record(entry: dict[str, Any]) -> ArxivRecord:
         submitted_at=published,
         updated_at=updated,
         categories=categories,
+        authors=authors,
         raw=entry,
+        submitter=submitter,
+        comments=comments,
+        journal_ref=journal_ref,
+        doi=doi,
+        primary_category=primary_category,
     )
 
 

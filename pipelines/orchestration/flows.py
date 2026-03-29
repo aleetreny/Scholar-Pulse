@@ -71,12 +71,12 @@ def embedding_exchange_flow(
 
 @flow(name="analytics_publish_flow")
 def analytics_publish_flow(snapshot_id: str) -> dict[str, int | str]:
-    result = build_dashboard_feeds(snapshot_id=snapshot_id)
+    result = build_dashboard_feeds(snapshot_id=snapshot_id, profile="minimal")
     return {
         "snapshot_id": result.snapshot_id,
         "status": "dashboard_feeds_published",
         "records_used": result.records_used,
-        "clusters": result.clusters,
+        "latest_count": result.latest_count,
         "output_dir": str(result.output_dir),
     }
 
@@ -88,8 +88,14 @@ def weekly_local_refresh_flow(
     since_iso: str | None = None,
     batch_size: int = 16,
     chunk_size: int = 10,
-    cluster_count: int = 16,
-    max_docs: int = 10000,
+    sample_points: int = 0,
+    density_bins: int = 0,
+    similarity_pca_dim: int = 0,
+    enrichment_sources_csv: str = "openalex,s2,crossref",
+    enrichment_max_papers: int = 0,
+    skip_space: bool = False,
+    skip_similarity: bool = False,
+    skip_enrichment: bool = False,
     skip_publish: bool = False,
 ) -> dict[str, int | str | None]:
     as_of = datetime.fromisoformat(as_of_iso) if as_of_iso else None
@@ -100,8 +106,16 @@ def weekly_local_refresh_flow(
         since=since,
         batch_size=batch_size,
         chunk_size=chunk_size,
-        cluster_count=cluster_count,
-        max_docs=max_docs,
+        sample_points=(sample_points if sample_points > 0 else None),
+        density_bins=(density_bins if density_bins > 0 else None),
+        similarity_pca_dim=(similarity_pca_dim if similarity_pca_dim > 0 else None),
+        enrichment_sources=[
+            token.strip() for token in enrichment_sources_csv.split(",") if token.strip()
+        ],
+        enrichment_max_papers=(enrichment_max_papers if enrichment_max_papers > 0 else None),
+        skip_space=skip_space,
+        skip_similarity=skip_similarity,
+        skip_enrichment=skip_enrichment,
         skip_publish=skip_publish,
     )
     return {

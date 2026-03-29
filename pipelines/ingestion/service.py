@@ -2,17 +2,28 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+import hashlib
 import json
 from pathlib import Path
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 import zstandard as zstd
 
 from pipelines.common.logging_utils import get_logger
 from pipelines.common.settings import get_settings
-from pipelines.db.models import IngestionRun, Paper, PaperCategory, PaperVersion, PipelineState
+from pipelines.db.models import (
+    Author,
+    IngestionRun,
+    Paper,
+    PaperAuthor,
+    PaperCategory,
+    PaperExternalId,
+    PaperSourceRaw,
+    PaperVersion,
+    PipelineState,
+)
 from pipelines.db.session import session_scope
 from pipelines.db.upsert import upsert_row
 from pipelines.ingestion.arxiv_utils import compute_record_hash
@@ -43,6 +54,84 @@ def month_windows(start: datetime, end: datetime) -> list[tuple[datetime, dateti
     return windows
 
 
+def _author_uid(display_name: str) -> str:
+    normalized = " ".join(display_name.lower().split())
+    digest = hashlib.sha1(normalized.encode("utf-8")).hexdigest()
+    return f"name:{digest[:24]}"
+
+
+def _persist_raw_payload(session: Session, record: ArxivRecord) -> None:
+    payload_hash = hashlib.sha256(
+        json.dumps(record.raw, ensure_ascii=True, sort_keys=True, default=str).encode("utf-8")
+    ).hexdigest()
+    upsert_row(
+        session=session,
+        table=PaperSourceRaw.__table__,
+        values={
+            "paper_id": record.paper_id,
+            "source": "arxiv",
+            "fetched_at": datetime.now(timezone.utc),
+            "payload_json": record.raw,
+            "payload_hash": payload_hash,
+            "status": "ok",
+            "error_message": None,
+        },
+        conflict_columns=["paper_id", "source", "payload_hash"],
+        update_columns=["fetched_at", "payload_json", "status", "error_message"],
+    )
+
+
+def _sync_authors(session: Session, record: ArxivRecord) -> None:
+    session.execute(delete(PaperAuthor).where(PaperAuthor.paper_version_id == record.paper_version_id))
+    for author_order, display_name in enumerate(record.authors, start=1):
+        cleaned = " ".join(display_name.split())
+        if not cleaned:
+            continue
+        author_uid = _author_uid(cleaned)
+        upsert_row(
+            session=session,
+            table=Author.__table__,
+            values={
+                "author_uid": author_uid,
+                "display_name": cleaned,
+                "orcid": None,
+                "openalex_author_id": None,
+                "s2_author_id": None,
+            },
+            conflict_columns=["author_uid"],
+            update_columns=["display_name"],
+        )
+        upsert_row(
+            session=session,
+            table=PaperAuthor.__table__,
+            values={
+                "paper_version_id": record.paper_version_id,
+                "author_uid": author_uid,
+                "author_order": author_order,
+                "affiliation": None,
+                "country_code": None,
+            },
+            conflict_columns=["paper_version_id", "author_uid"],
+            update_columns=["author_order", "affiliation", "country_code"],
+        )
+
+
+def _upsert_external_ids(session: Session, record: ArxivRecord) -> None:
+    upsert_row(
+        session=session,
+        table=PaperExternalId.__table__,
+        values={
+            "paper_id": record.paper_id,
+            "doi": record.doi,
+            "openalex_id": None,
+            "s2_id": None,
+            "crossref_doi": record.doi,
+        },
+        conflict_columns=["paper_id"],
+        update_columns=["doi", "crossref_doi"],
+    )
+
+
 def _upsert_record(session: Session, record: ArxivRecord) -> tuple[bool, bool]:
     content_hash = compute_record_hash(record)
     inserted_version = False
@@ -66,6 +155,12 @@ def _upsert_record(session: Session, record: ArxivRecord) -> tuple[bool, bool]:
         "version": record.version,
         "title": record.title,
         "abstract": record.abstract,
+        "authors_raw": record.authors,
+        "submitter": record.submitter,
+        "comments": record.comments,
+        "journal_ref": record.journal_ref,
+        "doi": record.doi,
+        "primary_category": record.primary_category,
         "submitted_at": record.submitted_at,
         "updated_at": record.updated_at,
         "content_hash": content_hash,
@@ -81,8 +176,25 @@ def _upsert_record(session: Session, record: ArxivRecord) -> tuple[bool, bool]:
         table=PaperVersion.__table__,
         values=values,
         conflict_columns=["paper_version_id"],
-        update_columns=["title", "abstract", "updated_at", "content_hash", "submitted_at", "version"],
+        update_columns=[
+            "title",
+            "abstract",
+            "authors_raw",
+            "submitter",
+            "comments",
+            "journal_ref",
+            "doi",
+            "primary_category",
+            "updated_at",
+            "content_hash",
+            "submitted_at",
+            "version",
+        ],
     )
+
+    _upsert_external_ids(session=session, record=record)
+    _sync_authors(session=session, record=record)
+    _persist_raw_payload(session=session, record=record)
 
     for category in record.categories:
         upsert_row(
@@ -220,6 +332,12 @@ def run_backfill(
                             "version": record.version,
                             "title": record.title,
                             "abstract": record.abstract,
+                            "authors": record.authors,
+                            "submitter": record.submitter,
+                            "comments": record.comments,
+                            "journal_ref": record.journal_ref,
+                            "doi": record.doi,
+                            "primary_category": record.primary_category,
                             "submitted_at": record.submitted_at.isoformat(),
                             "updated_at": record.updated_at.isoformat(),
                             "categories": record.categories,
@@ -309,6 +427,12 @@ def run_incremental(
                         "version": record.version,
                         "title": record.title,
                         "abstract": record.abstract,
+                        "authors": record.authors,
+                        "submitter": record.submitter,
+                        "comments": record.comments,
+                        "journal_ref": record.journal_ref,
+                        "doi": record.doi,
+                        "primary_category": record.primary_category,
                         "submitted_at": record.submitted_at.isoformat(),
                         "updated_at": record.updated_at.isoformat(),
                         "categories": record.categories,
@@ -368,6 +492,12 @@ def run_latest_seed(taxonomy: list[str], max_records: int = 200) -> IngestionSta
                         "version": record.version,
                         "title": record.title,
                         "abstract": record.abstract,
+                        "authors": record.authors,
+                        "submitter": record.submitter,
+                        "comments": record.comments,
+                        "journal_ref": record.journal_ref,
+                        "doi": record.doi,
+                        "primary_category": record.primary_category,
                         "submitted_at": record.submitted_at.isoformat(),
                         "updated_at": record.updated_at.isoformat(),
                         "categories": record.categories,

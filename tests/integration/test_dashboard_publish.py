@@ -53,11 +53,16 @@ def test_dashboard_publish_and_load_bundle() -> None:
         }
     ).to_parquet(embed_dir / "vectors_shard_00000.parquet", index=False)
 
-    result = build_dashboard_feeds(snapshot_id=snapshot_id, cluster_count=3, max_docs=0, seed=7)
+    result = build_dashboard_feeds(
+        snapshot_id=snapshot_id,
+        profile="minimal",
+        projection="pca_umap",
+        sample_points=4,
+        density_bins=8,
+    )
     assert result.records_used == 4
-    assert result.clusters >= 1
+    assert result.latest_count >= 0
 
     bundle = load_bundle(snapshot_id=snapshot_id)
-    assert not bundle.map_points.empty
-    assert not bundle.metrics.empty
-    assert not bundle.frontier.empty
+    assert not bundle.map_points_sample.empty
+    assert not bundle.map_density.empty
