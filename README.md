@@ -1,4 +1,6 @@
 # ScholarPulse
+> [!WARNING]  
+> **Work in Progress**: This project is under active development. Expect breaking changes and incomplete features.
 
 ScholarPulse is a dual-track repository for:
 
