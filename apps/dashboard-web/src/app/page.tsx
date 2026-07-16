@@ -1,5 +1,5 @@
-import { DashboardShell } from "@/components/dashboard-shell";
+import { FeedView } from "@/components/feed-view";
 
-export default function Home() {
-  return <DashboardShell />;
+export default function HomePage() {
+  return <FeedView />;
 }

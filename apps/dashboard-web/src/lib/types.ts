@@ -1,133 +1,55 @@
-export type SnapshotIndexResponse = {
-  snapshots: string[];
-  defaultSnapshotId: string | null;
-};
-
-export type TaxonomyOption = {
-  label: string;
-  value: string;
-  description?: string;
-  count?: number;
-};
-
-export type ControlResponse = {
-  taxonomyOptions: TaxonomyOption[];
-  yearMin: number;
-  yearMax: number;
-  yearValue: [number, number];
-  yearMarks: Record<string, string>;
-  snapshotPill: string;
-  statusChip: string;
-  metrics: {
-    corpus: string;
-    sample: string;
-    latest: string;
-    taxonomy: string;
-    years: string;
-  };
-};
-
-export type DensityCell = {
-  binX: number;
-  binY: number;
-  docCount: number;
-  xCenter: number;
-  yCenter: number;
-};
-
-export type PreviewPoint = {
-  docId: string;
-  x: number;
-  y: number;
-};
-
-export type MapPoint = {
-  docId: string;
-  paperId: string;
-  paperVersionId: string;
+export type Paper = {
+  /** Bare arXiv id without version, e.g. "2401.12345" or "math/0211159". */
+  id: string;
+  /** Id with version suffix as returned by the API, e.g. "2401.12345v2". */
+  versionedId: string;
   title: string;
-  abstractPreview: string;
-  submittedAt: string;
-  year: number;
+  abstract: string;
+  authors: string[];
+  published: string;
+  updated: string;
+  primaryCategory: string;
   categories: string[];
-  x: number;
-  y: number;
-  binX: number;
-  binY: number;
+  doi: string | null;
+  journalRef: string | null;
+  comment: string | null;
+  pdfUrl: string;
+  absUrl: string;
 };
 
-export type MapResponse = {
-  density: DensityCell[];
-  sample: PreviewPoint[];
-  detail: MapPoint[];
-  scopeHeadline: string;
-  scopeCaption: string;
-  visibleMetric: string;
-  modeLabel: string;
-  modeClass: string;
-  modeNote: string;
+export type FeedResponse = {
+  papers: Paper[];
+  totalResults: number;
+  start: number;
 };
 
-export type LatestPaper = {
-  docId: string;
-  paperId: string;
-  paperVersionId: string;
+export type SearchSort = "relevance" | "recent" | "updated";
+
+export type RelatedPaper = {
   title: string;
-  submittedAt: string;
-  year: number;
-  categories: string[];
-  categoriesText: string;
-  recencyScore: number;
-  noveltyScore: number;
-  score: number;
+  authors: string[];
+  year: number | null;
+  arxivId: string | null;
+  externalUrl: string | null;
+  abstractSnippet: string | null;
 };
 
-export type FilterQuery = {
-  taxonomyTokens: string[];
-  yearRange: [number, number] | null;
-  search: string;
+export type PaperExtras = {
+  citationCount: number | null;
+  influentialCitationCount: number | null;
+  venue: string | null;
+  tldr: string | null;
+  semanticScholarUrl: string | null;
+  related: RelatedPaper[];
+  /** Present when the enrichment service could not be reached. */
+  partial: boolean;
 };
 
-export type MapQuery = FilterQuery & {
-  viewport: ViewportBounds | null;
-};
+export type ReadingStatus = "to-read" | "reading" | "read";
 
-export type WorkspaceResponse = {
-  snapshotId: string;
-  controls: ControlResponse;
-  map: MapResponse;
-  latest: LatestPaper[];
+export type LibraryEntry = {
+  paper: Paper;
+  savedAt: string;
+  status: ReadingStatus;
+  note: string;
 };
-
-export type PaperDetail = {
-  docId: string;
-  paperId: string;
-  paperVersionId: string;
-  title: string;
-  abstractPreview: string;
-  submittedAt: string;
-  year: number;
-  categories: string[];
-};
-
-export type PaperNeighbor = {
-  docId: string;
-  paperId: string;
-  title: string;
-  cosineSimilarity: number;
-};
-
-export type PaperSheetResponse = {
-  paper: PaperDetail;
-  neighbors: PaperNeighbor[];
-  similarityError: string | null;
-};
-
-export type ViewportBounds = {
-  xMin: number;
-  xMax: number;
-  yMin: number;
-  yMax: number;
-};
-
-export type WorkspaceQuery = MapQuery;
