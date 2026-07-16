@@ -1,23 +1,24 @@
 # Scholar Pulse
 
-**Scholar Pulse is a living showroom for recent scientific work.** It turns the newest open papers
-into a clear daily edition with thematic collections, search, and readable paper sheets.
+**Scholar Pulse is a daily working index for active literature review.** It helps a researcher
+scan the newest open papers in a concrete field, inspect an abstract without losing context,
+follow related work, and build a portable reading list.
 
-[Open the public site](https://aleetreny.github.io/Scholar-Pulse/) ·
-[Explore Mapping Science](https://aleetreny.github.io/Mapping-Science/)
+[Open the public site](https://aleetreny.github.io/Scholar-Pulse/)
 
 ## Why the project changed
 
-The science-map experience now lives in the separate Mapping Science project. Scholar Pulse is
-focused on the complementary job: presenting what is new and making different research frontiers
-pleasant to browse.
+The science-map experience lives in a separate project. Scholar Pulse is focused on one narrower
+job: helping someone who already has a research question keep up with the moving edge of that
+field.
 
 The current public beta includes:
 
-- 36 recent papers refreshed from arXiv;
-- six thematic showrooms;
-- search and topic filters;
-- a detail panel with abstracts and source links;
+- 72 recent papers refreshed from arXiv;
+- query matching across title, abstract, author, field, and category;
+- field, publication-window, and order controls;
+- an in-context reading pane with explained related-paper suggestions;
+- a persistent reading list, BibTeX copy, and `.bib` export;
 - a daily GitHub Pages deployment.
 
 Selection is currently newest-first within transparent category lenses. It is not a quality
@@ -54,11 +55,11 @@ arXiv API -> scripts/fetch_recent_papers.py -> showroom.json -> Next.js static e
 
 The scheduled workflow in `.github/workflows/deploy-pages.yml` refreshes and republishes the
 edition every day. If arXiv is temporarily unavailable, the fetcher keeps the last committed feed
-for the affected showroom.
+for the affected field.
 
 ## Repository map
 
-- `apps/dashboard-web/` — the public Scholar Pulse showroom and its established visual system.
+- `apps/dashboard-web/` — the public Scholar Pulse research index.
 - `scripts/fetch_recent_papers.py` — lightweight feed refresh for the public edition.
 - `pipelines/` — ingestion, embeddings, similarity, enrichment, and publication work retained for
   richer future signals.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16T13:20:39+00:00",
+  "generatedAt": "2026-07-16T14:05:00+00:00",
   "source": {
     "name": "arXiv",
     "url": "https://arxiv.org/",
@@ -411,6 +411,51 @@
       "themeId": "space-cosmos"
     },
     {
+      "id": "2607.14063v1",
+      "title": "Reshaping quantum annealing landscapes with diagonal catalysts",
+      "summary": "Quantum annealing is often limited by population trapped in local minima many spin flips from the solution. We introduce a mathematical framework to understand the connection between energy and Hamming distance in optimization problems. Using this, we build ZZ-catalysts from ground-state patterns of small frustration-free subproblems that make configurations far from the solution less energetically competitive. On sparse problems they multiply the near-solution probability at short sweeps, with gains persisting on fully-connected models and tunable via subproblem choice.",
+      "authors": [
+        "Andrés N. Cáliz",
+        "Carlos Ramon-Escandell",
+        "Finnley Paolella",
+        "Josep Bosch",
+        "Jan Nogué",
+        "Arnau Riera",
+        "Jordi Riu"
+      ],
+      "publishedAt": "2026-07-15T17:35:56Z",
+      "updatedAt": "2026-07-15T17:35:56Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14063v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14063v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14056v1",
+      "title": "Acoustic Firewalls: Analogue Gravity Perspective on the AMPS Paradox",
+      "summary": "The monogamy of quantum entanglement, applied by Almheiri-Marolf-Polchinski-Sully (AMPS) to black holes, obstructs a smooth horizon vacuum after the Page time. We transcribe this argument to Hawking-like phonon radiation from a sonic horizon in the Unruh acoustic metric. An exact purity identity shows that post-Page-time unitarity forces the entanglement between an outgoing phonon and its interior partner to vanish, selecting a non-Hadamard (Boulware-like) phonon state, which we define as an acoustic firewall. Its renormalized stress tensor differs from the smooth state by a constant, negative near-horizon flux, and the thermal-atmosphere energy density it removes, measured by a static calorimeter, grows as $(δr)^{-2}$ in the radial coordinate toward the horizon (singular in the free-fall frame), cut off at the healing length. The construction is kinematic and does not resolve the information paradox; it yields one concrete, falsifiable prediction: a differential phonon-calorimetry signal $\\mathcal{R}(δr)=|Δ\\mathcal{E}|/\\mathcal{E}^{(0)}\\to(\\ell_κ/δr)^{2}$, present only after the analogue Page time in a Bose-Einstein condensate.",
+      "authors": [
+        "Nikolay S. Akintsov",
+        "Artyom P. Nevecheria",
+        "Stepan N. Andreev",
+        "Qing-Hua Qin"
+      ],
+      "publishedAt": "2026-07-15T17:26:41Z",
+      "updatedAt": "2026-07-15T17:26:41Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14056v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14056v1",
+      "primaryCategory": "gr-qc",
+      "categories": [
+        "gr-qc",
+        "cond-mat.quant-gas",
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
       "id": "2607.14051v1",
       "title": "Hindcast: Replaying Prediction Markets to Evaluate LLM Forecasters",
       "summary": "Forecasters are evaluated by backtesting, which replays resolved questions and grades the probability the system would have assigned before the outcome was known. For LLMs, two channels leak the answer into this test. A model that retrieves can surface reports written after the event, turning forecasting into a lookup, and each new model is trained on data closer to the event, so a question that lay in the future for last year's models sits inside this year's training data. Either way, the test grades recall while claiming to grade foresight. We introduce Hindcast, which closes both leaks by grading a model as if it stood at a chosen past date $t_0$, before the outcome existed in either channel. Hindcast replays resolved Polymarket prediction markets against a frozen snapshot of public Reddit, lets the model read only posts written before $t_0$, and scores each forecast against both what happened and the market's own price at $t_0$, itself a human forecast made from the same past information. Because the cutoff is set per market and the snapshot never changes, the evaluation re-runs on new markets as models improve, without going stale. Once the leak is closed, retrieval still helps most models, but only where Reddit discussed the event beforehand. Where the archive carried only speculation, retrieval hurts.",
@@ -456,6 +501,84 @@
       "themeId": "intelligent-systems"
     },
     {
+      "id": "2607.14046v1",
+      "title": "Earthquaker-AI: A Retrieval-Augmented Generation Framework with Rubric-Based Assessment for Primary School Earthquake Education",
+      "summary": "This paper presents Earthquaker-AI, a hybrid educational framework building upon a previously implemented educational robotics project by integrating a conversational AI assistant based on Retrieval-Augmented Generation. It aims to enhance earthquake preparedness and conscious action among primary-school students. The system extends the award-winning STEM project Earthquaker moving from mechanical simulation with Lego WeDo2 to cognitive and metacognitive processing. The robotics component uses Lego WeDo2 automation to simulate seismic response, letting students interact with sensors and actuators as tangible representations of protective actions. The assistant operates as a guided learning mechanism aligning student responses with safety guidelines, while providing rubric-based verbal feedback that supports self-regulated learning and calmness under emergency conditions. Earthquaker-AI follows a progressive learning trajectory aligned with cognitive development. In early grades, the focus is on basic recognition of safety actions through multiple-choice questions, assessed via a two-dimensional rubric. In middle grades, students identify correct action sequences through multiple-choice questions, evaluated via a three-axis rubric. In upper grades, the approach shifts to verbal production, requiring short written responses assessed via a four-dimensional rubric that includes clarity of expression. The dialogic module uses RAG to match student queries semantically with official guidelines, generating safe, accurate responses. Experimental evaluation shows high groundedness and accuracy, with a low hallucination rate. Overall, Earthquaker-AI combines hands-on engagement, information processing, and reflective practice. Combining robotics, rubrics, and AI promotes technological literacy, self-regulation, and responsible use of digital systems, contributing to early crisis-management skills.",
+      "authors": [
+        "Xanthi Kokkinou",
+        "Chaido Mizeli",
+        "Nafsika Koulaxidou",
+        "Marina Delianidi",
+        "Konstantinos Diamantaras"
+      ],
+      "publishedAt": "2026-07-15T17:15:16Z",
+      "updatedAt": "2026-07-15T17:15:16Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14046v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14046v1",
+      "primaryCategory": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14044v1",
+      "title": "AI-accelerated End-to-End Framework for Rapid Professional Upskilling",
+      "summary": "By 2030, 59 of every 100 workers will need reskilling or upskilling, yet the average time to close an enterprise skills gap grew from roughly 3 days in 2014 to 36 days in 2018. Most current frameworks accelerate single stages of upskilling programs and generally lack industry validation. We present an end-to-end framework that applies AI acceleration across five stages of knowledge acquisition, content development, content review and verification, teaching, and assessment development; with a strong focus on both production and learning efficiency. Three strong external signals validates the framework: the US National Association of State Boards of Accountancy reviewed and approved an upskilling program built on the framework for continuing-professional-education credits; 3 learners followed the program and passed the NVIDIA Certified Professional in Agentic AI exam in a significantly short amount of time, with 14 more in progress; the program's knowledge base supports complex downstream analysis such as the production of a robust 1,267 risk item dataset for managing multi-agent AI system risks.",
+      "authors": [
+        "Tam Nguyen",
+        "Hung Nguyen",
+        "Robert Ogburn"
+      ],
+      "publishedAt": "2026-07-15T17:14:03Z",
+      "updatedAt": "2026-07-15T17:14:03Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14044v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14044v1",
+      "primaryCategory": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14041v1",
+      "title": "Multi-Expert Routing for Multi-Domain Low-Resource OCR: A Manchu Case Study",
+      "summary": "Historical Manchu OCR must accommodate various visually distinct writing styles, including regular script, running script, and the semi-cursive chancery hand used in palace memorials, despite limited labeled data. We study a multi-expert system that reuses checkpoints from an iterative fine-tuning process as domain specialists and uses a lightweight page-level image classifier to dispatch pages by visual style. When the checkpoint pool lacks a suitable specialist, we train an additional expert for that domain. On three frozen test sets, the routed system matches the selected specialist for each style at two-decimal precision: 0.30 percent CER on regular script, 1.57 percent on memorials, and 4.83 percent on running script. The router achieves 99.3 percent page-level domain accuracy and matches the domain-label oracle at the same precision. Two of the three selected specialists were not trained specifically for their final domain; only the running-script expert was trained with that domain as its target. We report the evaluation protocol, router design, and per-page predictions to make the comparison reproducible.",
+      "authors": [
+        "Zhan Chen",
+        "Jiqiao Ma",
+        "Chih-wen Kuo"
+      ],
+      "publishedAt": "2026-07-15T17:12:37Z",
+      "updatedAt": "2026-07-15T17:12:37Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14041v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14041v1",
+      "primaryCategory": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14040v1",
+      "title": "Can an Old Dog Be Taught New Tricks? Taking LLMs Beyond Sentence Level Translation",
+      "summary": "Automatic translation systems, from CAT tools to MT, overwhelmingly treat translation as a sentence-by-sentence act. This paper asks whether LLMs can be moved beyond that paradigm through whole-document, corpus-informed translation. We present PAT (Pragmatic Auto-Translator), a RAG-based system that pairs user-configured specifications with context from a comparable corpus of authentic longform texts in U.S. English and Latin American Spanish, passing retrieved paragraph-, section-, and document-level examples to an LLM for whole-document generation. The goal is draft translation for professional verification: target texts reformulated to fit their Spanish-language context, where discourse organization, rhetorical style, and pragmatic norms differ meaningfully from English. We evaluated six automatic translations of essays on generative AI across three projects using a customized MQM typology, assessed by two trained evaluators working from U.S. English into LATAM and Mexican Spanish. Results show that a limited prompt produced no meaningful reformulation, and specifications and corpus-informed translations at times showed substantial reformulation, though not always to effect. We find that LLMs can be moved toward reformulation and away from the sentence-by-sentence paradigm, though more work is needed to improve the effectiveness of those reformulations. In this paper, we discuss considerations related to automatic translation system design, corpus construction, and translation quality evaluation methodology and results.",
+      "authors": [
+        "Alaina Brandt"
+      ],
+      "publishedAt": "2026-07-15T17:10:24Z",
+      "updatedAt": "2026-07-15T17:10:24Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14040v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14040v1",
+      "primaryCategory": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
       "id": "2607.14037v1",
       "title": "Early Adoption of Agentic Coding Tools by GitHub Projects",
       "summary": "Agentic coding tools are increasingly capable of generating and submitting pull requests (PRs) to software projects, introducing new forms of human-agent collaboration in software development. While prior studies have examined PR-level outcomes of agent-generated contributions, less is known about how agentic coding tools are adopted and managed at the project level. In this paper, we analyze 25,264 agentic PRs from 2,361 popular GitHub repositories to investigate (1) the adoption of agentic coding tools, (2) project-level agentic PR productivity, and (3) human-agent collaboration patterns. Our results show that the median repository generates only one to two agentic PRs during a three-month period, indicating that intensive adoption remains concentrated in a small subset of projects. At the same time, small projects (1-5 contributors) exhibit higher participation ratios and average levels of agentic PR activity than medium-sized and large projects. We also observe substantial variation in project-level agentic PR productivity. While a small number of projects exceed an industry-reported estimate of 36 PRs per participant during the three-month observation period, most projects remain below this threshold. Finally, human-agent collaboration is dominated by a single-human oversight model, in which one developer reviews and/or modifies the agent's contributions, while multi-human collaboration patterns remain uncommon. These findings provide early empirical evidence on how open-source projects organize human oversight around agentic coding tools and suggest that successful integration of agent-generated contributions depends not only on advances in agent capabilities but also on the human and organizational processes that govern their use. Because this study captures an early snapshot of agent adoption, future work should continue to track how adoption patterns evolve over time.",
@@ -474,7 +597,7 @@
         "cs.CY",
         "cs.LG"
       ],
-      "themeId": "society-economy"
+      "themeId": "intelligent-systems"
     },
     {
       "id": "2607.14034v1",
@@ -495,6 +618,109 @@
       "themeId": "space-cosmos"
     },
     {
+      "id": "2607.14031v1",
+      "title": "Electric field controlled spin transport in a topological insulator interfaced with a ferroelectric antiferromagnet",
+      "summary": "Topological insulators have been explored extensively for spin-charge interconversion via magnetic interfaces, yet the true response of their spin-charge conversion, particularly in the absence of an external magnetic field, remains to be studied. Here, we report electric-field control of spin-charge conversion in the topological insulator Bi$_2$Te$_3$ with the antiferromagnetic multiferroic BiFeO$_3$, employing a nonlocal spin transport device. A systematic thickness dependence of the spin transport across the interface between Bi$_2$Te$_3$ and BiFeO$_3$ reveals a signature of topological surface-state-dominated spin transport in the bilayer system. The spin-charge conversion remains robust for thicknesses above 10 nm but falls rapidly with reducing thickness and vanishes at 5 nm. This is consistent with the hybridization-induced emergence of a trivial insulating phase, which is supported by the coherency factor estimated from the magnetoconductance of Bi$_2$Te$_3$. These results establish that spin-momentum-locked surface states dominate interfacial spin transport in the decoupled regime. Beyond presenting efficient spin-charge interconversion at an entirely insulating magnetic interface, this work also highlights sputter-deposited Bi$_2$Te$_3$ as a high-quality and scalable platform for integrating quantum materials into devices. The nonlocal spin transport approach presented here provides a simple and direct evidence of spin-charge conversion and opens an efficient and practical pathway toward designing energy-efficient spin-based devices.",
+      "authors": [
+        "Yogesh Kumar",
+        "Pushpendra Gupta",
+        "Xinyan Li",
+        "Richa Mudgal",
+        "Ashish Omar",
+        "Ryan Chen",
+        "Mito Funatsu",
+        "Maya Ramesh",
+        "Nicholas Reiterer",
+        "Yuanqi Lyu",
+        "Yiping Zeng",
+        "Darrell G. Schlom",
+        "Alessandra Lanzara",
+        "Robert J. Birgeneau",
+        "James G. Analytis",
+        "Ramamoorthy Ramesh",
+        "Sajid Husain"
+      ],
+      "publishedAt": "2026-07-15T16:58:29Z",
+      "updatedAt": "2026-07-15T16:58:29Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14031v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14031v1",
+      "primaryCategory": "cond-mat.mes-hall",
+      "categories": [
+        "cond-mat.mes-hall",
+        "cond-mat.mtrl-sci"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14029v1",
+      "title": "Unified Terahertz Framework for Magnetic and Lattice Responses Reveals an Elusive Ordering Transition in Gd$_2$Ru$_2$O$_7$",
+      "summary": "Magnetic order in materials combining localized rare-earth moments with itinerant transition-metal sublattices generates internal fields whose lattice imprint is rarely accessed directly. In Gd pyrochlore ruthenate, we find that a single terahertz spectrum resolves an exchange-split Gd$^{3+}$ mode and an optical phonon. Their coupled evolution quantifies the internal field, oriented as predicted for cluster-multipolar order, and reveals a Gd-ordering transition elusive to bulk thermodynamic probes, establishing a unified framework for accessing magnetic and lattice responses in correlated quantum materials.",
+      "authors": [
+        "Nicolas M. Kawahala",
+        "Rafael L. Sabainsk",
+        "Esteban Marulanda",
+        "Rafael S. Freitas",
+        "Felix G. G. Hernandez"
+      ],
+      "publishedAt": "2026-07-15T16:57:42Z",
+      "updatedAt": "2026-07-15T16:57:42Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14029v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14029v1",
+      "primaryCategory": "cond-mat.str-el",
+      "categories": [
+        "cond-mat.str-el",
+        "cond-mat.mtrl-sci"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14025v1",
+      "title": "The WEST code for large-scale excited-state materials simulations",
+      "summary": "We present WEST, an open-source plane-wave pseudopotential code for large-scale excited-state materials simulations, and describe its theoretical foundations, software architecture, and capabilities. WEST implements full-frequency GW, quantum defect embedding theory, the Bethe-Salpeter equation, and time-dependent density functional theory within a common algorithmic framework that avoids the explicit computation of virtual electronic states. By combining density functional and density matrix perturbation theory, low-rank representations of the dielectric screening and exact exchange, and localization techniques, WEST achieves favorable computational scaling with system size. The code supports the calculation of quasi-particle and neutral excitation energies, optical and photoluminescence spectra, excited-state forces, and non-adiabatic couplings, with interoperable workflows connecting to quantum chemistry, vibronic coupling, and quantum computing packages. A hierarchical parallelization strategy and GPU acceleration deliver near-ideal strong scaling to thousands of GPUs, enabling accurate excited-state simulations of systems with more than a thousand atoms. Representative applications, spanning the full optical cycle of solid-state spin defects, self-trapped excitons in metal-halide perovskites, and the optical response of liquid water and ice, demonstrate the accuracy and versatility of the code across diverse material classes. The capabilities implemented in WEST establish the code as a scalable platform for predictive excited-state simulations, high-throughput materials discovery, and the generation of high-fidelity datasets for machine learning in computational materials science.",
+      "authors": [
+        "Victor Wen-zhe Yu",
+        "Siyuan Chen",
+        "Yu Jin",
+        "Vrindaa Somjit",
+        "Stefano Paolo Villani",
+        "Jiawei Zhan",
+        "Marco Govoni",
+        "Giulia Galli"
+      ],
+      "publishedAt": "2026-07-15T16:56:46Z",
+      "updatedAt": "2026-07-15T16:56:46Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14025v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14025v1",
+      "primaryCategory": "cond-mat.mtrl-sci",
+      "categories": [
+        "cond-mat.mtrl-sci"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14024v1",
+      "title": "Improving Wind and Solar Power Prediction with Efficient Wrapper-based Feature Selection: An Empirical Study",
+      "summary": "With rising global energy demand and growing awareness of climate change and its impacts, the share of renewable energies in the global energy mix continues to grow. Unlike conventional power generation, the output of renewable energy sources cannot be controlled as consistently due to their dependence on environmental conditions. Therefore, reliable prediction of current and future energy production is essential. In this paper, we report findings from two structured literature reviews on real-world renewable energy prediction tasks: wind turbine power curve modeling and photovoltaic power prediction. For the former, we conducted a comprehensive literature review ourselves, while for the latter, we synthesize the key findings regarding frequently selected input features based on an existing survey. Across both domains, our analysis reveals that despite the large number of available monitoring and environmental variables, only limited or unsystematic methods for feature selection exist. To address this gap, we propose Cluster-based Sequential Feature Selection (CSFS), a novel, model-agnostic, clustering-based wrapper method for automatic, efficient, and reliable feature selection in renewable energy prediction pipelines. To support reproducibility and reuse, we provide an open-source implementation of CSFS on GitHub. We empirically evaluate the proposed approach on both use cases and compare it with established feature selection techniques such as wrapper-based sequential feature selection (SFS), filter-based methods, and Random Forest's embedded feature importance. The results show that the wrapper-based methods overall provide better-performing selections of features. CSFS achieves a predictive performance comparable to SFS while reducing computational cost by an average of 21%.",
+      "authors": [
+        "Daniel Grillmeyer",
+        "Marius Hadry",
+        "Michael Stenger",
+        "Vanessa Borst",
+        "Veronika Lesch",
+        "Samuel Kounev"
+      ],
+      "publishedAt": "2026-07-15T16:55:42Z",
+      "updatedAt": "2026-07-15T16:55:42Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14024v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14024v1",
+      "primaryCategory": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
       "id": "2607.14023v1",
       "title": "Exact Decomposition of Adversarial Dual-Objective Value Functions, with Applications to Optimal Drug Dosing",
       "summary": "Hamilton-Jacobi Reachability (HJR) is a central framework in safe control theory. While HJR has traditionally focused on a few fundamental tasks, there is increasing interest in scaling to more complex objectives. Recent works have studied the exact decomposition of the value functions for two fundamental dual-objective tasks in the adversary-free setting. However, not all value function decompositions in HJR remain valid with an adversary. In this work, we develop theoretical approaches to certify that for these two composite value functions, the proposed decompositions still hold with an adversary. Finally, we show how these results can solve issues that arise when applying HJR to optimal drug regimen design.",
@@ -513,6 +739,60 @@
         "q-bio.QM"
       ],
       "themeId": "life-health"
+    },
+    {
+      "id": "2607.14012v1",
+      "title": "Temporal Entanglement from Twist Correlators in 2d Conformal Field Theory and Holography",
+      "summary": "We formulate timelike entanglement entropy and its Rényi extension in two-dimensional conformal field theory through the analytic continuation of replica twist correlators to time-ordered, timelike-separated insertions. This field-theoretic construction grounds and generalizes recent developments, and applies to temporal subregions of arbitrary extent. Within three-dimensional holography, the semiclassical boundary correlator identifies boundary-anchored complex geodesics as the relevant bulk saddles and selects the one with the smallest real part of the length. This provides a direct boundary derivation of the proposed complex extremal surface prescription and extends to Rényi index $n>1$, for which we explicitly construct the corresponding complex cosmic brane geometry in the vacuum. We develop these ideas in several representative settings, including locally and globally excited states and quantum operator quenches, making manifest the precise agreement between boundary twist correlator and bulk complex geodesic calculations. For AdS-Vaidya, our approach predicts a different result from earlier piecewise geodesic constructions, while reproducing the field theory answer. Across these examples, the operator ordering uniquely determines the imaginary part of the complex-valued entropy, which is quantized in units of $cπ/6$ and sensitive to the effective causal structure but not to the underlying dynamics.",
+      "authors": [
+        "Alice Bernamonti",
+        "Federico Galli",
+        "Michal P. Heller",
+        "Fabio Ori",
+        "Alexandre Serantes"
+      ],
+      "publishedAt": "2026-07-15T16:40:45Z",
+      "updatedAt": "2026-07-15T16:40:45Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14012v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14012v1",
+      "primaryCategory": "hep-th",
+      "categories": [
+        "hep-th",
+        "cond-mat.stat-mech",
+        "gr-qc",
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14007v1",
+      "title": "The potential broader complex linked to the key Cepheid SV Vul",
+      "summary": "A new distance was established to the Cepheid SV Vul ($P\\simeq45^{d}$) and its host cluster Alicante 13, and is tied in part to deeper UKIDSS-DR6 photometry and Gaia DR3 observations ($d=2.30\\pm0.13$ kpc). SV Vul and Alicante 13 possibly belong to a broader coeval stellar complex, which could include Liu-Pang 1738. The clusters and Cepheid share comparable astrometry (e.g., $σ_π\\simeq0.02$ mas, $σ_{μ_δ}\\simeq0.06$ mas yr$^{-1}$), and similar cluster turnoffs (ages) exist as indicated by ultraviolet UVEX color-color analyses, Gaia XP spectroscopically differentially dereddened color-magnitude diagrams, and Padova isochrones. Yet SV Vul may be comparatively overluminous. Robust radial velocities for both clusters could substantiate certain hypotheses.",
+      "authors": [
+        "Daniel Majaess",
+        "Ignacio Negueruela",
+        "Leonid N. Berdnikov",
+        "Charles J. Bonatto",
+        "David G. Turner",
+        "Dante Minniti",
+        "Vittorio F. Braga",
+        "Giovanni Carraro",
+        "Igor Usenko",
+        "Giuseppe Bono",
+        "Matias Gomez",
+        "Roberto K. Saito",
+        "Maria G. Navarro"
+      ],
+      "publishedAt": "2026-07-15T16:37:06Z",
+      "updatedAt": "2026-07-15T16:37:06Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14007v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14007v1",
+      "primaryCategory": "astro-ph.SR",
+      "categories": [
+        "astro-ph.SR",
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
     },
     {
       "id": "2607.14000v1",
@@ -551,6 +831,63 @@
         "q-bio.GN"
       ],
       "themeId": "life-health"
+    },
+    {
+      "id": "2607.13971v1",
+      "title": "A Universal Relation Between Primordial Density-Potential Cross-correlation Coefficient and Spin Factor Distribution",
+      "summary": "Recent studies have revealed that the key properties of visible galaxies like their optical sizes, stellar ages, star formation rates and morphologies are closely linked with the angular momenta of their host dark matter halos. According to the linear tidal torque theory, the halo angular momentum, as a conserved quantity, is directly proportional to the primordial spin factor, $τ$, defined as the degree of misalignment between the principal axes of the initial density and potential Hessian matrices, which were found by numerical experiments to follow a Gamma distribution, fully characterized by its mean and variance. In this study, we heuristically develop an analytic expression for the mean and variance of $τ$ in terms of the initial density-potential cross-correlation coefficient, $q$. Analyzing a dataset from the Multiverse simulations performed for both of the flat $Λ$CDM and $w$CDM cosmologies, we prove that this analytic expression is universally valid in describing how the mean and variance of $τ$ change with $q$, regardless of the smoothing scales for both of the cosmologies. Given the prior finding that the $τ$-distribution can be reconstructed from the observable galaxy size distribution, this universal analytic expression may allow us to determine $q$ from the same observable via the mean and variance of $τ$. We discuss a possibility of constraining the early universe physics from the reconstructed $q$ via our heuristic model, without suffering from cosmological degeneracies.",
+      "authors": [
+        "Jun-Sung Moon",
+        "Jounghun Lee",
+        "Juhan Kim"
+      ],
+      "publishedAt": "2026-07-15T15:56:53Z",
+      "updatedAt": "2026-07-15T15:56:53Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13971v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13971v1",
+      "primaryCategory": "astro-ph.CO",
+      "categories": [
+        "astro-ph.CO",
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.13961v1",
+      "title": "Even central galaxies feel their environment: cosmic siphoning of cool gas accretion",
+      "summary": "Identifying the key processes regulating cool gas accretion in galaxies is essential for understanding the baryon cycle within galactic ecosystems. Recent studies indicate that the most fundamental internal process is likely the competition between halos and central black holes. This is revealed through a universal relation between increasing black hole masses and decreasing cool gas fraction ($μ_{\\rm HI} \\equiv M_{\\rm HI}/M_{\\star} \\propto M_{\\rm BH}^{-0.6}$). Here we further explore the primary external effects on cool gas accretion in central galaxies. We find that galaxies deviating significantly from the $μ_{\\rm HI}-M_{\\rm BH}$ relation are overwhelmingly isolated central galaxies without substantial satellites. These isolated, gas-poor centrals exhibit systematically higher black-hole-to-stellar-mass ratios and more prominent bulges, suggesting a greater susceptibility to AGN feedback. At larger scales, they are preferentially located near massive neighboring halos. We interpret these as evidence of \"cosmic siphoning'' -- a multi-scale, gravity-driven process in which cool gas is channeled into deeper potential wells. On inter-halo scales, it manifests as competitive accretion: massive dark matter halos intercept cold filamentary streams, starving neighboring low-mass halos and quenching their star formation. On sub-halo scales, an analogous siphoning operates within groups and clusters, where the central galaxy systematically drains gas from its satellites through tidal interactions and accretion of satellite circumgalactic medium. This multi-scale mechanism -- from inter-halo competition to central-satellite interplay -- naturally drives the observed differences in the cool gas fractions between isolated and group centrals, or among the isolated, between those with and without a massive neighboring halo, and embodies a cosmic \"rich-get-richer\" paradigm.",
+      "authors": [
+        "Ke Xu",
+        "Tao Wang"
+      ],
+      "publishedAt": "2026-07-15T15:47:21Z",
+      "updatedAt": "2026-07-15T15:47:21Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13961v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13961v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.13942v1",
+      "title": "The dynamical environment of the high-mass star-forming region G28.288$-$0.364",
+      "summary": "Massive stars form within deeply embedded dust cores, and the development of hypercompact and ultracompact H II regions characterizes their early evolution. Identifying and analyzing such regions is essential for understanding the physical processes that govern massive star formation and the transitions between early evolutionary stages. In this article, we investigate the physical and kinematic properties of the massive star-forming region G28.288$-$0.364 to constrain the evolutionary stages of embedded H II regions and the surrounding cores. We analyze multiwavelength observations, including uGMRT radio continuum data; archival continuum and radio recombination line data from the GLOSTAR-D survey; high-angular-resolution ALMA Band 3 radio recombination line and 1.36-mm dust continuum data from the ALMAGAL survey; and complementary molecular line tracers. We derive spectral indices, measure linewidths and velocities of the radio recombination line emission, identify compact dust cores using dendrogram analysis, and estimate their physical properties. The radio continuum emission exhibits a positive spectral index, consistent with partially optically thick free-free emission. High-resolution observations resolve the ionized gas into two distinct components with physical sizes of $\\sim$ 0.06 pc, and their RRL linewidths ($\\sim$ 37 and 32 km s$^{-1}$, respectively) indicate that one component is in a transitional stage between hypercompact and ultracompact H II regions, while the other is more evolved. The 1.36-mm dust continuum data reveal five dust cores with surface densities consistent with the theoretical threshold for massive star formation. In summary, these results highlight the complex and sequential nature of massive star formation in clustered environments and demonstrate the importance of high angular resolution observations for resolving the early evolution of massive stars.",
+      "authors": [
+        "Jyotirmoy Dey",
+        "Devendra K. Ojha",
+        "Jagadheep D. Pandian"
+      ],
+      "publishedAt": "2026-07-15T15:24:30Z",
+      "updatedAt": "2026-07-15T15:24:30Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13942v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13942v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
     },
     {
       "id": "2607.13916v1",
@@ -602,6 +939,23 @@
       "themeId": "society-economy"
     },
     {
+      "id": "2607.13910v1",
+      "title": "Testing string theory with combined cosmological probes: a case study for dark matter gravitons",
+      "summary": "The string theory Swampland programme has resulted in distinct scenarios for the particle nature of dark matter. In this research note, I use combined cosmological probes to constrain the Dark Dimension scenario, which predicts that dark matter consists of decaying massive gravitons characterised by a time-dependent kick velocity. I first provide updated constraints using a combination of CMB and BAO data. I then produce forecasts for a Stage-IV tomographic survey, and outline strategies for predicting the model's behaviour on nonlinear scales. The results demonstrate the potential of surveys like Euclid and LSST to confirm or rule out string theory models of the dark sector.",
+      "authors": [
+        "Alkistis Pourtsidou"
+      ],
+      "publishedAt": "2026-07-15T14:52:02Z",
+      "updatedAt": "2026-07-15T14:52:02Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13910v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13910v1",
+      "primaryCategory": "astro-ph.CO",
+      "categories": [
+        "astro-ph.CO"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
       "id": "2607.13879v1",
       "title": "Global factors for local shocks in a data-scarce environment: with an application to regional fiscal multipliers in Italy",
       "summary": "We propose a novel econometric methodology for Structural Vector Autoregressions with external instruments (`proxy-SVARs' or `SVAR-IVs') in panel data characterized by strong cross-sectional dependence, dynamic heterogeneity, and limited availability of direct external instruments for the shocks of interest. For each unit, we specify a Factor-Augmented proxy-SVAR (`proxy-FA-SVAR') that incorporates factors summarizing cross-sectional information from the non-policy variables of the system. The effects of the policy shocks are then recovered indirectly by estimating unit-specific policy reaction functions through a Minimum Distance approach. Identification relies on global instruments for the non-policy shocks; that is, proxies common to all units in the panel, internally constructed from a separate SVAR estimated on factors for the policy and non-policy variables. These global instruments can be complemented with local (idiosyncratic) instruments constructed from auxiliary unit-level SVARs. Their joint use renders the proxy-FA-SVARs overidentified and therefore statistically testable. We illustrate the methodology by estimating government spending multipliers for Italian NUTS-2 regions using annual data. The global and local instruments for the regional output shocks are obtained from Blanchard-Perotti-type SVARs.",
@@ -619,6 +973,28 @@
         "econ.EM"
       ],
       "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13868v1",
+      "title": "Mapping Dust Attenuation at Kiloparsec Scales. IV. A Dust-model Interpretation of Attenuation Curves in Nearby Galaxies",
+      "summary": "In this fourth paper on kiloparsec-scale dust attenuation, we ask whether the empirical trends found in Papers I--III can be translated into effective dust properties. Using attenuation curves for 2487 high-continuum-S/N spaxels in 91 SwiM v4.2 galaxies, we construct a grid of uniform-screen dust models composed of astronomical silicate and graphite grains with MRN-like size distributions. We fit the normalized attenuation-curve shape to constrain model parameters and then use the attenuation amplitude to estimate the model-dependent dust mass surface density. The inferred dust masses, compositions, and small-grain fractions are therefore effective quantities defined within the adopted attenuation model. The fitted models reproduce the main attenuation-curve variations and provide a direct bridge to Papers I--III: within this model, the relative 2175Å bump sequence maps mainly onto the effective fraction of small graphitic/carbonaceous grains, while the NUV-slope sequence maps onto the effective small-silicate grain fraction and total silicate mass fraction. Non-SF regions have higher dust mass surface densities but lower dust-to-stellar mass ratios than SF regions, separating absolute dust content from dust content per unit stellar mass. Regions with larger specific H$α$ surface brightness have larger dust-to-stellar mass ratios but lower inferred small-grain fractions, especially lower small-silicate fractions. In non-SF regions this quantity is interpreted as ionized-gas emission per unit stellar mass rather than as a direct sSFR. These model-dependent trends support a picture in which local dust processing changes the relative abundance of small grains and thereby shapes the attenuation-curve variations found across the series.",
+      "authors": [
+        "Ruonan Guo",
+        "Cheng Li",
+        "Tao Jing",
+        "Shuang Zhou",
+        "Niu Li",
+        "Zhuo Cheng"
+      ],
+      "publishedAt": "2026-07-15T14:17:03Z",
+      "updatedAt": "2026-07-15T14:17:03Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13868v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13868v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
     },
     {
       "id": "2607.13862v1",
@@ -657,6 +1033,110 @@
       "themeId": "society-economy"
     },
     {
+      "id": "2607.13839v1",
+      "title": "AI-Augmented Human Resource Management? Insights from German companies",
+      "summary": "This study examines the integration of AI into Human Resource Management in German companies. We ask if and how AI-based technologies are \\enquote{augmenting} human resource management. Organisations employ generative AI or predictive analytics to transform traditional human resource functions, to streamline routine tasks and to reallocate resources toward strategic, people-centred activities. Our findings from interviews and group discussions and a survey (N=410) reveal that while AI tools enhance HR analytics capabilities, their adoption mainly serves efficiency and rationalising goals. The introduction of AI tools is shaped by organisational transformation factors such as digital infrastructure, co-determination frameworks, and ethical implications. The research highlights both the strategic potential for improved talent development and the challenges posed by data governance and algorithmic transparency. Overall, this work contributes to understanding the ambiguous role of technological change in HR, which promises to augment predictive capabilities yet serves the ends of efficiency and rationalisation.",
+      "authors": [
+        "Yannick Kalff",
+        "Katharina Simbeck"
+      ],
+      "publishedAt": "2026-07-15T13:46:51Z",
+      "updatedAt": "2026-07-15T13:46:51Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13839v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13839v1",
+      "primaryCategory": "cs.CY",
+      "categories": [
+        "cs.CY",
+        "cs.AI"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13798v1",
+      "title": "Persona Migration and Expectation Recalibration in Generative AI Adoption: A Longitudinal Study at a State Department of Transportation",
+      "summary": "Generative AI tools are increasingly being piloted in public agencies, but limited evidence explains how employee acceptance changes after hands-on use. This study examines Microsoft 365 Copilot adoption during an eight-week pilot at a state Department of Transportation. A matched two-wave survey measured perceived usefulness, perceived ease of use, behavioral intention, and trust before and after participation. After matching and response-quality screening, the sample included 124 employees. Nonparametric tests assessed aggregate changes, k-means clustering identified baseline acceptance personas, and fixed-centroid assignment tracked migration. Open-ended responses were examined using keyword-based content mapping. Perceived usefulness declined significantly after use, suggesting recalibration of expectations, while perceived ease of use, behavioral intention, and trust showed only small, nonsignificant changes. Three baseline personas emerged: Skeptics, Cautiously Positive users, and Champions. Although persona counts changed modestly, individual movement was substantial: 40 percent of Skeptics moved to Cautiously Positive, while 68 percent of Champions moved to less enthusiastic personas. Upward movement was associated with gains in usefulness, behavioral intention, and trust; downward movement was associated with declines in usefulness and trust. Communication and summarization remained stable use cases, while data, chart, and presentation tasks declined. Accuracy and privacy concerns decreased, but job and skills concerns increased. Public-sector AI adoption should be monitored dynamically and supported through persona-specific training, workflow examples, verification routines, and trust-calibration safeguards. The study offers a framework for tracking workforce heterogeneity during enterprise generative AI implementation.",
+      "authors": [
+        "Omidreza Shoghli",
+        "Fatemeh Banani Ardecani",
+        "Amin Mohamadi Hezaveh"
+      ],
+      "publishedAt": "2026-07-15T13:02:55Z",
+      "updatedAt": "2026-07-15T13:02:55Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13798v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13798v1",
+      "primaryCategory": "cs.CY",
+      "categories": [
+        "cs.CY",
+        "cs.HC"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13766v1",
+      "title": "Design of policy digital twins incorporating multi-level agent based modelling",
+      "summary": "Digital twins are used across many industries to enable better decision making. However, while policy makers at all levels (including city, national and supranational scales) have expressed a desire to integrate digital twins into their workflows, this adoption has been slow to materialise. In this paper, we discuss the key issues associated with policy digital twins, and the ways in which they differ from, and are similar to, their counterparts in other areas. We describe how multi-level agent based modelling can be used within policy digital twins to include the effects of human behaviours on outcomes; an aspect that is often largely overlooked. We also describe how digital twins can be designed for policy use cases, and present as a case study the design of a policy digital twin incorporating multi-level agent based modelling to aid a UK city council (local authority) in delivering energy transition policy. After describing both the design method used and the resultant digital twin, we discuss the effectiveness of both, as well as how the ways in which different contexts might shape the future architecture of the digital twin.",
+      "authors": [
+        "Matt Tipuric",
+        "Alejandro Beltran",
+        "Nick Malleson",
+        "Dani Arribas-Bel",
+        "David Wagg"
+      ],
+      "publishedAt": "2026-07-15T12:28:24Z",
+      "updatedAt": "2026-07-15T12:28:24Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13766v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13766v1",
+      "primaryCategory": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "cs.CY"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13759v1",
+      "title": "Time preference effects in forecasting",
+      "summary": "We study the evaluation of forecasts regarding the timing and occurrence of uncertain future events, such as volcanic eruptions, the start of a war or the beginning of a recession. We show theoretically that a typical approach -- evaluating the forecasts after the event occurred -- incentivizes dishonest predictions if forecasters discount future rewards in favor of more immediate benefits. An empirical application to forecasting tournament data finds strong empirical evidence that forecasters adjust predictions in response to these incentives, implying that existing forecasts of such events are likely systematically overstating the probability of early occurrence. We conclude that rewarding such forecasts in an incentive-compatible way is inherently challenging.",
+      "authors": [
+        "Yannick Hoga",
+        "Niklas V. Lehmann"
+      ],
+      "publishedAt": "2026-07-15T12:20:14Z",
+      "updatedAt": "2026-07-15T12:20:14Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13759v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13759v1",
+      "primaryCategory": "econ.EM",
+      "categories": [
+        "econ.EM"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13668v1",
+      "title": "Machine Learning-based detection of long COVID using Heart Rate Variability Analysis",
+      "summary": "After COVID epidemic has ravaged the world, around 20% of infected subjects continue to manifest symptoms several months after their cure. This disorder is called long COVID. This paper presents a study carried out at the University Hospital of Ourense with the aim of establishing a relationship among the disease and variations in Heart rate variability (HRV) parameters using machine learning (ML). Five heart rate recordings were obtained per subject, both at rest and under conditions of physical effort and stress. Each record was processed and 15 HRV indices were extracted, giving 75 features per patient. Of these features, 16 were selected to train 10 different ML models: Support Vector Classification, Linear Support Vector Classification, Logistic Regression, Linear Discriminant Analysis, Stochastic Gradient Descent, Multiple Layer Perceptron, Naive Bayes, Random Forest, and Gradient and ADA Boost Classifiers. Results show that the best model, Gradient Boost, achieves an accuracy of 85.2%, F1-score of 84.9%, and an Area Under the Receiver Operating Characteristic Curve (AUC) of 0.907, and that all models exceed 0.833 AUC. This study demonstrates an association between long COVID and heart rate variability (HRV), highlighting the utility of machine learning models in identifying this relationship and supporting its diagnose.",
+      "authors": [
+        "Brais Iglesias-Otero",
+        "Xosá A. Vila Sobrino",
+        "María J. Lado",
+        "Leandro Rodriguez-Liñares",
+        "Baltasar García Pérez-Schofield",
+        "Pedro Cuesta Morales",
+        "Arturo J. Méndez",
+        "María Bustillo Casado",
+        "Alexandre García-Caballero"
+      ],
+      "publishedAt": "2026-07-15T10:12:46Z",
+      "updatedAt": "2026-07-15T10:12:46Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13668v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13668v1",
+      "primaryCategory": "stat.AP",
+      "categories": [
+        "stat.AP"
+      ],
+      "themeId": "society-economy"
+    },
+    {
       "id": "2607.13644v1",
       "title": "Evaluating Encoding Strategies for Closed-Loop Classification in Biological Neural Networks",
       "summary": "Interfacing with Biological Neural Networks (BNNs) requires encoding information into stimulation patterns that can be effectively processed and that enable the underlying system to adapt. Nevertheless, the role of stimulation encoding remains poorly understood. In this work, we compare multiple encoding strategies, including rate-based, phase-based, burst-based, and time-to-first-spike temporal encodings, in a closed-loop neural classification task using cultured BNNs. We encode visual inputs as spatiotemporal stimulation patterns delivered via a Multi-Electrode Array (MEA) and evaluate classification performance for each encoding scheme. We find that burst-based temporal encoding yields the highest observed performance, achieving up to 95.6 % accuracy in a binary classification task, compared to substantially lower performance from rate- and phase-based approaches. We further show that performance is highly sensitive to the spatial distribution of stimulation, with suboptimal electrode selection significantly degrading accuracy. These findings indicate that effective interfacing with biological neural systems requires the joint optimization of temporal and spatial encoding strategies, and highlight temporal encoding as a key design dimension for bio-digital computing.",
@@ -679,6 +1159,45 @@
         "q-bio.NC"
       ],
       "themeId": "life-health"
+    },
+    {
+      "id": "2607.13615v1",
+      "title": "Extending Liquid Rank Toward Multi-Source Reputation Aggregation",
+      "summary": "In this paper, we present an extension of liquid rank reputation systems that enables the aggregation and blending of multiple heterogeneous reputation sources into a unified reputation score. The proposed framework supports the incorporation of external reputational signals alongside internally generated reputation, allowing influence to reflect participation and contribution across multiple contexts and subsystems. By introducing explicit weighting and blending mechanisms, the model provides fine-grained control over the relative impact of individual reputation sources, making it adaptable to diverse governance and coordination scenarios involving both human and machine agents. The resulting approach extends existing liquid rank systems and offers a flexible foundation for designing reputation-based governance mechanisms in complex socio-technical environments.",
+      "authors": [
+        "Nejc Znidar",
+        "Anton Kolonin"
+      ],
+      "publishedAt": "2026-07-15T09:04:33Z",
+      "updatedAt": "2026-07-15T09:04:33Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13615v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13615v1",
+      "primaryCategory": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "cs.CY"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13607v1",
+      "title": "Equilibrium stability as a driver of cooperation among Q-learners",
+      "summary": "Algorithmic collusion among pricing algorithms has raised concerns about sustained supra-competitive prices and their implications for social welfare. Existing work has largely focused on the probability that reinforcement-learning algorithms converge to cooperative strategies, typically under the assumption that exploration vanishes over time. Motivated by the observation that algorithms deployed in practice are likely to continue exploring in order to remain adaptive to changing environments, we study learning dynamics under constant exploration. In this setting, the relevant question is no longer whether an algorithm converges to a particular strategy profile, but rather what fraction of time the algorithms spend playing cooperative strategies. Even in the benchmark case of the repeated Prisoner's Dilemma with one-period memory, this yields high-dimensional stochastic learning dynamics, for which a complete analytic treatment is intractable. We show that cooperative strategies can be dominant in this time-averaged sense and derive a boundary predicting when such dominance arises, based on the expected dynamics of the Q-learning process. Extensive simulations show that this boundary is a strong predictor for non-defection-dominated behaviour under epsilon-greedy Q-learning.",
+      "authors": [
+        "Janusz M. Meylahn",
+        "Maximilian Schäfer"
+      ],
+      "publishedAt": "2026-07-15T08:56:53Z",
+      "updatedAt": "2026-07-15T08:56:53Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13607v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13607v1",
+      "primaryCategory": "cs.MA",
+      "categories": [
+        "cs.MA",
+        "econ.GN",
+        "econ.TH"
+      ],
+      "themeId": "society-economy"
     },
     {
       "id": "2607.13560v1",
@@ -704,6 +1223,27 @@
       "themeId": "life-health"
     },
     {
+      "id": "2607.13309v1",
+      "title": "Fundamental Relation between Conductance of Biomolecules and the Fukui Function",
+      "summary": "The finite-temperature conductance of a molecule coupled to metallic leads is derived entirely within the framework of density functional theory (DFT) and its time-dependent extension for open quantum systems. Starting from the Mermin grand potential, the foundational Kohn-Sham equations, the Fukui function, and the open-system master equation for the single-particle density matrix are systematically formulated. The non-equilibrium electron-phonon dissipator is obtained from the partial trace over the phonon bath. By applying Wick's theorem for non-interacting fermions, a fully exchange-symmetric collision integral is obtained that strictly preserves Pauli exclusion at the operator level. Performing a double perturbation expansion, initially in the applied voltage (linear response), and subsequently in the molecule-lead coupling (weak coupling), it is demonstrated that under the fast-thermalization condition, the complex exchange-correlation self-consistent field response is analytically projected out by the diagonal structure of the slow Liouvillian mode. Consequently, the thermal conductance is governed by the finite-temperature Fukui function, the central reactivity descriptor of conceptual density functional theory. This condition is satisfied in proteins, whose wave functions are extended and multifractal due to quantum criticality at the Anderson metal-insulator transition. This derivation establishes a fundamental link between electronic transport and chemical reactivity, identifying conducting paths with reactive sites. It opens new technological avenues connecting drug design to conductance experiments and also provides a foundation for designing next-generation bioelectronic sensing and computing architectures.",
+      "authors": [
+        "Gabor Vattay"
+      ],
+      "publishedAt": "2026-07-14T22:23:34Z",
+      "updatedAt": "2026-07-14T22:23:34Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13309v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13309v1",
+      "primaryCategory": "cond-mat.soft",
+      "categories": [
+        "cond-mat.soft",
+        "cond-mat.mes-hall",
+        "cond-mat.mtrl-sci",
+        "physics.bio-ph",
+        "q-bio.BM"
+      ],
+      "themeId": "life-health"
+    },
+    {
       "id": "2607.13281v1",
       "title": "Predator-dependent replicator dynamics or a predator-prey model with two prey types and frequency dependence",
       "summary": "Braga and Wardil [J. Phys. A: Math. Theor. 55 (2022) 025601] introduced a population model for two prey species that compete among themselves and are preyed upon by a single predator species. They showed the existence of 16 dynamic scenarios and stated sufficient conditions for the stable coexistence of the three species. The model, which can be seen as replicator dynamics with predator-dependent fitnesses for the prey, is based on two pay-off matrices: one for prey reproduction and one for interaction between prey and predators. We argue that the model can also be seen as a Lotka-Volterra-type predator-prey model with a single prey species, logistic limitation for prey, and frequency-dependent reproduction and capture coefficients. Using this alternative viewpoint, we obtain conditions for the existence of equilibria with the three types of individuals. We also prove theorems on the stability or instability of equilibria with only two species and relate the stability change of these equilibria to the appearance or disappearance of equilibria with the three species. When all parameters, except the one that regulates carrying capacities, are fixed, a rich cascade of bifurcations may appear. Solutions range from predator extinction due to insufficient prey to predators coexisting with one or two prey types. Sometimes stable limit cycles involving all species appear.",
@@ -720,6 +1260,27 @@
         "q-bio.PE"
       ],
       "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.13216v1",
+      "title": "Classifying daily activities needs posture, reconstructing them needs motion",
+      "summary": "Humans recognize movements effortlessly, even from noisy and complex visual input. But what information in the stimulus allows humans to rapidly classify movements? No framework has systematically compared different strategies of movement analysis to address this question. Here, we used videos of 16 daily activities from the MoVi dataset and compared three strategies: Temporal Movement Primitives (TMPs), which decompose movements into weighted sums of temporally smooth basis functions; Legendre polynomial coefficients, which project joint-coordinate trajectories onto an orthogonal polynomial basis; and Autoencoder latent embeddings. Legendre coefficients and TMPs achieved the highest classifier accuracy, followed by autoencoders. We found two discriminative features for movement classification. The most informative is the general posture of the body, the average spatial configuration that distinguishes one activity from another. Additionally, we identified 9 critical joints that are most predictive for movement classification. Interestingly, good classification accuracy did not automatically lead to good movement generation: when we reconstructed movements for each activity, TMPs preserved the temporal dynamics and produced perceptually natural motion, whereas reconstructions from Legendre coefficients retained only the average posture and appeared frozen. These results reveal a dissociation in how movement information is organized: the static configuration of the body suffices to classify what activity is performed, but the temporal dynamics of movement are required to reconstruct how it unfolds. This distinction clarifies which features the visual system may rely upon for rapid action recognition, and suggests that postural features could enable efficient movement screening in clinical applications, while dynamic information remain essential wherever movement generation is the goal.",
+      "authors": [
+        "Arefeh Farahmandi",
+        "Gunnar Blohm"
+      ],
+      "publishedAt": "2026-07-14T19:21:32Z",
+      "updatedAt": "2026-07-14T19:21:32Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13216v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13216v1",
+      "primaryCategory": "q-bio.NC",
+      "categories": [
+        "q-bio.NC",
+        "cs.AI",
+        "cs.IR",
+        "cs.LG"
+      ],
+      "themeId": "life-health"
     },
     {
       "id": "2607.13207v1",
@@ -782,6 +1343,27 @@
       "themeId": "climate-earth"
     },
     {
+      "id": "2607.12930v1",
+      "title": "Optimal photostimulation selection for iterative activity maps",
+      "summary": "All-optical two-photon holographic optogenetics enables causal circuit mapping by stimulating defined neurons or ensembles while imaging population activity. Yet exhaustive connectivity mapping remains experimentally prohibitive because of combinatorial complexity, tissue heating, photodamage, and experimental time. We present OPhELIA (Optimal Photostimulation sElection for Iterative Activity maps), a Bayesian framework for selecting informative perturbations under limited trial budgets. OPhELIA combines Beta-Bernoulli connectivity inference with an ambiguity-based acquisition heuristic and learned priors derived from pre-stimulation neural activity, augmenting active learning and compressed sensing. In standalone simulations and in vivo larval zebrafish visuomotor experiments, OPhELIA with active learning improves trial-efficient approximation of exhaustive functional connectomes. In combinatorial in vivo experiments, OPhELIA with compressed sensing most closely recovers an exhaustive connectome using only 5% of trials. These results establish OPhELIA as a sample-efficient framework for causal connectomics.",
+      "authors": [
+        "Jacob J. Morra",
+        "Kaitlyn E. Fouke",
+        "Owen Traubert",
+        "Eva A. Naumann"
+      ],
+      "publishedAt": "2026-07-14T16:01:56Z",
+      "updatedAt": "2026-07-14T16:01:56Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12930v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12930v1",
+      "primaryCategory": "q-bio.NC",
+      "categories": [
+        "q-bio.NC",
+        "q-bio.QM"
+      ],
+      "themeId": "life-health"
+    },
+    {
       "id": "2607.12927v1",
       "title": "Mixing and sharpening at the interface of a two-layer fluid forced by random jets",
       "summary": "Understanding mixing at density interfaces is essential for predicting transport in stratified environmental flows. Laboratory studies have mostly relied on steady, spatially uniform forcing, whereas turbulence in nature is intermittent and heterogeneous. Here, we present experiments on a two-layer salt-stratified fluid forced by random turbulent bursts generated with a randomly actuated synthetic jet array (RASJA). Density fields are recorded with the light attenuation technique, allowing us to resolve the interface evolution. We measure that the upward velocity of the interface decreases with the density jump, in agreement with the power-law found in previous oscillating-grid studies. At large density differences, the interface sharpens during mixing, contrary to the smaller density jump case. Background potential energy analysis demonstrates irreversible mixing in both cases, with comparable energy changes. These results extend classical laboratory observations to a more isotropic forcing, offering new insights into the dynamics of mixing in geophysical settings.",
@@ -820,6 +1402,198 @@
       "primaryCategory": "q-bio.PE",
       "categories": [
         "q-bio.PE"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12909v1",
+      "title": "Real-time fall detection based on vision for low-power edge platforms",
+      "summary": "Falling detection is vital for elderly care and intelligent surveillance; however, prevailing vision-based approaches predominantly frame it as static pose classification or discrete temporal pattern matching, fundamentally overlooking the instability dynamics of the human support system. This paper proposes a physics-informed falling detection framework that recasts falling as a stability-loss event in a coupled dynamical system. We introduce a novel dual-LTC architecture comprising a Center-of-Mass (CoM) subsystem and a Base-of-Support (BoS) subsystem, both instantiated as Liquid Time-Constant (LTC) neural networks to continuously model inertial trajectory evolution and ground-contact adjustment through adaptive time constants, Physical interpretability of falling motion. A learnable coupling module emulates physical interaction between the two subsystems, while a Stability Manifold classifier operates in the joint latent space to detect boundary crossing via Lyapunov-inspired stability metrics. Complementary counterfactual trajectory projection and Time-to-Collision (TTC) estimation further enable irreversibility assessment and early warning. The architecture is designed to support a three-state prediction paradigm (Normal, Falling, Fallen); in this preliminary study, we validate the core stability discrimination capability on a two-class dataset (Normal vs. Falling), leaving the full three-state temporal transition to future work. Unlike conventional CNN--RNN pipelines, the proposed formulation encodes continuous-time mechanical inertia, yielding a sub-50K-parameter network capable of real-time inference on resource-constrained edge devices. Extensive experiments demonstrate competitive accuracy with superior physical interpretability, validating its efficacy for low-compute visual fall detection.",
+      "authors": [
+        "Wenjun Xia",
+        "Zhicheng Peng",
+        "Haopeng Li",
+        "Zhengdi Zhang"
+      ],
+      "publishedAt": "2026-07-14T15:43:41Z",
+      "updatedAt": "2026-07-14T15:43:41Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12909v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12909v1",
+      "primaryCategory": "q-bio.NC",
+      "categories": [
+        "q-bio.NC",
+        "cs.AI",
+        "cs.CV"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.12876v1",
+      "title": "Superstatistical Analysis of PDFs and autocorrelation functions for air pollution concentrations in the UK",
+      "summary": "Conventional statistical models often struggle to fully capture the complex spatio-temporal dynamics, intermittent fluctuations, and heavy-tailed distributions characteristic of real-world air pollution data. Furthermore, existing literature frequently focuses on extreme events, overlooking the persistence of low-pollution states and temporal memory effects. To address these gaps, we apply superstatistical frameworks from non-equilibrium statistical physics to analyse a comprehensive five-year dataset (2020-2025) of hourly air pollutant concentrations across the United Kingdom. Excellent fits of experimentally measured distributions are obtained from our theoretical models. We observe large heterogeneities of the best fitting parameters depending on the locations where the measurements are performed. These parameters form characteristic patterns in the 3-dimensional parameter space and depend on the type of pollutant considered, as well as on the environmental conditions (high traffic, industrial, or rural surroundings). We also investigate autocorrelation functions and provide evidence for differences in day-time and night-time decays of the autocorrelation function. Our investigation mainly focuses onto the dynamics of NO, NO2, PM2.5, PM10, but we also report on some anomalous distributions observed for O3.",
+      "authors": [
+        "Nisal Amarakoon",
+        "Hankun He",
+        "Christian Beck"
+      ],
+      "publishedAt": "2026-07-14T15:23:48Z",
+      "updatedAt": "2026-07-14T15:23:48Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12876v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12876v1",
+      "primaryCategory": "physics.ao-ph",
+      "categories": [
+        "physics.ao-ph",
+        "math.DS"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12874v1",
+      "title": "Metric-Guided Synthetic Image Data Rendering for Deep Learning compatible with Agentic AI",
+      "summary": "Deep learning computer vision for scientific applications requires collecting and annotating large datasets in a laborious, expensive and error-prone process. Synthetic data generation through 3D modelling and rendering may simplify this process and increase the accuracy of annotations by generating them programmatically. However, minimising the domain gap between real and synthetic images visually is subjective and lacks systematic quantitative guidance. We present GraNatPy, a Python package with metrics to guide improvement of the rendered scene. We show that quantifiable increase in realism, diversity and size of rendered dataset correlates with improved visual perception of the scene and higher zero-shot performance of an object detection model. Furthermore, we demonstrated using photographs of virological plaque assays that gradient similarity affects performance on small object detection, which can be improved by mixing real and synthetic data. Finally, we turn procedural data rendering into an agentic skill (SynthClaw) to automate the procedural parameter optimisation.",
+      "authors": [
+        "Martina Radoynova",
+        "Samuel Pantze",
+        "Trina De",
+        "Ulrik Günther",
+        "Artur Yakimovich"
+      ],
+      "publishedAt": "2026-07-14T15:22:26Z",
+      "updatedAt": "2026-07-14T15:22:26Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12874v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12874v1",
+      "primaryCategory": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "q-bio.QM"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.12864v1",
+      "title": "Can deleterious mutations surf deterministic population waves?",
+      "summary": "In spatially structured populations, rare neutral mutations can spread through large regions during a range expansion, a phenomenon known as gene surfing. Whether deleterious mutations can also surf remains poorly understood. To address this question, we study a deterministic version of the spatial Muller's ratchet, given by an infinite system of reaction-diffusion equations describing an asexual population subject to mutation, migration, and density-dependent reproduction and death. After establishing that the system of PDEs is well-posed, we analyse the distribution of deleterious mutations within the population. In the monostable regime, we derive quantitative bounds on the ratio between the density of individuals carrying a given number of mutations and the density of mutation-free individuals. Under a Fisher-KPP condition, we further determine the spreading speed of the population into an empty habitat, confirming non-rigorous computations of Foutel-Rodier and Etheridge. Finally, using a tracer dynamics approach, we show that deleterious mutations cannot surf deterministic waves: although they are present at the expansion front, they only arise as recent descendants of the wild type.",
+      "authors": [
+        "Joao Luiz de Oliveira Madeira",
+        "Marcel Ortgiese",
+        "Sarah Penington"
+      ],
+      "publishedAt": "2026-07-14T15:15:56Z",
+      "updatedAt": "2026-07-14T15:15:56Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12864v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12864v1",
+      "primaryCategory": "math.AP",
+      "categories": [
+        "math.AP",
+        "math.PR",
+        "q-bio.PE"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12808v1",
+      "title": "Dispersion-Guided Physics-Aware Deep Inverse Operator for Surface Wave Mode Separation",
+      "summary": "Surface-wave (SW) dispersion analysis is widely used in near-surface geophysics and seismology to determine shear-wave velocity structures by measuring SW geometric dispersion in seismic data. Among the available approaches, multichannel analysis of surface waves (MASW) and two-station methods are commonly employed to extract dispersion information for SW inversion. However, the coexistence of fundamental and higher modes in seismic data poses challenges for these methods, particularly for two-station analysis. To separate the different mode components, we propose a physics-aware unsupervised deep-learning framework. The method acts as a deep inverse operator that directly separates fundamental- and higher-mode components in the time-space domain using an adaptive Gaussian mask constructed in the frequency-phase-velocity (f-v) domain. Physical constraints are incorporated into the loss function by maximizing energy concentration within the target mask while suppressing leakage outside it. Through backpropagation, the network learns the inverse mapping from physical constraints in the f-v domain to wavefield separation in the time-space domain without requiring labeled training data. Numerical experiments on both synthetic and field data show that the framework provides a robust and automated solution for SW mode separation, facilitating more reliable dispersion-curve picking and improving the accuracy of subsequent SW inversion.",
+      "authors": [
+        "Yang Cui",
+        "Sujith Swaminadhan",
+        "Yangkang Chen",
+        "Christian Schiffer",
+        "Myrto Papadopoulou"
+      ],
+      "publishedAt": "2026-07-14T14:21:38Z",
+      "updatedAt": "2026-07-14T14:21:38Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12808v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12808v1",
+      "primaryCategory": "physics.geo-ph",
+      "categories": [
+        "physics.geo-ph"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12771v1",
+      "title": "Learning Mechanistic Reasoning for Chemical Reactions with Large Language Models",
+      "summary": "Reaction mechanisms consist of the step-by-step sequences of elementary reactions that explain chemical transformations. Learning the mechanism logic is therefore essential for enhancing the fundamental chemical intelligence of large language models (LLMs). The stepwise deduction of reaction mechanism aligns naturally with the reasoning paradigms of reasoning LLMs. However, current chemical LLMs primarily emphasize coarse-grained name reactions for product prediction and retrosynthesis, often leading to physical inconsistencies and hallucinations. In contrast, specialized small-scale generative models for mechanism inference typically suffer from restricted generalization capacity across diverse chemical spaces. To overcome these limitations, we built a novel, large-scale reasoning dataset of reaction mechanisms. Furthermore, we established the FukuyamaBench, a difficult benchmark derived from Fukuyama's Advanced Organic Reaction Mechanism book, to rigorously evaluate model performance on hierarchical mechanism reasoning. Our fine-tuned Qwen3-30B-A3B achieves 8.3% exact pathway match on FukuyamaBench Set~A, surpassing the specialized FlowER model (5.1%), demonstrating that mechanism-aware training substantially enhances chemical reasoning in language models.",
+      "authors": [
+        "Xingyu Dang",
+        "Haocheng Tang",
+        "Junmei Wang",
+        "Yanjun Li"
+      ],
+      "publishedAt": "2026-07-14T13:44:51Z",
+      "updatedAt": "2026-07-14T13:44:51Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12771v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12771v1",
+      "primaryCategory": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CE",
+        "cs.CL",
+        "q-bio.BM"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.12760v1",
+      "title": "On seasonal trunk thermal buffering and its electrical signature in mature trees",
+      "summary": "Tree trunks contain living tissues whose functioning depends on their thermal environment, yet the processes governing trunk temperature under field conditions remain poorly understood. In particular, it is unclear whether hydraulic transport contributes to buffering trunk temperature against atmospheric variability. We investigated this question by continuously monitoring sapwood temperature, local air temperature, soil temperature at 1~m depth, and spontaneous electrical potential (SP) in six mature trees, comprising three oaks and three hornbeams, over multiple years in a temperate urban forest garden. trunk temperature exhibited a smoother seasonal cycle than air temperature and remained consistently closer to deep-soil temperature, indicating substantial thermal buffering. Seasonal components extracted from the time series revealed a coherent delayed relationship between SP and the trunk-soil temperature difference. Phase-space analysis showed reproducible hysteresis across individuals, and instantaneous phase estimates indicated a lag of approximately 100~days in five of the six trees. A minimal energy-balance model further showed that trunk heat storage alone was insufficient to reproduce the observed seasonal dynamics. Positive effective soil-coupling coefficients were obtained for most individuals, although their magnitude varied markedly among trees. These results are consistent with a contribution of vertically mediated, hydraulically linked heat transfer to seasonal trunk thermal regulation. They further suggest that spontaneous electrical potentials may provide a non-invasive, integrative indicator of slow hydraulic and thermal processes within trees. Such thermo-hydraulic coupling may influence the thermal environment of the cambium and phloem and could therefore contribute to tree responses to seasonal heat and climatic variability.",
+      "authors": [
+        "Jean-Baptiste Boulé",
+        "Vincent Courtillot",
+        "Dominique Gibert",
+        "Fernando Lopes",
+        "Alexis Maineult",
+        "Pierpaolo Zuddas",
+        "Jean de Bremond d'Ars"
+      ],
+      "publishedAt": "2026-07-14T13:26:47Z",
+      "updatedAt": "2026-07-14T13:26:47Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12760v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12760v1",
+      "primaryCategory": "physics.bio-ph",
+      "categories": [
+        "physics.bio-ph",
+        "physics.geo-ph"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12743v1",
+      "title": "An Extension to the Procedure for Developing Uncertainty-Consistent Shear Wave Velocity Profiles from Inversion of Experimental Surface Wave Dispersion Data",
+      "summary": "Measurements of shear wave velocity (Vs) with uncertainty are critical for site-specific probabilistic seismic hazard studies. However, rigorously quantifying the uncertainty in Vs over large enough areas and great enough depths remains challenging. In 2021, Vantassel and Cox (i.e., VC21) proposed a procedure for developing suites of Vs profiles from surface wave testing whose uncertainty were consistent with the experimental dispersion data's uncertainty. The VC21 procedure was a significant step forward, however, it requires a full dispersion data matrix to compute inter-wavelength phase velocity correlations. While applicable to many practical cases, VC21 could not be applied to the case where multiple surface wave arrays of different sizes were deployed at a site as a means of developing broadband dispersion data and deeper Vs profiles. In response, this work extends the VC21 procedure using two possible approaches for estimating a full dispersion data matrix. Approach 1 uses a selection of theoretical dispersion curves from an initial, traditional surface wave inversion. Approach 2 estimates the full data matrix by combining pieces of the data matrix obtained from the experimental dispersion measurements. Both approaches are evaluated using two synthetic datasets; one relatively-simple, three-layered model and one more-complex, five-layered model. Approach 1 and Approach 2 were able to reasonably estimate the true correlation matrix and recover uncertainty-consistent Vs profiles similar to the true distribution of Vs. While the uncertainty of the recovered Vs profiles were higher than is often assumed, the engineering proxies computed from those Vs profiles, namely the time averaged shear wave velocity in upper 30 m and the fundamental site period, showed substantially less uncertainty indicating the Vs profiles, while uncertain, are effective at capturing a site's ...",
+      "authors": [
+        "Joseph P. Vantassel",
+        "Brady R. Cox"
+      ],
+      "publishedAt": "2026-07-14T13:14:18Z",
+      "updatedAt": "2026-07-14T13:14:18Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12743v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12743v1",
+      "primaryCategory": "physics.geo-ph",
+      "categories": [
+        "physics.geo-ph",
+        "stat.AP"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12673v1",
+      "title": "Contrasting statistical patterns in melodic and molecular evolution reveal distinctive constraints in a culturally evolving system",
+      "summary": "Evolved sequences can be used to infer the rules of evolution. Orally transmitted folk melodies are evolved sequences whose similarity to protein sequences (one-dimensional, drawn from a limited alphabet) invites application of bioinformatics methods to study cultural evolution. A major obstacle is that melodies encode rhythm, which breaks some assumptions of standard sequence-alignment algorithms. We develop a rhythm-aware alignment method and apply it to \\num{40000} Irish dance tune variants, enabling the first large-scale automated melodic alignment. Four canonical bioinformatics analyses -- mutability, substitution matrices, positional conservation, and covariance -- reveal patterns distinct from those of molecular evolution, revealing the forces that shape each domain: biochemical and biophysical constraints for proteins; memory, motor, and social biases for melodies. Together the results show that bioinformatics provides a powerful framework -- conceptual as much as algorithmic -- for studying cultural evolution. Although the cultural transmission of music has been discussed for centuries, here we show how to analyze it at large scale.",
+      "authors": [
+        "John M McBride",
+        "W Tecumseh Fitch"
+      ],
+      "publishedAt": "2026-07-14T12:03:02Z",
+      "updatedAt": "2026-07-14T12:03:02Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12673v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12673v1",
+      "primaryCategory": "q-bio.PE",
+      "categories": [
+        "q-bio.PE",
+        "cs.SD",
+        "physics.soc-ph"
       ],
       "themeId": "climate-earth"
     }

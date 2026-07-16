@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
+const archivo = Archivo({
   variable: "--font-display",
   subsets: ["latin"],
 });
@@ -15,12 +15,12 @@ const ibmPlexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://aleetreny.github.io/Scholar-Pulse/"),
-  title: "Scholar Pulse — Research worth opening",
+  title: "Scholar Pulse — Find what's new in your field",
   description:
-    "A living showroom for the newest ideas moving across science, refreshed daily from open research.",
+    "A daily working index for researchers scanning recent open papers in a concrete field.",
   openGraph: {
-    title: "Scholar Pulse — Research worth opening",
-    description: "Fresh papers, six thematic showrooms, one clear daily pulse.",
+    title: "Scholar Pulse — Find what's new in your field",
+    description: "Search, inspect, relate, and save the newest open papers in your research area.",
     type: "website",
   },
 };
@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" className={`${archivo.variable} ${ibmPlexMono.variable}`}>
       <body>{children}</body>
     </html>
   );
