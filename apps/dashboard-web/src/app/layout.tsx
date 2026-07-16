@@ -17,10 +17,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://aleetreny.github.io/Scholar-Pulse/"),
   title: "Scholar Pulse — Find what's new in your field",
   description:
-    "A daily working index for researchers scanning recent open papers in a concrete field.",
+    "A compact thematic view of the newest open papers for active literature review.",
   openGraph: {
     title: "Scholar Pulse — Find what's new in your field",
-    description: "Search, inspect, relate, and save the newest open papers in your research area.",
+    description: "Browse the newest open papers field by field, without an endless feed.",
     type: "website",
   },
 };

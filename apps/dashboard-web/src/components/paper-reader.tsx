@@ -32,72 +32,64 @@ export function PaperReader({
   onToggleSave,
 }: PaperReaderProps) {
   return (
-    <aside className={isOpen ? "reading-pane is-open" : "reading-pane"} aria-label="Selected paper">
-      <div className="reader-head">
+    <aside className={isOpen ? "paper-reader is-open" : "paper-reader"} aria-label="Paper details">
+      <header className="reader-toolbar">
         <div>
-          <span>ON DESK</span>
-          <b>{paper.id}</b>
+          <span style={{ backgroundColor: theme.accent }} aria-hidden="true" />
+          <strong>{theme.name}</strong>
+          <small>{formatPaperDate(paper.publishedAt)}</small>
         </div>
-        <button type="button" className="reader-close" onClick={onClose}>CLOSE ×</button>
-      </div>
+        <button type="button" className="reader-close" onClick={onClose}>Close</button>
+      </header>
 
-      <div className="reader-scroll">
-        <div className="reader-field">
-          <span>{theme.name}</span>
-          <span>{formatPaperDate(paper.publishedAt)}</span>
-        </div>
+      <div className="reader-content">
+        <div className="reader-id">arXiv:{paper.id}</div>
         <h2>{paper.title}</h2>
         <p className="reader-authors">{authorLine(paper.authors, 12)}</p>
-
         <div className="reader-categories" aria-label="arXiv categories">
           {paper.categories.map((category) => <span key={category}>{category}</span>)}
         </div>
 
-        <section className="abstract-section">
-          <div className="reader-section-label"><span>ABSTRACT</span><b>01</b></div>
+        <div className="reader-actions">
+          <a href={paper.arxivUrl} target="_blank" rel="noreferrer">Open paper ↗</a>
+          <a href={paper.pdfUrl} target="_blank" rel="noreferrer">PDF ↗</a>
+          <button
+            type="button"
+            className={isSaved ? "is-saved" : ""}
+            aria-pressed={isSaved}
+            onClick={() => onToggleSave(paper.id)}
+          >
+            {isSaved ? "Saved ✓" : "Save"}
+          </button>
+          <button type="button" onClick={onCopyBibtex}>{copyLabel}</button>
+        </div>
+
+        {isBibtexVisible ? (
+          <label className="bibtex-fallback">
+            <span>Clipboard blocked — select the citation</span>
+            <textarea
+              aria-label="BibTeX citation"
+              readOnly
+              rows={8}
+              value={bibtex}
+              onFocus={(event) => event.currentTarget.select()}
+            />
+          </label>
+        ) : null}
+
+        <section className="reader-section">
+          <h3>Abstract</h3>
           <p>{paper.summary}</p>
         </section>
 
-        <section className="paper-utilities">
-          <div className="reader-section-label"><span>USE THIS PAPER</span><b>02</b></div>
-          <div className="utility-grid">
-            <a href={paper.arxivUrl} target="_blank" rel="noreferrer">OPEN PAPER ↗</a>
-            <a href={paper.pdfUrl} target="_blank" rel="noreferrer">OPEN PDF ↗</a>
-            <button
-              type="button"
-              className={isSaved ? "is-saved" : ""}
-              aria-pressed={isSaved}
-              onClick={() => onToggleSave(paper.id)}
-            >
-              {isSaved ? "REMOVE FROM LIST" : "SAVE TO LIST +"}
+        <section className="reader-section related-papers">
+          <h3>Related in the recent archive</h3>
+          {relatedPapers.map((related) => (
+            <button type="button" key={related.paper.id} onClick={() => onSelect(related.paper.id)}>
+              <strong>{related.paper.title}</strong>
+              <span>{related.reason}</span>
             </button>
-            <button type="button" onClick={onCopyBibtex}>{copyLabel}</button>
-          </div>
-          {isBibtexVisible ? (
-            <label className="bibtex-fallback">
-              <span>Clipboard blocked — select the citation below</span>
-              <textarea
-                aria-label="BibTeX citation"
-                readOnly
-                rows={9}
-                value={bibtex}
-                onFocus={(event) => event.currentTarget.select()}
-              />
-            </label>
-          ) : null}
-        </section>
-
-        <section className="related-section">
-          <div className="reader-section-label"><span>RELATED IN THIS EDITION</span><b>03</b></div>
-          <div className="related-list">
-            {relatedPapers.map((related, index) => (
-              <button type="button" key={related.paper.id} onClick={() => onSelect(related.paper.id)}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <strong>{related.paper.title}</strong>
-                <small>{related.reason}</small>
-              </button>
-            ))}
-          </div>
+          ))}
         </section>
       </div>
     </aside>

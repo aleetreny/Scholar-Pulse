@@ -3,37 +3,37 @@
 import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { PaperBrowser } from "@/components/paper-browser";
 import { PaperReader } from "@/components/paper-reader";
-import { PaperResults } from "@/components/paper-results";
-import { ResearchHeader } from "@/components/research-header";
-import { ScopePanel } from "@/components/scope-panel";
+import { PulseHeader } from "@/components/pulse-header";
+import { ThemeNav } from "@/components/theme-nav";
+import { ThemeOverview } from "@/components/theme-overview";
 import {
-  ageInHours,
   findRelatedPapers,
+  getThemeSignals,
   makeBibtex,
   matchPaper,
 } from "@/lib/research";
-import type { DateRange, SortMode, WorkspaceMode } from "@/lib/research";
+import type { WorkspaceMode } from "@/lib/research";
 import type { PulseData } from "@/lib/showroom";
 
+const PAGE_SIZE = 4;
 const STORAGE_KEY = "scholar-pulse:saved";
 
-type ResearchWorkspaceProps = {
+type PulseShellProps = {
   data: PulseData;
 };
 
-export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
+export function PulseShell({ data }: PulseShellProps) {
+  const [activeThemeId, setActiveThemeId] = useState("overview");
+  const [mode, setMode] = useState<WorkspaceMode>("latest");
   const [query, setQuery] = useState("");
-  const [activeTheme, setActiveTheme] = useState("all");
-  const [dateRange, setDateRange] = useState<DateRange>("all");
-  const [sortMode, setSortMode] = useState<SortMode>("relevance");
-  const [mode, setMode] = useState<WorkspaceMode>("discover");
+  const [page, setPage] = useState(0);
   const [selectedPaperId, setSelectedPaperId] = useState(data.papers[0]?.id ?? "");
   const [savedPaperIds, setSavedPaperIds] = useState<string[]>([]);
   const [storageReady, setStorageReady] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [readerOpen, setReaderOpen] = useState(false);
-  const [copyLabel, setCopyLabel] = useState("COPY BIBTEX");
+  const [copyLabel, setCopyLabel] = useState("Copy BibTeX");
   const [bibtexVisible, setBibtexVisible] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -41,14 +41,8 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
     () => new Map(data.themes.map((theme) => [theme.id, theme])),
     [data.themes],
   );
-  const themeCounts = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const paper of data.papers) {
-      counts.set(paper.themeId, (counts.get(paper.themeId) ?? 0) + 1);
-    }
-    return counts;
-  }, [data.papers]);
   const savedPaperSet = useMemo(() => new Set(savedPaperIds), [savedPaperIds]);
+  const activeTheme = activeThemeId === "overview" ? undefined : themeById.get(activeThemeId);
 
   useEffect(() => {
     try {
@@ -60,7 +54,7 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
         }
       }
     } catch {
-      // A blocked storage API should never block the research index.
+      // Keep the research archive usable when storage is blocked.
     } finally {
       setStorageReady(true);
     }
@@ -71,7 +65,7 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPaperIds));
     } catch {
-      // Keep the in-memory reading list when local storage is unavailable.
+      // The in-memory reading set remains available for this visit.
     }
   }, [savedPaperIds, storageReady]);
 
@@ -81,42 +75,38 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
         event.preventDefault();
         searchRef.current?.focus();
       }
-      if (event.key === "Escape") {
-        setFiltersOpen(false);
-        setReaderOpen(false);
-      }
+      if (event.key === "Escape") setReaderOpen(false);
     }
     window.addEventListener("keydown", handleShortcut);
     return () => window.removeEventListener("keydown", handleShortcut);
   }, []);
 
-  const matches = useMemo(() => {
-    const scoped = data.papers
+  const allMatches = useMemo(() => {
+    return data.papers
+      .filter((paper) => activeThemeId === "overview" || paper.themeId === activeThemeId)
+      .filter((paper) => mode === "latest" || savedPaperSet.has(paper.id))
       .map((paper) => {
         const theme = themeById.get(paper.themeId);
         return theme ? matchPaper(paper, theme, query) : null;
       })
       .filter((match) => match !== null)
       .filter((match) => !query.trim() || match.score > 0)
-      .filter((match) => activeTheme === "all" || match.paper.themeId === activeTheme)
-      .filter((match) => {
-        if (dateRange === "all") return true;
-        const age = ageInHours(match.paper.publishedAt, data.generatedAt);
-        return dateRange === "24h" ? age <= 24 : age <= 72;
-      })
-      .filter((match) => mode === "discover" || savedPaperSet.has(match.paper.id));
+      .sort((left, right) => {
+        if (query.trim() && right.score !== left.score) return right.score - left.score;
+        return right.paper.publishedAt.localeCompare(left.paper.publishedAt);
+      });
+  }, [activeThemeId, data.papers, mode, query, savedPaperSet, themeById]);
 
-    return scoped.sort((left, right) => {
-      if (sortMode === "title") return left.paper.title.localeCompare(right.paper.title);
-      if (sortMode === "relevance" && query.trim() && right.score !== left.score) {
-        return right.score - left.score;
-      }
-      return right.paper.publishedAt.localeCompare(left.paper.publishedAt);
-    });
-  }, [activeTheme, data.generatedAt, data.papers, dateRange, mode, query, savedPaperSet, sortMode, themeById]);
+  const pageCount = Math.ceil(allMatches.length / PAGE_SIZE);
+  const currentPage = Math.min(page, Math.max(0, pageCount - 1));
+  const visibleMatches = allMatches.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE);
+  const activeThemePapers = useMemo(
+    () => activeTheme ? data.papers.filter((paper) => paper.themeId === activeTheme.id) : [],
+    [activeTheme, data.papers],
+  );
+  const signals = useMemo(() => getThemeSignals(activeThemePapers), [activeThemePapers]);
 
-  const selectedPaper =
-    data.papers.find((paper) => paper.id === selectedPaperId) ?? data.papers[0];
+  const selectedPaper = data.papers.find((paper) => paper.id === selectedPaperId) ?? data.papers[0];
   const selectedTheme = selectedPaper ? themeById.get(selectedPaper.themeId) : undefined;
   const relatedPapers = useMemo(
     () => (selectedPaper ? findRelatedPapers(selectedPaper, data.papers) : []),
@@ -125,9 +115,9 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
 
   const handleSelect = useCallback((paperId: string) => {
     setSelectedPaperId(paperId);
-    setCopyLabel("COPY BIBTEX");
-    setBibtexVisible(false);
     setReaderOpen(true);
+    setCopyLabel("Copy BibTeX");
+    setBibtexVisible(false);
   }, []);
 
   const handleToggleSave = useCallback((paperId: string) => {
@@ -136,6 +126,46 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
         ? current.filter((savedId) => savedId !== paperId)
         : [...current, paperId],
     );
+  }, []);
+
+  const handleThemeChange = useCallback((themeId: string) => {
+    setActiveThemeId(themeId);
+    setMode("latest");
+    setQuery("");
+    setPage(0);
+    if (themeId !== "overview") {
+      const firstPaper = data.papers.find((paper) => paper.themeId === themeId);
+      if (firstPaper) setSelectedPaperId(firstPaper.id);
+    }
+  }, [data.papers]);
+
+  const handleModeChange = useCallback((nextMode: WorkspaceMode) => {
+    setMode(nextMode);
+    setPage(0);
+    if (nextMode === "saved") setActiveThemeId("overview");
+  }, []);
+
+  const handleQueryChange = useCallback((value: string) => {
+    setQuery(value);
+    setPage(0);
+  }, []);
+
+  const handleSignalClick = useCallback((signal: string) => {
+    setQuery(signal);
+    setPage(0);
+    searchRef.current?.focus();
+  }, []);
+
+  const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (allMatches[0]) handleSelect(allMatches[0].paper.id);
+  }, [allMatches, handleSelect]);
+
+  const handleClear = useCallback(() => {
+    setMode("latest");
+    setActiveThemeId("overview");
+    setQuery("");
+    setPage(0);
   }, []);
 
   const handleCopyBibtex = useCallback(async () => {
@@ -148,7 +178,7 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
           window.setTimeout(() => reject(new Error("Clipboard timed out")), 800);
         }),
       ]);
-      setCopyLabel("COPIED");
+      setCopyLabel("Copied");
       setBibtexVisible(false);
     } catch {
       const fallback = document.createElement("textarea");
@@ -160,7 +190,7 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
       fallback.select();
       const copied = document.execCommand("copy");
       fallback.remove();
-      setCopyLabel(copied ? "COPIED" : "SELECT BELOW");
+      setCopyLabel(copied ? "Copied" : "Select below");
       setBibtexVisible(!copied);
     }
   }, [selectedPaper]);
@@ -182,92 +212,69 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
   }, [data.papers, savedPaperSet]);
 
-  const handleSubmit = useCallback((event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (matches[0]) handleSelect(matches[0].paper.id);
-  }, [handleSelect, matches]);
-
-  const handleQueryExample = useCallback((example: string) => {
-    setMode("discover");
-    setQuery(example);
-    searchRef.current?.focus();
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setActiveTheme("all");
-    setDateRange("all");
-    setSortMode("relevance");
-    setFiltersOpen(false);
-  }, []);
-
-  const handleClear = useCallback(() => {
-    setMode("discover");
-    setQuery("");
-    setActiveTheme("all");
-    setDateRange("all");
-  }, []);
-
   if (!selectedPaper || !selectedTheme) {
-    return <main className="empty-feed">The current edition could not be loaded.</main>;
+    return <main className="empty-feed">The recent paper archive could not be loaded.</main>;
   }
 
+  const showOverview = mode === "latest" && !query.trim() && activeThemeId === "overview";
+
   return (
-    <div id="research-index" className="research-shell">
-      <ResearchHeader
+    <div id="pulse-app" className="pulse-app">
+      <PulseHeader
         generatedAt={data.generatedAt}
         mode={mode}
-        paperCount={data.papers.length}
         query={query}
-        resultCount={matches.length}
         savedCount={savedPaperIds.length}
         searchRef={searchRef}
+        totalCount={data.papers.length}
         onExport={handleExport}
-        onModeChange={setMode}
-        onQueryChange={setQuery}
-        onQueryExample={handleQueryExample}
+        onModeChange={handleModeChange}
+        onQueryChange={handleQueryChange}
         onSubmit={handleSubmit}
       />
 
-      <main className="research-workspace">
-        {filtersOpen ? (
-          <button
-            type="button"
-            className="drawer-backdrop filter-backdrop"
-            aria-label="Close filters"
-            onClick={() => setFiltersOpen(false)}
-          />
-        ) : null}
-        <ScopePanel
-          activeTheme={activeTheme}
-          dateRange={dateRange}
-          isOpen={filtersOpen}
-          paperCount={data.papers.length}
-          sortMode={sortMode}
+      <main className="pulse-workspace">
+        <ThemeNav
+          activeThemeId={activeThemeId}
+          papers={data.papers}
           themes={data.themes}
-          themeCounts={themeCounts}
-          onClose={() => setFiltersOpen(false)}
-          onDateRangeChange={setDateRange}
-          onReset={handleReset}
-          onSortModeChange={setSortMode}
-          onThemeChange={setActiveTheme}
+          onThemeChange={handleThemeChange}
         />
-        <PaperResults
-          matches={matches}
-          mode={mode}
-          savedIds={savedPaperSet}
-          selectedPaperId={selectedPaper.id}
-          sortMode={sortMode}
-          themeById={themeById}
-          onClear={handleClear}
-          onOpenFilters={() => setFiltersOpen(true)}
-          onSelect={handleSelect}
-          onToggleSave={handleToggleSave}
-        />
+
+        {showOverview ? (
+          <ThemeOverview
+            generatedAt={data.generatedAt}
+            papers={data.papers}
+            themes={data.themes}
+            onOpenTheme={handleThemeChange}
+            onSelectPaper={handleSelect}
+          />
+        ) : (
+          <PaperBrowser
+            activeTheme={activeTheme}
+            currentPage={currentPage}
+            matches={visibleMatches}
+            mode={mode}
+            pageCount={pageCount}
+            query={query}
+            savedIds={savedPaperSet}
+            selectedPaperId={selectedPaper.id}
+            signals={signals}
+            themeById={themeById}
+            totalCount={allMatches.length}
+            onClear={handleClear}
+            onPageChange={setPage}
+            onSelect={handleSelect}
+            onSignalClick={handleSignalClick}
+            onToggleSave={handleToggleSave}
+          />
+        )}
+
         {readerOpen ? (
           <button
             type="button"
-            className="drawer-backdrop reader-backdrop"
-            aria-label="Close paper reader"
+            className="reader-backdrop"
+            aria-label="Close paper details"
             onClick={() => setReaderOpen(false)}
           />
         ) : null}
@@ -286,14 +293,6 @@ export function ResearchWorkspace({ data }: ResearchWorkspaceProps) {
           onToggleSave={handleToggleSave}
         />
       </main>
-
-      <footer className="research-footer">
-        <p>Scholar Pulse / a daily working index for active literature review</p>
-        <p>
-          Source: <a href={data.source.url} target="_blank" rel="noreferrer">arXiv</a>
-          {data.warnings.length > 0 ? " / cached fields in this edition" : " / refreshed daily"}
-        </p>
-      </footer>
     </div>
   );
 }

@@ -1,8 +1,8 @@
 # Scholar Pulse
 
-**Scholar Pulse is a daily working index for active literature review.** It helps a researcher
-scan the newest open papers in a concrete field, inspect an abstract without losing context,
-follow related work, and build a portable reading list.
+**Scholar Pulse is a compact thematic monitor for active literature review.** It helps a
+researcher see what is arriving in each field, browse a recent archive without an endless feed,
+inspect a paper in context, and keep a portable reading set.
 
 [Open the public site](https://aleetreny.github.io/Scholar-Pulse/)
 
@@ -14,9 +14,10 @@ field.
 
 The current public beta includes:
 
-- 72 recent papers refreshed from arXiv;
+- 240 recent papers refreshed from arXiv, 40 per field;
+- a six-field overview with seven-day activity and recurring topic signals;
+- four-paper pages ordered by recency instead of a long scrolling list;
 - query matching across title, abstract, author, field, and category;
-- field, publication-window, and order controls;
 - an in-context reading pane with explained related-paper suggestions;
 - a persistent reading list, BibTeX copy, and `.bib` export;
 - a daily GitHub Pages deployment.

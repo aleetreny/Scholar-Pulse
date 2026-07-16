@@ -1,56 +1,53 @@
 # Scholar Pulse: product direction
 
-## The person it serves
+## The job
 
-Scholar Pulse is for an active researcher, doctoral student, analyst, or R&D specialist who is
-already working in a concrete area and needs a disciplined way to scan what has just arrived.
-They are not looking for a map of all science. They are asking:
+Scholar Pulse is for someone already researching a concrete field who wants to answer two simple
+questions:
 
-> What changed near my question, which papers deserve inspection, and what should enter my review?
+> What has appeared recently in this area, and which paper should I inspect next?
 
-The product is deliberately a **frontier monitor**, not a complete scholarly search engine and
-not a quality ranking.
+It is a recent-research monitor, not a feed of papers published today, a map of science, a complete
+scholarly database, or a quality ranking.
 
-## Core workflow
+## The product model
 
-1. **Name the work** — search by problem, method, author, or arXiv category.
-2. **Reduce the frontier** — narrow by field and publication window; order explicitly.
-3. **Inspect in context** — read the abstract without leaving or losing the result list.
-4. **Follow a thread** — open related papers with a visible reason for the relationship.
-5. **Keep evidence** — save papers locally, copy BibTeX, or export a working `.bib` file.
+The public site is one compact workspace:
 
-The interface is organised around this sequence. It avoids a marketing hero, ornamental metrics,
-and duplicated navigation in favour of a query, a dense index, and a reading desk.
+1. **Field overview** — six themes, their newest paper, seven-day submission activity, and recurring
+   title signals.
+2. **Recent archive by theme** — 40 newest available papers per field, always ordered by publication
+   date and shown four at a time.
+3. **Paper reader** — abstract, categories, source links, citation tools, and related recent work
+   without leaving the workspace.
+4. **Working set** — browser-local saves with BibTeX copy and `.bib` export.
+5. **Scoped search** — query the current field, or search all fields from the overview.
 
-## What ships now
-
-- A static Next.js index with 72 recent arXiv papers across six broad field lenses.
-- Weighted client-side matching across title, field, category, author, and abstract.
-- Transparent `matched in` labels and related-paper reasons.
-- Publication-window and ordering controls.
-- A persistent browser-local reading list with BibTeX copy/export.
-- Keyboard focus with `/`, responsive filter and reader drawers, and daily GitHub Pages refreshes.
+The desktop experience fits in one viewport. Only the reader scrolls internally. Paper results use
+explicit pagination, so the interface never mounts or presents an endless list.
 
 ## Product honesty
 
-The edition is newest-first within transparent arXiv category lenses. It is useful for monitoring
-but cannot replace systematic database searches, citation chasing, or subject-expert judgement.
-No quality, novelty, or influence claim is currently made.
+The archive contains the newest arXiv submissions returned by transparent category lenses. A paper
+can be several days old when a field is quieter; “recent” means latest available, not “published
+today”. No importance, quality, novelty, or influence claim is made.
 
-## Next valuable layers
+## Current public scope
 
-The repository already contains ingestion, enrichment, similarity, and publication work that can
-turn the lightweight index into a more distinctive research instrument:
+- 240 papers: 40 in each of six broad research fields.
+- Daily static refresh and GitHub Pages deployment.
+- No database, API server, account, embeddings, or large local artifacts required.
+- Responsive layouts with a finite mobile page and a modal paper reader.
 
-1. Personal tracked queries with a concise "new since last visit" diff.
-2. Cross-source identity and metadata from OpenAlex, Crossref, and Semantic Scholar.
-3. Explainable novelty and cross-field movement signals, with uncertainty shown.
-4. Semantic neighbours from the existing embedding pipeline rather than lexical overlap alone.
-5. Notes, review status, and exports compatible with Zotero and common systematic-review flows.
+## Next useful additions
 
-## Data needed for the next phase
+The next layer should deepen the same workflow rather than add more navigation:
 
-No large local files are needed for the current public edition. The next meaningful handoff is a
-recent canonical paper snapshot containing IDs, titles, abstracts, dates, categories, source
-metadata, and optionally embeddings. That is enough to replace lexical neighbours with semantic
-relations and add defensible frontier signals without moving the full historical corpus.
+1. “New since last visit” for a tracked field or query.
+2. Better semantic neighbours from the repository’s embedding pipeline.
+3. Cross-source metadata and identity from OpenAlex, Crossref, and Semantic Scholar.
+4. Notes and review status compatible with Zotero and systematic-review workflows.
+
+For semantic neighbours or novelty signals, the smallest useful handoff is a recent canonical
+snapshot containing paper IDs, titles, abstracts, dates, categories, source metadata, and optional
+embeddings. The full historical corpus is not required.

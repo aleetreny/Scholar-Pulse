@@ -196,7 +196,7 @@ def main() -> None:
         type=Path,
         default=Path("apps/dashboard-web/src/data/showroom.json"),
     )
-    parser.add_argument("--per-theme", type=int, default=12)
+    parser.add_argument("--per-theme", type=int, default=40)
     args = parser.parse_args()
 
     feed = build_feed(args.output, max(1, args.per_theme))
