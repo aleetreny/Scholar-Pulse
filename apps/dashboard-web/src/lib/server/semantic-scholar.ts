@@ -83,6 +83,28 @@ function toRelatedPaper(paper: S2RecommendedPaper): RelatedPaper {
 }
 
 /**
+ * The recommendations API draws from a corpus pool: `recent` (default) only
+ * covers recently indexed papers and returns an empty list for anything
+ * older, so fall back to the `all-cs` pool — which in practice returns
+ * relevant results for non-CS papers too — when `recent` comes up empty.
+ */
+async function fetchRecommendations(
+  arxivId: string,
+): Promise<S2RecommendedPaper[]> {
+  const recommendationFields = "title,abstract,year,authors,url,externalIds";
+  const pathFor = (pool: "recent" | "all-cs") =>
+    `/recommendations/v1/papers/forpaper/arXiv:${arxivId}?fields=${recommendationFields}&limit=8&from=${pool}`;
+
+  const recent = await fetchJson<S2Recommendations>(pathFor("recent"));
+  const papers = recent.recommendedPapers ?? [];
+  if (papers.length > 0) {
+    return papers;
+  }
+  const allCs = await fetchJson<S2Recommendations>(pathFor("all-cs"));
+  return allCs.recommendedPapers ?? [];
+}
+
+/**
  * Enrichment for one arXiv paper: citation metrics + TLDR + recommended papers.
  * Each upstream call fails independently; the result marks itself `partial`
  * instead of throwing so the paper page always renders.
@@ -94,21 +116,18 @@ export async function fetchPaperExtras(arxivId: string): Promise<PaperExtras> {
   }
 
   const detailFields = "citationCount,influentialCitationCount,venue,url,tldr";
-  const recommendationFields = "title,abstract,year,authors,url,externalIds";
 
   const [detailResult, recommendationsResult] = await Promise.allSettled([
     fetchJson<S2PaperDetail>(
       `/graph/v1/paper/arXiv:${arxivId}?fields=${detailFields}`,
     ),
-    fetchJson<S2Recommendations>(
-      `/recommendations/v1/papers/forpaper/arXiv:${arxivId}?fields=${recommendationFields}&limit=8`,
-    ),
+    fetchRecommendations(arxivId),
   ]);
 
   const detail = detailResult.status === "fulfilled" ? detailResult.value : null;
   const recommendations =
     recommendationsResult.status === "fulfilled"
-      ? (recommendationsResult.value.recommendedPapers ?? [])
+      ? recommendationsResult.value
       : [];
 
   const extras: PaperExtras = {
