@@ -14,8 +14,15 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ScholarPulse Studio",
-  description: "Next.js dashboard for navigating published research-frontier snapshots.",
+  metadataBase: new URL("https://aleetreny.github.io/Scholar-Pulse/"),
+  title: "Scholar Pulse — Research worth opening",
+  description:
+    "A living showroom for the newest ideas moving across science, refreshed daily from open research.",
+  openGraph: {
+    title: "Scholar Pulse — Research worth opening",
+    description: "Fresh papers, six thematic showrooms, one clear daily pulse.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

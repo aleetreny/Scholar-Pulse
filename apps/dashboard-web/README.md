@@ -1,21 +1,24 @@
-## Dashboard Web
+# Scholar Pulse web
 
-Next.js + TypeScript frontend for the ScholarPulse dashboard.
+The public Next.js application for the Scholar Pulse research showroom. It keeps the original
+Scholar Pulse visual language while replacing the map-led dashboard with recent papers and topic
+showrooms.
 
-### Local Dev
+## Commands
 
-1. Start the Python API from the repo root:
-	`make run-dashboard-api`
-2. Copy `.env.example` to `.env.local` if needed.
-3. Run the web app:
-	`NEXT_PUBLIC_DASHBOARD_API_URL=http://127.0.0.1:8051/api npm run dev`
+```bash
+npm ci
+npm run dev
+npm run typecheck
+npm run lint
+npm run build
+```
 
-Open `http://127.0.0.1:3000`.
+`npm run build` creates a static export in `out/`. GitHub Pages supplies `PAGES_BASE_PATH` during
+the production build so assets resolve correctly under `/Scholar-Pulse/`.
 
-### Scripts
+The paper feed lives at `src/data/showroom.json` and is refreshed from the repository root with:
 
-- `npm run dev`
-- `npm run build`
-- `npm run start`
-- `npm run lint`
-- `npm run typecheck`
+```bash
+python scripts/fetch_recent_papers.py
+```

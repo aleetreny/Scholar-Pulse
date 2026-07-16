@@ -1,5 +1,7 @@
-import { DashboardShell } from "@/components/dashboard-shell";
+import { ShowroomShell } from "@/components/showroom-shell";
+import showroomData from "@/data/showroom.json";
+import type { PulseData } from "@/lib/showroom";
 
 export default function Home() {
-  return <DashboardShell />;
+  return <ShowroomShell data={showroomData as PulseData} />;
 }

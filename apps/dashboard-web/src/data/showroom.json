@@ -1,0 +1,828 @@
+{
+  "generatedAt": "2026-07-16T13:20:39+00:00",
+  "source": {
+    "name": "arXiv",
+    "url": "https://arxiv.org/",
+    "note": "Newest submissions selected by transparent category lenses; no ranking is implied."
+  },
+  "themes": [
+    {
+      "id": "intelligent-systems",
+      "name": "Intelligent systems",
+      "shortName": "AI",
+      "description": "Models that learn, reason, generate, and act.",
+      "accent": "#1f4fb8"
+    },
+    {
+      "id": "life-health",
+      "name": "Life & health",
+      "shortName": "Life",
+      "description": "From molecular mechanisms to human health.",
+      "accent": "#23706f"
+    },
+    {
+      "id": "climate-earth",
+      "name": "Climate & Earth",
+      "shortName": "Earth",
+      "description": "A changing planet, observed across scales.",
+      "accent": "#7a6531"
+    },
+    {
+      "id": "quantum-matter",
+      "name": "Quantum & matter",
+      "shortName": "Quantum",
+      "description": "The structure and behavior of matter at its limits.",
+      "accent": "#6a4ba0"
+    },
+    {
+      "id": "space-cosmos",
+      "name": "Space & cosmos",
+      "shortName": "Space",
+      "description": "New observations of worlds, galaxies, and the universe.",
+      "accent": "#355879"
+    },
+    {
+      "id": "society-economy",
+      "name": "Society & economy",
+      "shortName": "Society",
+      "description": "Evidence about institutions, markets, and collective life.",
+      "accent": "#9a573e"
+    }
+  ],
+  "papers": [
+    {
+      "id": "2607.14091v1",
+      "title": "Pair-Partition Constructions for CPM-Based Quantum LDPC Codes",
+      "summary": "We construct binary Calderbank--Shor--Steane (CSS) quantum low-density parity-check (LDPC) codes from circulant permutation matrices (CPMs). The construction is parameterized by column weight J, row weight L, and prime lift size P. A J x J array of pair partitions imposes linear paired-difference equations on the CPM exponents. These equations give CSS orthogonality. The main finite examples reported here are the (J,L)=(4,12)-regular girth-six code [[372,130,16]] with rate 0.349, and the (J,L)=(4,14)-regular girth-six code [[518,228,16]] with rate 0.440. We also record (J,L)=(3,8)-regular girth-six instances [[472,122,14]] and [[488,126,14]], with lift sizes P=59 and P=61, respectively. The stated distances are established for the fixed matrices by exhaustive low-weight exclusion together with explicit non-stabilizer witnesses.",
+      "authors": [
+        "Koki Okada",
+        "Kenta Kasai"
+      ],
+      "publishedAt": "2026-07-15T17:59:52Z",
+      "updatedAt": "2026-07-15T17:59:52Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14091v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14091v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14090v1",
+      "title": "Cold Stream Penetration of Virial Shocks: Fragmentation, Coagulation, and Disruption in the Hot Circumgalactic Medium",
+      "summary": "Cold streams penetrating virial shocks of massive halos along cosmic web filaments are expected to fuel galaxy growth at high redshift, yet the physical processes governing their penetration remain uncertain. We investigate cylindrical cold streams penetrating a hot circumgalactic medium (CGM) using idealized three-dimensional simulations. We systematically vary the stream radius, Mach number, and initial pressure contrast between the stream and the CGM across three density contrasts, while controlling stream properties after pressure equilibrium is re-established. We identify three evolutionary regimes: coagulation, fragmentation, and disruption, plus a borderline regime in which the stream core marginally survives while detached fragments are disrupted. At modest pressure contrast, survival is governed primarily by the competition between velocity shear and radiative cooling. Increasing pressure contrast produces a transient response during pressure restoration, temporarily enhancing or suppressing the cold-gas mass and cold-hot interfacial area before evolution converges to a shear-dominated state. At larger pressure contrasts, the oblique shock steepens into a bow shock, and the final outcome is determined by the ratio of the post-shock cooling time to the virial crossing time. In all survival cases, post-equilibration evolution is well described by turbulent radiative entrainment at the stream-CGM interface: the cold-gas mass flux increases while the mean streamwise momentum flux remains approximately conserved. Applying these results to a galaxy evolution framework, we find that cold streams in high-\\ifmσ density peaks at $z>2$ are expected to survive and may fragment into multiphase structures embedded in the hot CGM. At $z\\lesssim0.5$, stronger bow shocks and longer post-shock cooling suppress cold-stream penetration.",
+      "authors": [
+        "Zhiyuan Yao",
+        "Nir Mandelker",
+        "S. Peng Oh"
+      ],
+      "publishedAt": "2026-07-15T17:59:41Z",
+      "updatedAt": "2026-07-15T17:59:41Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14090v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14090v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14089v1",
+      "title": "Sail membranes for optomechanical accelerometry",
+      "summary": "Strained membrane resonators have emerged as a promising platform for optomechanical accelerometry; however, the desired combination of low frequency and high $Q$-mass product requires a rethinking of their dissipation dilution engineering. Applying Bayesian optimization to a Si$_3$N$_4$ membrane, we discover a class of sail-like trampoline resonators in which the frequency is decreased by an order of magnitude while preserving the $Q$-mass product. We demonstrate centimeter-scale sails with kHz frequencies, $Q\\sim10^7$ and $Q\\times\\text{mass}\\sim$ 10 g. Vertically integrating a 7 kHz device with a nanoribbon, we realize a monolithic cavity optomechanical accelerometer with a room temperature thermal noise of $40\\;\\text{n}g_0/\\sqrt{\\text{Hz}}$, sufficient to resolve $μg_0/\\sqrt{\\text{Hz}}$ ambient vibration over a bandwidth of 4 kHz with a displacement imprecision of $10^{-14}\\;\\text{m}/\\sqrt{\\text{Hz}}$. Cryogenic arrays of sail membranes may be attractive for new physics searches and distributed quantum sensing experiments.",
+      "authors": [
+        "Atkin D. Hyatt",
+        "Mitul Dey Chowdhury",
+        "Mahir Chowdhury",
+        "Mohamed J. Ahamed",
+        "Dalziel J. Wilson"
+      ],
+      "publishedAt": "2026-07-15T17:59:24Z",
+      "updatedAt": "2026-07-15T17:59:24Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14089v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14089v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cond-mat.mes-hall",
+        "physics.app-ph",
+        "physics.ins-det",
+        "physics.optics"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14086v1",
+      "title": "Leveraging unlabelled data for generalizable neural population decoding",
+      "summary": "Robust and accurate neural decoders are integral to neurotechnologies such as brain-computer interfaces and closed-loop experiments. Recent work has shown that tokenizing neural data at the spike level facilitates multi-session pretraining and delivers state-of-the-art decoding performance. However, current spike-based models are restricted to supervised learning (SL), limiting training to datasets with paired behavioural labels. To address this limitation, we introduce MOJO (Masked autOencoder-based JOint training), a training framework for spike-tokenizing models that jointly leverages self-supervised learning (SSL) via masked autoencoding and SL objectives. We evaluate MOJO on three spiking datasets spanning monkey motor cortex during reaching tasks and multi-regional mouse recordings during vision and decision making tasks, demonstrating superior performance over purely SL-trained models. This improvement is especially pronounced when training with limited labelled data, particularly in few-shot finetuning, where only a small amount of labelled data from a new session is available. Incorporating SSL also yields more interpretable neuronal representations, improving performance on brain region classification and spike-statistics prediction without explicit optimization for these tasks. We further show that MOJO generalizes beyond spiking data to human electrocorticography during speech, where it continues to outperform purely SL-trained models and achieves performance comparable to neuro-foundation models (NFMs) designed specifically for continuous signals. Overall, augmenting spike-tokenizing models with SSL improves performance in label-impoverished settings and enables the use of unlabelled data across various tasks and species, while generalizing to other neural modalities. These results suggest a path towards more flexible and scalable data usage when training NFMs.",
+      "authors": [
+        "Ximeng Mao",
+        "Nanda H. Krishna",
+        "Avery Hee-Woon Ryoo",
+        "Matthew G. Perich",
+        "Guillaume Lajoie"
+      ],
+      "publishedAt": "2026-07-15T17:58:00Z",
+      "updatedAt": "2026-07-15T17:58:00Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14086v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14086v1",
+      "primaryCategory": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "q-bio.NC"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14085v1",
+      "title": "Benchmarking trigonometric continuous-variable gate primitives with trapped ions",
+      "summary": "Hybrid continuous-discrete-variable quantum processors can represent bosonic degrees of freedom directly in oscillator modes, or qumodes, while using qubits for control, readout, and nonlinear operations. Recently proposed trigonometric continuous-variable (CV) gate sets promote periodic functions of oscillator quadratures to elementary operations, making them natural primitives for compact variables, rotor models, lattice gauge theories, and anharmonic dynamics. Here we experimentally demonstrate and benchmark one-qumode cosine gates, and perform a mode-resolved marginal benchmark of two-qumode cosine-gate implementations, on the QSCOUT trapped-ion quantum platform. Our implementation uses collective motional modes of three- and four-ion $^{171}{\\rm Yb}^{+}$ chains and realizes finite-step trigonometric-gate circuits through hybrid qubit-qumode operations and conditional phase-space displacements. In contrast to previous theoretical and compilation work, we focus on the gate-level characterization of the trigonometric primitives. We measure Fock-space transition probabilities, study their dependence on gate parameters and Trotter step number, and compare with simulations incorporating thermal initialization and motional dephasing. We also derive ideal gate matrix elements and phase-space diagnostics, connecting the measurements to the non-Gaussian structure generated by these gates. These results establish trigonometric CV gates as reusable building blocks for bosonic Hamiltonian simulations and hybrid quantum algorithms requiring intrinsically non-polynomial operations.",
+      "authors": [
+        "Tommaso Rainaldi",
+        "Jake Montgomery",
+        "Christopher G. Yale",
+        "Brian K. McFarland",
+        "Melissa C. Revelle",
+        "Daniel Lobser",
+        "Edward C. Tortorici",
+        "Susan Clark",
+        "George Siopsis",
+        "Matt Grau",
+        "Felix Ringer"
+      ],
+      "publishedAt": "2026-07-15T17:57:48Z",
+      "updatedAt": "2026-07-15T17:57:48Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14085v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14085v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14084v1",
+      "title": "Investigating anomalous microwave emission near G107.2+5.20 in Ku-band with the Green Bank Telescope",
+      "summary": "Anomalous microwave emission (AME) is 30 GHz-peaking continuum emission thought to arise from spinning dust grains. Observations suggest that the local environment shapes the AME spectral energy distribution (SED), so building a spatially resolved sample of AME regions is a key step towards understanding its emission mechanism. Using the Green Bank Telescope Ku-band receiver, we obtained a ~1 arcmin resolution map of radius 1.25 deg centered on G107.2+5.20. Our first objective was to constrain the low-frequency side of the AME SED with 13 GHz data. Using matched-resolution aperture photometry, we measure the SED from 408 MHz-3 THz and fit two emission models: one including spinning dust, the other optically thick free-free emission. We find that the spinning dust model is superior, with an amplitude of $14.1\\pm1.1$ Jy and a peak frequency of $27\\pm2$ GHz. Our second objective was to spatially locate excess 13 GHz emission consistent with spinning dust. We compare our Ku-band map to multi-wavelength gas and dust tracers at ~4 arcmin resolution. We observe two sources of 13 GHz excess at 3$σ$ significance consistent with spinning dust emission, though potential contributions from optically thick free-free emission remain ambiguous. ``Region A'' (G106.95+5.19) is spatially coincident with peak dust radiance. ``Region B'' (G107.08+4.90) is spatially coincident with peak PAH abundance. If regions A and B are indeed sources of spinning dust emission, they are a resolved example of how AME-dust correlation varies with environment.",
+      "authors": [
+        "Jordan E. Shroyer",
+        "Bradley R. Johnson",
+        "Dillon J. Bass",
+        "L. Ilsedore Cleeves",
+        "Anna Dignan",
+        "Stuart E. Harper",
+        "Brian S. Mason",
+        "Andrey Moore",
+        "Eric J. Murphy"
+      ],
+      "publishedAt": "2026-07-15T17:57:42Z",
+      "updatedAt": "2026-07-15T17:57:42Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14084v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14084v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA",
+        "astro-ph.CO"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14083v1",
+      "title": "Cluster-configurational study of G-center in Silicon",
+      "summary": "Understanding the properties of defects is imperative for proper use for variety of applications including quantum computing. In this paper, we use the multiconfigurational self consistent field (MCSCF) combined with DFT optimized geometry in order to investigate the spin and optical properties of G centers in Silicon. By utilizing quantum chemistry based methods, we show excellent agreement with the Zero Phonon Line and Zero Field Splitting Tensor components of the G center. We also calculate the theoretical spin decoherence time of the G centers using Cluster Correlation Expansion (CCE) methods.",
+      "authors": [
+        "Narayan Pokhrel",
+        "Kyungwha Park",
+        "Vsevolod Ivanov"
+      ],
+      "publishedAt": "2026-07-15T17:57:32Z",
+      "updatedAt": "2026-07-15T17:57:32Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14083v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14083v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph",
+        "cond-mat.mtrl-sci"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14082v1",
+      "title": "Building Shor's Algorithm in Lean: An Agentic Formalization of Quantum Attacks on RSA-2048 and P-256",
+      "summary": "Large language models are increasingly assisting with demanding formal theorem-proving tasks, particularly when grounded in machine-checked libraries such as Lean. Agentic systems further amplify this process by searching, reusing, and extending existing formal developments to uncover new discoveries. In quantum computing, Shor's algorithm and its variants present such a demanding case for Lean formalization. In this work, we formalize this algorithm family in Lean through agentic formalization: software agents analyze sources, write Lean code and repair proofs, with human review of the scientific claims and machine checking of the resulting formal proofs. Our formalization develops the mathematical foundations for analyzing quantum attacks in two cryptographic settings: a 2048-bit modulus in the RSA-2048 and the standardized elliptic curve over a 256-bit prime field (P-256). To support these analyses, the formalization ranges from quantum algorithms for order finding to reversible quantum circuits for modular and elliptic-curve arithmetic. Based on [Quantum 5, 433] and [ASIACRYPT 2017, 241--270], we formalize the logical resource estimates for RSA-2048 and P-256, respectively, and provide additional estimates of classical operations. We expect the results pave the way for broader machine-checked quantum cryptanalysis and represent a step toward AI-assisted design and verification of quantum algorithms.",
+      "authors": [
+        "Lei Zhang",
+        "Yusheng Zhao",
+        "Hongshun Yao",
+        "Xin Wang"
+      ],
+      "publishedAt": "2026-07-15T17:56:58Z",
+      "updatedAt": "2026-07-15T17:56:58Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14082v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14082v1",
+      "primaryCategory": "quant-ph",
+      "categories": [
+        "quant-ph"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14081v1",
+      "title": "Linear Independent Component Analysis via Optimal Transport",
+      "summary": "Linear Independent Component Analysis (ICA) recovers jointly independent source signals from their linear mixtures. To achieve this, classical ICA algorithms attempt to maximize non-Gaussianity, measured by negentropy, which is linked to independence by information theory. Because exact negentropy optimization is intractable, they rely on proxy contrast functions, such as fourth-order cumulants, and parametric log-likelihoods. We propose instead to measure non-Gaussianity using the squared Wasserstein distance $W_2^2$ to a standard Gaussian. We prove that the Wasserstein distance between a standard normal distribution and linear projections of the data is maximized when the projection recovers an independent component. Based on this observation, we propose the OT-ICA algorithm which finds this projection by gradient-based optimization. Empirical evaluation on simulated data shows that OT-ICA outperforms proxy-based methods for different distributions of the latent variables. Application to EEG artifact removal and econometric price discovery confirm OT-ICA can be used for applied ICA tasks without distributional assumptions.",
+      "authors": [
+        "Ashutosh Jha",
+        "Michel Besserve",
+        "Simon Buchholz"
+      ],
+      "publishedAt": "2026-07-15T17:56:11Z",
+      "updatedAt": "2026-07-15T17:56:11Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14081v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14081v1",
+      "primaryCategory": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "stat.ML"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14078v1",
+      "title": "A modular state-space model of human perception, cognition, and decision dynamics",
+      "summary": "Human-centered adaptive systems require behavioral models that are both psychologically interpretable and mathematically analyzable. Many existing predictors either operate as black-box input-output mappings or provide limited access to latent internal dynamics. This paper addresses this gap by modeling behavior as a perception-cognition-decision pipeline. We propose a modular state-space model in which attentional selection, predictive inference, cognitive-state evolution, intention formation, and action selection are represented by coupled mathematical mappings. The model links sensory inputs to observable behavior through latent internal states while retaining interpretable connections to neuro-cognitive mechanisms. We establish sufficient conditions for boundedness, Lipschitz regularity, forward invariance, contraction of perceptual inference under constant input, and input-to-state stability of the cognitive state dynamics. Numerical sensitivity analyses show that the model yields interpretable changes in perceptual tracking, cognitive amplification, intention expression, and action decisiveness. We further demonstrate a closed-loop rehabilitation case study in which a receding-horizon controller uses the model to adapt movement difficulty from partial feedback. In this proof-of-concept setting, the model-based controller sustains simulated task participation and achieves lower realized cumulative cost than target-following and random baselines. Overall, the framework provides a white-box dynamical structure for estimation, validation, and model-based control in human-centered settings.",
+      "authors": [
+        "Sven Schoonebeek",
+        "Anahita Jamshidnejad",
+        "Carlo Cenedese"
+      ],
+      "publishedAt": "2026-07-15T17:50:28Z",
+      "updatedAt": "2026-07-15T17:50:28Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14078v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14078v1",
+      "primaryCategory": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "q-bio.NC"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.14072v1",
+      "title": "MetaPerch: Learning from metadata for bioacoustics foundation models",
+      "summary": "Bioacoustic foundation models rely on large-scale citizen science platforms like Xeno-Canto for geographically and ecologically diverse data. Recent work has shown that supervision alone can produce SotA species detection models when trained on this large-scale data -- however, there remains unutilized potential in the form of recording metadata readily available within these community-driven data hubs. In this work, we explore the use of metadata -- such as location and time -- as auxiliary supervision signals, allowing the model to leverage species-metadata correlations in its learned representation. Auxiliary metadata losses provide additional information beyond vocalizations alone that can encourage a richer, more robust representation that generalizes better to species distribution and acoustic domain shifts -- important challenges for deployment in real-world passive acoustic monitoring (PAM) settings. We introduce MetaPerch, a new foundation model that achieves strong species identification performance across multiple challenging domains and present an extensive empirical study of the effects of 9 diverse metadata sources on 17 bioacoustic datasets.",
+      "authors": [
+        "Mustafa Chasmai",
+        "Vincent Dumoulin",
+        "Jenny Hamer"
+      ],
+      "publishedAt": "2026-07-15T17:42:41Z",
+      "updatedAt": "2026-07-15T17:42:41Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14072v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14072v1",
+      "primaryCategory": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.SD"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14070v1",
+      "title": "Screening of Biosecurity Features in Metagenomic Data with Evo 2 Probes",
+      "summary": "Genomic foundation models such as Evo 2 learn rich sequence representations, but their value for biosecurity screening is largely unexplored. We ask how much biosecurity-relevant signal is linearly accessible in these representations by training minimal linear and attention probes on frozen Evo 2 layer-26 activations, without fine-tuning the underlying model. Across held-out metagenomic test sets, the probes detect antimicrobial resistance (AMR) with strong discrimination: a linear probe reaches a region-level ROC-AUC of 0.888 (mean-pool), rising to 0.977 with a single-head attention probe. The probes resolve finer-grained AMR drug-class subcategories and separate them from unrelated functional genes, providing additional evidence that the learned signal is not explained solely by generic functional-gene status. Bacterial virulence is also decodable, though more weakly (region-level ROC-AUC 0.833). The AMR probe retains comparable ranking performance on simulated short reads without retraining, enabling evaluation before assembly in settings where assembly is computationally costly or unreliable. It achieves a read-level ROC-AUC of 0.898 (mean-pool), comparable to the mean-pooled full-region result. Within SynGenome, AMR-associated prompt labels are only weakly recoverable from Evo 1.5-generated sequences; these prompt-derived labels do not establish the function of the generated response sequences. A complementary sparse-autoencoder analysis recovers interpretable resistance-associated features but proves less consistent than the supervised probes. Together, these results position lightweight embedding-based probes as a fast, inexpensive first-pass detection layer for metagenomic biosurveillance and map both strengths and current limits of the approach. This work was conducted as part of the AIxBio Hackathon 2026 hosted by BlueDot Impact, Apart Research, and Cambridge Biosecurity Hub.",
+      "authors": [
+        "Jeremy Guntoro",
+        "Alexander Dack",
+        "Dylan Danno",
+        "Michaela Jančovičová",
+        "Križan Jurinović",
+        "Vanessa Smilansky"
+      ],
+      "publishedAt": "2026-07-15T17:38:02Z",
+      "updatedAt": "2026-07-15T17:38:02Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14070v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14070v1",
+      "primaryCategory": "q-bio.GN",
+      "categories": [
+        "q-bio.GN",
+        "cs.LG"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14069v1",
+      "title": "Orbital Hybridization Induces Giant Cubic Rashba Effect at Cu/WO$_{3}$ Interface",
+      "summary": "Harnessing Rashba spin-orbit interaction and related spintronic functionalities has traditionally relied on metallic surfaces or interfaces containing elemental heavy metals. Here, using first-principles calculations and Cu(001)/WO$_3$(001) as a model heterostructure, we show that interfacing a light metal, Cu, with a band insulator, WO$_3$, yields an interface state that exhibits a robust Rashba spin splitting arising from the interplay between linear and cubic Rashba effects. The spin splitting is driven by the strong spin-orbit coupling of W atoms and enabled by W-Cu orbital hybridization at the interface. The cubic Rashba contribution asymptotically grows with Cu thickness and can be explained in terms of cross-coupling between the vacuum/Cu and Cu/WO$_3$ interfaces. This interfacial cross-coupling, however, diminishes at larger Cu thicknesses, allowing us to extract the intrinsic cubic Rashba parameter, which has a giant value of approximately -1.93 eV $Å^3$. In contrast, the linear Rashba parameter is only weakly affected by this cross-coupling and varies from approximately 0.30 to 0.49 eV Å. We further show that sizable linear and cubic Rashba effects persist across several interface geometries and Cu surface orientations, including (110) and (111). Our work identifies the Cu/WO$_3$ interface as a novel light-metal/heavy-element-based oxide platform for exploring the rich spectrum of Rashba physics, including linear and nonlinear spin-orbit phenomena.",
+      "authors": [
+        "Md Aktar Hossain",
+        "Saikat Das"
+      ],
+      "publishedAt": "2026-07-15T17:37:25Z",
+      "updatedAt": "2026-07-15T17:37:25Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14069v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14069v1",
+      "primaryCategory": "cond-mat.mtrl-sci",
+      "categories": [
+        "cond-mat.mtrl-sci",
+        "cond-mat.mes-hall"
+      ],
+      "themeId": "quantum-matter"
+    },
+    {
+      "id": "2607.14067v1",
+      "title": "Magnesium isotope ratios in Milky Way and dwarf galaxy stars",
+      "summary": "Under the assumption of hierarchical galaxy formation, dwarf galaxies are the closest existing analogues to the high-redshift protogalaxies that merged to form the Milky Way. These low-mass systems serve as unique laboratories for studying nucleosynthetic channels, given that the chemical compositions of their stars play a pivotal role in constraining their chemical enrichment history. To date, stellar abundances in dwarf galaxies have focused almost exclusively on elemental abundance ratios. While important, elemental abundances omit critical information about the isotopic composition. Here, we compute the Mg isotopic ratios of six accreted dwarf galaxy stars (low-alpha) and seven Milky Way stars (high-alpha) using a set of high-resolution (65000 < R < 160000) and high signal-to-noise ratio (S/N > 250) optical spectra. We show, for the first time, that at a given [Fe/H], stars born in a dwarf galaxy differ in their Mg isotopic ratios from stars born in the Milky Way. However, when comparing isotopic ratios at a given [Mg/H] rather than [Fe/H], a powerful diagnostic emerges that suggests nucleosynthesis processes are consistent across different stellar environments. This universality of Mg isotopic abundances provides additional dimensionality for chemical evolution models and helps to constrain massive-star nucleosynthesis across cosmic time.",
+      "authors": [
+        "M. McKenzie",
+        "S. Monty",
+        "D. Yong",
+        "C. Kobayashi",
+        "A. I. Karakas",
+        "P. E. Nissen",
+        "J. E. Norris",
+        "A. Rains",
+        "A. Mura-Guzmán",
+        "E. X. Wang",
+        "S. Martell"
+      ],
+      "publishedAt": "2026-07-15T17:36:52Z",
+      "updatedAt": "2026-07-15T17:36:52Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14067v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14067v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14066v1",
+      "title": "The complex stellar system M 22: constraining the chemical enrichment from AGB stars using magnesium isotope ratios",
+      "summary": "The complex star cluster M 22 (NGC 6656) provides a unique opportunity for studying slow neutron-capture (s-process) nucleosynthesis at low metallicity due to its two stellar groups with distinct iron-peak and neutron-capture element abundances. Previous studies attribute these abundance differences to pollution from 3-6 solar-mass asymptotic giant branch (AGB) stars, which produce significant quantities of the neutron-rich Mg isotopes 25Mg and 26Mg. We report the first-ever measurements of Mg isotopic abundance ratios at [Fe/H] approximately -2 in a globular-cluster-like system using very high-resolution and high signal-to-noise spectra (R = 110000, S/N = 300 per pixel at 514 nm) from the VLT/UVES spectrograph for six stars, three in each s-process group. Despite the presence of star-to-star variations in 24Mg, 25Mg, and 26Mg, we find no correlation with heavy-element abundances, implying that the nucleosynthetic source of s-process enrichment must not influence Mg isotope ratios. Instead, a key result of this work is that we identify correlations between 26Mg/24Mg and some light elements. Using a custom suite of AGB nucleosynthesis yields tailored to the metallicity of M 22, we find that low-mass AGB stars of approximately 1-3 solar masses are capable of reproducing the observed s-process abundances of M 22 and that the absence of any difference in Mg isotope ratios between the two s-process groups precludes AGBs with masses above approximately 3 solar masses. This places tighter constraints on possible formation scenarios and suggests an age difference of at least approximately 280-480 Myr between the two populations that is independent of isochrone fitting.",
+      "authors": [
+        "M. McKenzie",
+        "D. Yong",
+        "A. I. Karakas",
+        "E. Wang",
+        "S. Monty",
+        "A. F. Marino",
+        "A. P. Milone",
+        "T. Nordlander",
+        "A. Mura-Guzmán",
+        "S. Martell",
+        "M. Carlos"
+      ],
+      "publishedAt": "2026-07-15T17:36:45Z",
+      "updatedAt": "2026-07-15T17:36:45Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14066v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14066v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14065v1",
+      "title": "The complex stellar system M 22: confirming abundance variations with high precision differential measurements",
+      "summary": "M 22 (NGC 6656) is a chemically complex globular cluster-like system reported to harbour heavy element abundance variations. However, the extent of these variations and the origin of this cluster is still debated. In this work, we investigate the chemical inhomogeneity of M 22 using differential line-by-line analysis of high-quality (R = 110,000, S/N = 300 per pixel at 514 nm) VLT/UVES spectra of six carefully chosen red giant branch stars. By achieving abundance uncertainties as low as ~0.01 dex (~2 per cent), this high-precision data validates the results of previous studies and reveals variations in Fe, Na, Si, Ca, Sc, Ti, Cr, Mn, Co, Ni, Zn, Y, Zr, La, Ce, Nd, Sm and Eu. Additionally, we can confirm that the cluster hosts two stellar populations with a spread of at least 0.24 dex in [Fe/H] and an average s-process abundance spread of 0.65 dex. In addition to global variations across the cluster, we also find non-negligible variations within each of the two populations, with the more metal-poor population hosting larger spreads in elements heavier than Fe than the metal-rich. We address previous works which do not identify anomalous abundances and relate our findings to our current dynamical understanding of the cluster. Given our results, we suggest that M 22 is either a nuclear star cluster, the product of two merged clusters, or an original building block of the Milky Way.",
+      "authors": [
+        "M. McKenzie",
+        "D. Yong",
+        "A. F. Marino",
+        "S. Monty",
+        "E. Wang",
+        "A. I. Karakas",
+        "A. P. Milone",
+        "M. V. Legnardi",
+        "I. U. Roederer",
+        "S. Martell",
+        "D. Horta"
+      ],
+      "publishedAt": "2026-07-15T17:36:36Z",
+      "updatedAt": "2026-07-15T17:36:36Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14065v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14065v1",
+      "primaryCategory": "astro-ph.GA",
+      "categories": [
+        "astro-ph.GA"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14051v1",
+      "title": "Hindcast: Replaying Prediction Markets to Evaluate LLM Forecasters",
+      "summary": "Forecasters are evaluated by backtesting, which replays resolved questions and grades the probability the system would have assigned before the outcome was known. For LLMs, two channels leak the answer into this test. A model that retrieves can surface reports written after the event, turning forecasting into a lookup, and each new model is trained on data closer to the event, so a question that lay in the future for last year's models sits inside this year's training data. Either way, the test grades recall while claiming to grade foresight. We introduce Hindcast, which closes both leaks by grading a model as if it stood at a chosen past date $t_0$, before the outcome existed in either channel. Hindcast replays resolved Polymarket prediction markets against a frozen snapshot of public Reddit, lets the model read only posts written before $t_0$, and scores each forecast against both what happened and the market's own price at $t_0$, itself a human forecast made from the same past information. Because the cutoff is set per market and the snapshot never changes, the evaluation re-runs on new markets as models improve, without going stale. Once the leak is closed, retrieval still helps most models, but only where Reddit discussed the event beforehand. Where the archive carried only speculation, retrieval hurts.",
+      "authors": [
+        "Xiao Ye",
+        "Jacob Dineen",
+        "Evan Zhu",
+        "Shijie Lu",
+        "Kevin Song",
+        "Ben Zhou"
+      ],
+      "publishedAt": "2026-07-15T17:21:43Z",
+      "updatedAt": "2026-07-15T17:21:43Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14051v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14051v1",
+      "primaryCategory": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14049v1",
+      "title": "Deep Interaction: An Efficient Human-AI Interaction Method for Large Reasoning Models",
+      "summary": "The emergence of Chain-of-Thought (CoT) reasoning has significantly enhanced the ability of large language models (LLMs) to tackle complex, multi-step tasks. However, when errors occur, current interaction approaches typically involve re-generating another response that may make mistakes again, or users laboriously flag the faulty step in follow-up turns that may get responses <You are right, I made a mistake here> followed by similar errors recurring. To address this issue, we propose an efficient human intervention mechanism for precisely correcting reasoning errors in LLMs, termed Deep Interaction. Our approach enables direct editing of the original response, allowing erroneous parts to be corrected while preserving accurate reasoning steps. We refine the edited CoT into a distilled prompt, which then steers the LLM along the corrected reasoning path. Experimental results show that our method achieves over a 25% improvement in correction success rate and reduces token usage by approximately 40% on STEM tasks reasoning compared to baseline approaches.",
+      "authors": [
+        "Hefeng Zhou",
+        "Jinxuan Zhang",
+        "Jiong Lou",
+        "Yuxin Liu",
+        "Chaochao Lu",
+        "Jingjing Qu",
+        "Jie Li"
+      ],
+      "publishedAt": "2026-07-15T17:16:43Z",
+      "updatedAt": "2026-07-15T17:16:43Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14049v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14049v1",
+      "primaryCategory": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "themeId": "intelligent-systems"
+    },
+    {
+      "id": "2607.14037v1",
+      "title": "Early Adoption of Agentic Coding Tools by GitHub Projects",
+      "summary": "Agentic coding tools are increasingly capable of generating and submitting pull requests (PRs) to software projects, introducing new forms of human-agent collaboration in software development. While prior studies have examined PR-level outcomes of agent-generated contributions, less is known about how agentic coding tools are adopted and managed at the project level. In this paper, we analyze 25,264 agentic PRs from 2,361 popular GitHub repositories to investigate (1) the adoption of agentic coding tools, (2) project-level agentic PR productivity, and (3) human-agent collaboration patterns. Our results show that the median repository generates only one to two agentic PRs during a three-month period, indicating that intensive adoption remains concentrated in a small subset of projects. At the same time, small projects (1-5 contributors) exhibit higher participation ratios and average levels of agentic PR activity than medium-sized and large projects. We also observe substantial variation in project-level agentic PR productivity. While a small number of projects exceed an industry-reported estimate of 36 PRs per participant during the three-month observation period, most projects remain below this threshold. Finally, human-agent collaboration is dominated by a single-human oversight model, in which one developer reviews and/or modifies the agent's contributions, while multi-human collaboration patterns remain uncommon. These findings provide early empirical evidence on how open-source projects organize human oversight around agentic coding tools and suggest that successful integration of agent-generated contributions depends not only on advances in agent capabilities but also on the human and organizational processes that govern their use. Because this study captures an early snapshot of agent adoption, future work should continue to track how adoption patterns evolve over time.",
+      "authors": [
+        "Maliha Noushin Raida",
+        "Daqing Hou"
+      ],
+      "publishedAt": "2026-07-15T17:05:06Z",
+      "updatedAt": "2026-07-15T17:05:06Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14037v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14037v1",
+      "primaryCategory": "cs.SE",
+      "categories": [
+        "cs.SE",
+        "cs.AI",
+        "cs.CY",
+        "cs.LG"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.14034v1",
+      "title": "Supermagnified Stars in Lensing Clusters and Small-Scale Structure in the Dark Matter",
+      "summary": "Supermagnified stars, discovered by HST and JWST in lensing clusters of galaxies, are luminous stars in source galaxies lying near lensing caustics that are magnified by large factors ($\\sim 1000$), making them detectable at cosmological distances. Intracluster stars in the lens modify the large-scale caustic into a corrugated network of micro-caustics, causing frequent microlensing events of the supermagnified stars. The frequency and lightcurves of these micro-caustic crossings are extremely sensitive to any small-scale, low amplitude surface density fluctations in the lensing cluster, making them a unique probe to dark matter minihalos or any small-scale irregularities. Furthermore, the disks of supermagnified stars can be resolved (at cosmological distances!) from photometric monitoring of micro-caustic crossing events, exploiting the limb darkening effect. Examples are shown of model lightcurves to fit the Kelly et al. (2018) observations of the first supermagnified star discovered. The unique sensitivity and angular resolution of the Habitable Worlds Observatory enables photometry of microlensing events of supermagnified stars sensitive to small-scale structure different from intracluster stars, a probe to the nature of dark matter that is not accessible to other observations at present.",
+      "authors": [
+        "Gabriel Torralba",
+        "Jordi Miralda-Escudé"
+      ],
+      "publishedAt": "2026-07-15T17:02:28Z",
+      "updatedAt": "2026-07-15T17:02:28Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14034v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14034v1",
+      "primaryCategory": "astro-ph.CO",
+      "categories": [
+        "astro-ph.CO"
+      ],
+      "themeId": "space-cosmos"
+    },
+    {
+      "id": "2607.14023v1",
+      "title": "Exact Decomposition of Adversarial Dual-Objective Value Functions, with Applications to Optimal Drug Dosing",
+      "summary": "Hamilton-Jacobi Reachability (HJR) is a central framework in safe control theory. While HJR has traditionally focused on a few fundamental tasks, there is increasing interest in scaling to more complex objectives. Recent works have studied the exact decomposition of the value functions for two fundamental dual-objective tasks in the adversary-free setting. However, not all value function decompositions in HJR remain valid with an adversary. In this work, we develop theoretical approaches to certify that for these two composite value functions, the proposed decompositions still hold with an adversary. Finally, we show how these results can solve issues that arise when applying HJR to optimal drug regimen design.",
+      "authors": [
+        "Dylan Hirsch",
+        "William Sharpless",
+        "Sylvia Herbert"
+      ],
+      "publishedAt": "2026-07-15T16:55:13Z",
+      "updatedAt": "2026-07-15T16:55:13Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14023v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14023v1",
+      "primaryCategory": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "q-bio.QM"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.14000v1",
+      "title": "Activity Regeneration from Silent States in Neuronal Networks with Transient Synaptic Memory",
+      "summary": "Transient synaptic memory has emerged as a potential mechanism for maintaining short-term information even in the absence of persistent neuronal activity. However, it remains unclear whether the hidden synaptic state alone contains sufficient information to predict the future evolution of neuronal networks after activity has ceased. Here, we introduce a minimal neuronal network model with finite-lifetime synapses and investigate the mechanism underlying spontaneous activity regeneration following complete neuronal silence. We show that the residual synaptic configuration at the first silent state already determines whether network activity terminates after a single activation cycle or spontaneously regenerates an additional cycle. By analyzing this synaptic-memory snapshot, we identify the Latent Excitatory Recruitment (LER) capacity, quantified by the cumulative number of fresh excitatory neurons, as a near-perfect predictor of multi-cycle dynamics without continuing the subsequent network simulation. Remarkably, these distinct dynamical outcomes emerge in an otherwise homogeneous neuronal network, demonstrating that transient synaptic memory alone is sufficient to generate diverse future dynamics. Our findings provide a mechanistic explanation for activity regeneration from a residual synaptic state and suggest that short-term memory is encoded not only in ongoing neuronal activity but also in the latent synaptic configuration that preserves the network's capacity to recruit new neuronal assemblies. More broadly, the proposed snapshot-based framework offers a new perspective for predicting and potentially controlling the future evolution of neuronal networks.",
+      "authors": [
+        "Mozhgan Khanjanianpak",
+        "Alireza Valiadeh"
+      ],
+      "publishedAt": "2026-07-15T16:28:51Z",
+      "updatedAt": "2026-07-15T16:28:51Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.14000v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.14000v1",
+      "primaryCategory": "q-bio.NC",
+      "categories": [
+        "q-bio.NC",
+        "cond-mat.dis-nn",
+        "cond-mat.stat-mech"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.13994v1",
+      "title": "Causal Discovery of Radiation Response Mechanisms in Human Cells",
+      "summary": "Next-generation sequencing technologies, including RNA-sequencing, provide genome-wide measurements of gene expression and enable broad explorations of biomarkers and mechanisms underlying disease and treatment response. Bioinformatics tools for processing this data, such as differential expression analysis, are largely univariate, linear, and rely on predefined pathway knowledge annotations, which limits their ability to capture nonlinear and multivariate gene interactions. This paper explores the application of causal discovery to characterizing transcriptional responses to radiation as a function of dose rate in human cells. By jointly modeling radiation perturbations and gene expression, we learn directed gene networks that capture important regulatory relationships beyond correlation and exhibit significant enrichment of known radiation response pathways compared to baseline approaches. We find that inferred causal graphs reveal structured network features such as high in-degree housekeeping genes and high out-degree transcription factors. Further analysis suggests a hierarchical organization of stress response pathways and triggered cell death pathways. This work highlights the potential of causal discovery in healthcare settings with applications to understanding response mechanisms, identifying regulatory targets, and improving interpretation of complex genomic data.",
+      "authors": [
+        "Ashka Shah",
+        "Rick Stevens"
+      ],
+      "publishedAt": "2026-07-15T16:25:18Z",
+      "updatedAt": "2026-07-15T16:25:18Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13994v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13994v1",
+      "primaryCategory": "q-bio.GN",
+      "categories": [
+        "q-bio.GN"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.13916v1",
+      "title": "Detecting unusual trading patterns on cryptocurrency exchanges by means of complexity measures",
+      "summary": "Artificial transaction generation remains an important source of potential market manipulation on cryptocurrency exchanges, as it may distort reported liquidity and reduce market transparency. This study proposes a diagnostic framework for detecting unusual trading patterns based on complexity and statistical-structure measures derived from high-frequency trade-level data. The analysis considers log-returns, trading volume, and transaction counts, using tail distributions, autocorrelation functions, multifractal characteristics, approximate entropy, and detrended cross-correlations. The methodology is applied to BTC, ETH, and XRP traded on Binance, Bitget, KuCoin, and Kraken over the period from April 1 to June 30, 2025. The results reveal a pronounced anomaly on Bitget for BTC and ETH after mid-May 2025. The number of transactions increases sharply, but there is no proportional increase in traded volume or return fluctuations. This regime is characterised by numerous low-volume trades, weaker autocorrelations, reduced multifractal organisation, higher short-pattern irregularity, and weaker cross-correlations involving the transaction-count series. These features are consistent with a noise-like component in trading activity and may indicate artificially increased transaction counts, although they do not provide direct proof of wash trading. The findings show that complexity-based indicators can be useful for detecting exchange-specific trading anomalies that remain hidden in price-based measures.",
+      "authors": [
+        "Jakub Zwydak",
+        "Marcin Wątorek",
+        "Jarosław Kwapień",
+        "Stanisław Drożdż"
+      ],
+      "publishedAt": "2026-07-15T14:55:34Z",
+      "updatedAt": "2026-07-15T14:55:34Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13916v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13916v1",
+      "primaryCategory": "q-fin.TR",
+      "categories": [
+        "q-fin.TR",
+        "cs.CE",
+        "econ.EM",
+        "physics.data-an",
+        "stat.AP"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13914v1",
+      "title": "Epidemic Informatics and Control: A Holistic Approach from System Informatics to Epidemic Response and Risk Management in Public Health",
+      "summary": "This paper presents a holistic systems informatics approach, i.e., Define, Measure, Analyze, Improve, and Control (DMAIC), for epidemic response and management through the intensive use of data, statistics and optimization. Despite the sustained successes of system informatics in a variety of established industries such as manufacturing, logistics, services and beyond, there is a dearth of concentrated review and application of the data-driven DMAIC approach in the context of epidemic outbreaks. First, we define specific challenges posed by epidemic outbreaks to populational health, health systems, as well as economic challenges to different industries such as retailing, education and manufacturing. Second, we present a review of medical testing and statistical sampling methods for data collection, as well as existing efforts in data management and data visualization. Third, we discuss the importance to realizing the full potential of data for epidemic insights, and emphasize the need to leverage analytical methods and tools for decision support. Fourth, an epidemic brings imperative changes to health systems. We discuss the new trend of healthcare solutions to improve system resilience, including telehealth, artificial intelligence, resource allocation, and system re-design. In closing, prescriptive approaches are discussed to optimize the health policies and action strategies for controlling the spread of virus. We posit that this work will catalyze more in-depth investigations and multi-disciplinary research efforts to accelerate the application of system informatics methods and tools in epidemic response and risk management.",
+      "authors": [
+        "Hui Yang",
+        "Siqi Zhang",
+        "Runsang Liu",
+        "Alexander Krall",
+        "Yidan Wang",
+        "Marta Ventura",
+        "Chris Deflitch"
+      ],
+      "publishedAt": "2026-07-15T14:54:09Z",
+      "updatedAt": "2026-07-15T14:54:09Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13914v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13914v1",
+      "primaryCategory": "eess.SY",
+      "categories": [
+        "eess.SY",
+        "cs.CY",
+        "stat.AP"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13879v1",
+      "title": "Global factors for local shocks in a data-scarce environment: with an application to regional fiscal multipliers in Italy",
+      "summary": "We propose a novel econometric methodology for Structural Vector Autoregressions with external instruments (`proxy-SVARs' or `SVAR-IVs') in panel data characterized by strong cross-sectional dependence, dynamic heterogeneity, and limited availability of direct external instruments for the shocks of interest. For each unit, we specify a Factor-Augmented proxy-SVAR (`proxy-FA-SVAR') that incorporates factors summarizing cross-sectional information from the non-policy variables of the system. The effects of the policy shocks are then recovered indirectly by estimating unit-specific policy reaction functions through a Minimum Distance approach. Identification relies on global instruments for the non-policy shocks; that is, proxies common to all units in the panel, internally constructed from a separate SVAR estimated on factors for the policy and non-policy variables. These global instruments can be complemented with local (idiosyncratic) instruments constructed from auxiliary unit-level SVARs. Their joint use renders the proxy-FA-SVARs overidentified and therefore statistically testable. We illustrate the methodology by estimating government spending multipliers for Italian NUTS-2 regions using annual data. The global and local instruments for the regional output shocks are obtained from Blanchard-Perotti-type SVARs.",
+      "authors": [
+        "Giuseppe Cavaliere",
+        "Luca Fanelli",
+        "Marco Mazzali"
+      ],
+      "publishedAt": "2026-07-15T14:28:46Z",
+      "updatedAt": "2026-07-15T14:28:46Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13879v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13879v1",
+      "primaryCategory": "econ.EM",
+      "categories": [
+        "econ.EM"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13862v1",
+      "title": "Estimation and Inference for Latent Dual Networks Using High-Dimensional IV Screening",
+      "summary": "We develop a novel methodology for estimation and inference in high-dimensional panel network models with latent dual structures. The framework allows outcomes to be affected simultaneously by positive and negative interaction channels, accommodating settings in which some interactions reinforce outcomes while others generate competition and displacement effects. The proposed method identifies and estimates the network directly from the structural model using observed data without the need to pre-specify the network. Network recovery is achieved through a sequential instrumental-variable screening procedure. We establish exact support recovery and oracle-equivalent post-selection inference. An application to U.S. corporate leverage data reveals the coexistence of reinforcing and displacement interactions in firms' financial decisions.",
+      "authors": [
+        "Arturas Juodis",
+        "George Kapetanios",
+        "Vasilis Sarafidis"
+      ],
+      "publishedAt": "2026-07-15T14:07:26Z",
+      "updatedAt": "2026-07-15T14:07:26Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13862v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13862v1",
+      "primaryCategory": "econ.EM",
+      "categories": [
+        "econ.EM"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13844v1",
+      "title": "Messy Research, Certification and the Monetization of Science",
+      "summary": "I study how cheaper AI-assisted research changes the institutions that certify science. AI lowers the cost of producing a polished manuscript faster than it lowers the cost of judging whether the underlying contribution is valuable. Polish therefore loses information, entry expands and the average quality of the uncertified pool can fall. At a fixed standard, the willingness to pay for credible certification then rises because the outside option deteriorates. A certifier with market power can capture this premium; competition and alternative disclosure rules need not produce the same fee. With fixed review capacity and weak commitment, certification instead dilutes. In that extension, the partial Pigouvian toll on submissions and the shadow value of review capacity both rise with AI-assisted entry. The contribution is to connect the economics of AI and scientific production to signaling, certification and peer review: cheaper production shifts scarcity downstream, from making research look credible to verifying which research is credible.",
+      "authors": [
+        "Johan Fourie"
+      ],
+      "publishedAt": "2026-07-15T13:49:51Z",
+      "updatedAt": "2026-07-15T13:49:51Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13844v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13844v1",
+      "primaryCategory": "econ.GN",
+      "categories": [
+        "econ.GN"
+      ],
+      "themeId": "society-economy"
+    },
+    {
+      "id": "2607.13644v1",
+      "title": "Evaluating Encoding Strategies for Closed-Loop Classification in Biological Neural Networks",
+      "summary": "Interfacing with Biological Neural Networks (BNNs) requires encoding information into stimulation patterns that can be effectively processed and that enable the underlying system to adapt. Nevertheless, the role of stimulation encoding remains poorly understood. In this work, we compare multiple encoding strategies, including rate-based, phase-based, burst-based, and time-to-first-spike temporal encodings, in a closed-loop neural classification task using cultured BNNs. We encode visual inputs as spatiotemporal stimulation patterns delivered via a Multi-Electrode Array (MEA) and evaluate classification performance for each encoding scheme. We find that burst-based temporal encoding yields the highest observed performance, achieving up to 95.6 % accuracy in a binary classification task, compared to substantially lower performance from rate- and phase-based approaches. We further show that performance is highly sensitive to the spatial distribution of stimulation, with suboptimal electrode selection significantly degrading accuracy. These findings indicate that effective interfacing with biological neural systems requires the joint optimization of temporal and spatial encoding strategies, and highlight temporal encoding as a key design dimension for bio-digital computing.",
+      "authors": [
+        "Martin Schottlender",
+        "Veronika Volkova",
+        "Pengjie Zhou",
+        "Ruifeng Zheng",
+        "Frank H. P. Fitzek",
+        "Pit Hofmann"
+      ],
+      "publishedAt": "2026-07-15T09:41:23Z",
+      "updatedAt": "2026-07-15T09:41:23Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13644v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13644v1",
+      "primaryCategory": "cs.ET",
+      "categories": [
+        "cs.ET",
+        "cs.NE",
+        "q-bio.NC"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.13560v1",
+      "title": "Grounded world models in biological organisms and future embodied AI",
+      "summary": "Recent advances in generative and embodied AI have been driven by large-scale predictive learning over multimodal data. However, the resulting systems remain largely based on passive training regimes where linguistic regularities create the scaffold onto which information from other modalities is attached. Conversely, neuroscience and cognitive science suggest that biological intelligence is organized in the opposite way, where grounded world models acquired through interaction with the environment provide the semantic scaffold to which language is attached. Here, we illustrate five examples of neural circuits supporting grounded world modelling, which underlie navigation in physical and conceptual spaces, affordance-based perception and interaction with objects, active perception and exploratory learning, allostatic control and emotion, and the distinction between self- and world-generated outcomes. These examples highlight several features largely missing from current embodied AI, including the role of intrinsic dynamics as a foundation for learning, the centrality of action in aligning these dynamics with the external world, the prominence of autonomous experience and open-ended learning over passive assimilation of externally provided data, and the fact that early predictive and control mechanisms scaffold higher cognitive abilities such as reasoning, conceptual navigation, planning, imagination, understanding others' minds, and communication. Finally, we discuss whether and how principles derived from biological systems may inform future embodied AI, including training regimes based on social interaction to construct world models that are not only grounded but also socially shared and aligned with human norms and values.",
+      "authors": [
+        "Giovanni Pezzulo",
+        "Davide Nuzzi",
+        "Marco D'Alessandro",
+        "Riccardo Proietti",
+        "Roberto Bottini",
+        "Paul Cisek"
+      ],
+      "publishedAt": "2026-07-15T08:02:19Z",
+      "updatedAt": "2026-07-15T08:02:19Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13560v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13560v1",
+      "primaryCategory": "q-bio.NC",
+      "categories": [
+        "q-bio.NC",
+        "cs.AI"
+      ],
+      "themeId": "life-health"
+    },
+    {
+      "id": "2607.13281v1",
+      "title": "Predator-dependent replicator dynamics or a predator-prey model with two prey types and frequency dependence",
+      "summary": "Braga and Wardil [J. Phys. A: Math. Theor. 55 (2022) 025601] introduced a population model for two prey species that compete among themselves and are preyed upon by a single predator species. They showed the existence of 16 dynamic scenarios and stated sufficient conditions for the stable coexistence of the three species. The model, which can be seen as replicator dynamics with predator-dependent fitnesses for the prey, is based on two pay-off matrices: one for prey reproduction and one for interaction between prey and predators. We argue that the model can also be seen as a Lotka-Volterra-type predator-prey model with a single prey species, logistic limitation for prey, and frequency-dependent reproduction and capture coefficients. Using this alternative viewpoint, we obtain conditions for the existence of equilibria with the three types of individuals. We also prove theorems on the stability or instability of equilibria with only two species and relate the stability change of these equilibria to the appearance or disappearance of equilibria with the three species. When all parameters, except the one that regulates carrying capacities, are fixed, a rich cascade of bifurcations may appear. Solutions range from predator extinction due to insufficient prey to predators coexisting with one or two prey types. Sometimes stable limit cycles involving all species appear.",
+      "authors": [
+        "Henrique M. Cruz",
+        "Armando G. M. Neves"
+      ],
+      "publishedAt": "2026-07-14T21:31:57Z",
+      "updatedAt": "2026-07-14T21:31:57Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13281v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13281v1",
+      "primaryCategory": "q-bio.PE",
+      "categories": [
+        "q-bio.PE"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.13207v1",
+      "title": "Estimation of Elastic Parameters with Guidance-based Diffusion model",
+      "summary": "Elastic parameters are fundamental rock properties for reservoir characterization, but their reliable estimation from angle-stack seismic data remains challenging due to strong nonlinearity and imperfect physical modeling. Conventional deterministic approaches based on linearized Zoeppritz approximations yield a single point estimate and cannot quantify solution uncertainty, while probabilistic methods are computationally expensive. To address these limitations, we present a workflow for elastic parameter inversion from angle-stack seismic data using a guided diffusion model as an implicit prior over the joint distribution of P-wave velocity, S-wave velocity, and density. The diffusion model is trained in an unsupervised manner on benchmark datasets and well-log-derived synthetic models, learning the non-Gaussian statistical coupling among the three elastic parameters. For guidance, we employ Diffusion Posterior Sampling (DPS), which approximates the likelihood function through a forward operator based on the Aki-Richards approximation and injects data-consistency gradient corrections at each reverse diffusion step, sampling from a posterior conditioned on the misfit between observed and modeled angle-stack data. We evaluate the framework on two datasets: the 2D Otway synthetic elastic model and field data from the Poseidon field, NW Shelf, Browse Basin, Australia, comparing it against two baselines: LSQR least-squares inversion and ADMM-based inversion with total variation regularization. Quantitative comparisons confirm that the diffusion-based framework recovers sharper lithological contrasts and geologically more realistic elastic profiles. Uncertainty quantification is achieved by generating multiple independent posterior realizations through repeated reverse diffusion runs, producing spatially resolved uncertainty maps for each elastic parameter.",
+      "authors": [
+        "Anjali Dixit",
+        "Francesco Brandolin",
+        "Tariq Alkhalifah"
+      ],
+      "publishedAt": "2026-07-14T18:58:13Z",
+      "updatedAt": "2026-07-14T18:58:13Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.13207v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.13207v1",
+      "primaryCategory": "physics.geo-ph",
+      "categories": [
+        "physics.geo-ph"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12954v1",
+      "title": "Robustness of Deep Learning Models for PV Power Forecasting under NWP Forecast Errors: A Spatiotemporal and Physically Interpretable Analysis",
+      "summary": "Engineering use of AI forecasting models requires not only high nominal accuracy but also predictable behavior under uncertain inputs. In photovoltaic (PV) forecasting, this requirement is especially challenging because numerical weather prediction (NWP) errors are temporally correlated, state dependent, and physically coupled across variables. Existing evaluations, however, often rely on perfect forecast assumptions or simplistic perturbations that do not reflect these characteristics. This study presents a physically constrained robustness evaluation framework based on simulation, using virtual PV power as a controlled response variable to isolate the propagation of input uncertainty from confounders at the plant level. Six representative machine learning and deep sequence models, including PatchTST, GRU, N-HITS, and LightGBM, are evaluated under dynamic NWP perturbations with heteroscedasticity modulated by clear-sky conditions and Erbs reconstruction that preserves radiation consistency. The results show that sequence models provide stronger noise filtering and temporal resilience than a strong tabular baseline under medium to high disturbance regimes. SHapley Additive exPlanations (SHAP) and Integrated Gradients (IG) further support a feature reallocation tendency at the case level, in which predictive reliance shifts from corrupted future forecasts toward more stable historical observations and deterministic physical priors. A Pareto analysis of accuracy under clean conditions, robustness, and computational latency then translates these findings into engineering implications for robustness assessment and model selection under forecast uncertainty.",
+      "authors": [
+        "Dandan Chen",
+        "Yan Zhao",
+        "Xuepeng Chen"
+      ],
+      "publishedAt": "2026-07-14T16:48:07Z",
+      "updatedAt": "2026-07-14T16:48:07Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12954v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12954v1",
+      "primaryCategory": "physics.ao-ph",
+      "categories": [
+        "physics.ao-ph",
+        "cs.LG"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12941v1",
+      "title": "Energetics and Stochastics of Extreme Waves Breaking over a Symmetrical Breakwater",
+      "summary": "Rogue wave formation and enhancement over coastal areas have been documented over the last decade. This seems to contradict the observed low rogue wave (RW) probability near the surf zone. Without considering wave breaking, RW amplification is expected in this regime. To address this gap, we consider fully nonlinear effects of wave breaking through the proxy of height-to-depth ratio, spatial changes on the wavenumber through the WKB approximation, and slope-corrected refraction mild-slope equations on the energetics of irregular wave fields travelling over a breakwater. By increasing the significant wave height towards the breaking limit, the kinetic energy grows faster than the variance of the surface elevation due to nonlinearity. Thus, the kurtosis decays, albeit not to the point of getting sub-Gaussian statistics. We thereby resolve the apparent paradox of the occurrence probability of RW increase at the beginning of shoaling but subsequently decrease when wave breaking becomes dominant. Motivated by these theoretical developments, we experimentally probe inhomogeneous wave fields nearing the wave-breaking regime. We conduct unidirectional irregular wave experiments in a 30 m long wave flume, generating broad-banded waves over a symmetric submerged breakwater featuring a bottom slope of 1/5, allowing detailed characterization of spectral evolution and the persistence of elevated excess kurtosis even near the breaking limit for this steep slope. We thereby confirm that the excess kurtosis can still be large if the bottom slope is steep, and its maximum value is at least 4 times larger than in other ocean processes, occurring atop the breakwater and about half of its deep water peak wavelength distance after the shoal. As these conditions are typical near shorelines, this understanding is key to coastal areas.",
+      "authors": [
+        "Saulo Mendes",
+        "Yuchen He",
+        "Jérôme Kasparian",
+        "Amin Chabchoub"
+      ],
+      "publishedAt": "2026-07-14T16:20:07Z",
+      "updatedAt": "2026-07-14T16:20:07Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12941v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12941v1",
+      "primaryCategory": "physics.flu-dyn",
+      "categories": [
+        "physics.flu-dyn",
+        "physics.ao-ph"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12927v1",
+      "title": "Mixing and sharpening at the interface of a two-layer fluid forced by random jets",
+      "summary": "Understanding mixing at density interfaces is essential for predicting transport in stratified environmental flows. Laboratory studies have mostly relied on steady, spatially uniform forcing, whereas turbulence in nature is intermittent and heterogeneous. Here, we present experiments on a two-layer salt-stratified fluid forced by random turbulent bursts generated with a randomly actuated synthetic jet array (RASJA). Density fields are recorded with the light attenuation technique, allowing us to resolve the interface evolution. We measure that the upward velocity of the interface decreases with the density jump, in agreement with the power-law found in previous oscillating-grid studies. At large density differences, the interface sharpens during mixing, contrary to the smaller density jump case. Background potential energy analysis demonstrates irreversible mixing in both cases, with comparable energy changes. These results extend classical laboratory observations to a more isotropic forcing, offering new insights into the dynamics of mixing in geophysical settings.",
+      "authors": [
+        "Noé Clavier",
+        "Hugo Pradel",
+        "Romain Volk",
+        "Mickaël Bourgoin",
+        "Yvan Dossmann"
+      ],
+      "publishedAt": "2026-07-14T15:59:31Z",
+      "updatedAt": "2026-07-14T15:59:31Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12927v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12927v1",
+      "primaryCategory": "physics.flu-dyn",
+      "categories": [
+        "physics.flu-dyn",
+        "physics.geo-ph"
+      ],
+      "themeId": "climate-earth"
+    },
+    {
+      "id": "2607.12919v1",
+      "title": "On Tree-Network Distinguishability and Full Identifiability of Phylogenetic Networks",
+      "summary": "Phylogenetic networks generalize phylogenetic trees to evolutionary histories that include reticulate events such as recombination, horizontal gene transfer, and hybridization. Under a Markov model of nucleotide substitution, a phylogenetic network determines a distribution of leaf-patterns. Here, we study the identifiability of the network topology from this distribution under the Jukes-Cantor (JC), Kimura 2-parameter (K2P), and Kimura 3-parameter (K3P) models. Our first result is that the semi-directed network parameter of a level-1 phylogenetic network (modulo redirecting triangles) is fully identifiable under all three models, on a biologically reasonable parameter space in which substitution rates are probabilistic and mixing parameters are non-trivial (i.e., not 0 or 1). In contrast to the generic identifiability established in prior work, this holds at every point of the parameter space, not merely off of a measure-zero subset. Our second result distinguishes phylogenetic networks from phylogenetic trees, on the same parameter space, under JC and K2P. We prove that no phylogenetic network and phylogenetic tree can induce the same leaf-pattern distribution unless the network is a tree, possibly augmented with certain substructures called $2$-blobs. This means the presence of reticulate evolution creates, in most cases, a detectable signature in the leaf-pattern distribution. More broadly, these results have consequences for identifiability beyond the models and network classes studied here, including for several coalescent-based models.",
+      "authors": [
+        "Jari Brits",
+        "Niels Holtgrefe",
+        "Leo van Iersel",
+        "Samuel Martin"
+      ],
+      "publishedAt": "2026-07-14T15:54:43Z",
+      "updatedAt": "2026-07-14T15:54:43Z",
+      "arxivUrl": "https://arxiv.org/abs/2607.12919v1",
+      "pdfUrl": "https://arxiv.org/pdf/2607.12919v1",
+      "primaryCategory": "q-bio.PE",
+      "categories": [
+        "q-bio.PE"
+      ],
+      "themeId": "climate-earth"
+    }
+  ],
+  "warnings": []
+}
