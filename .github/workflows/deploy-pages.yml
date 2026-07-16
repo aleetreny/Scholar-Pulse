@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - agent/scholar-pulse-showroom
   schedule:
     - cron: "17 5 * * *"
   workflow_dispatch:
