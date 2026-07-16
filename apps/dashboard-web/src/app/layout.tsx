@@ -1,22 +1,44 @@
-import type { Metadata } from "next";
-import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { IBM_Plex_Mono, Inter, Source_Serif_4 } from "next/font/google";
+
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-display",
+import { AppShell } from "@/components/app-shell";
+
+const inter = Inter({
   subsets: ["latin"],
+  variable: "--font-inter",
 });
 
-const ibmPlexMono = IBM_Plex_Mono({
-  variable: "--font-mono",
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-source-serif",
+});
+
+const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
   subsets: ["latin"],
+  variable: "--font-plex-mono",
 });
 
 export const metadata: Metadata = {
-  title: "ScholarPulse Studio",
-  description: "Next.js dashboard for navigating published research-frontier snapshots.",
+  title: {
+    default: "ScholarPulse — your research feed",
+    template: "%s · ScholarPulse",
+  },
+  description:
+    "Follow the latest papers in your field, search arXiv, and keep a reading library with citations ready to export.",
 };
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f3ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#0e1218" },
+  ],
+};
+
+const THEME_INIT = `(function(){try{var t=localStorage.getItem("scholarpulse.theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="light"}})()`;
 
 export default function RootLayout({
   children,
@@ -24,8 +46,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${ibmPlexMono.variable}`}>
-      <body>{children}</body>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${sourceSerif.variable} ${plexMono.variable}`}
+    >
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }

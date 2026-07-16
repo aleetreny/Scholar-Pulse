@@ -27,34 +27,29 @@ The platform maps scientific frontier dynamics using embedding-space geometry, d
 - **Scalable UX:** Dashboard uses density + semantic zoom + detail-on-demand instead of loading every point at once.
 - **Modular Inference:** Enrichment and downstream synthesis remain pluggable layers over the deterministic evidence base.
 
-## Dashboard Visualization
+## Web App (`apps/dashboard-web/`)
 
-The product dashboard is now split into two apps:
+The user-facing product is a standalone researcher app: a personalized feed of
+the newest arXiv papers, full search, paper pages with citations/TL;DR/similar
+papers (Semantic Scholar), and a local reading library with BibTeX export. It
+needs **no local pipeline or backend** — it consumes public scholarly APIs
+through its own Next.js route handlers.
 
-1. `apps/dashboard_api/` — FastAPI backend serving published dashboard feeds and paper detail endpoints.
-2. `apps/dashboard-web/` — Next.js + TypeScript frontend.
+```bash
+cd apps/dashboard-web
+npm install
+npm run dev
+```
 
-Run the Next.js dashboard stack against a published snapshot:
+Open `http://localhost:3000`. See `apps/dashboard-web/README.md` for details.
 
-1. `conda activate my_env`
-2. `python -m pip install -e '.[dashboard_api]'`
-3. `make run-dashboard-api`
-4. `cd apps/dashboard-web && npm install && NEXT_PUBLIC_DASHBOARD_API_URL=http://127.0.0.1:8051/api npm run dev`
+### Legacy research dashboards
 
-Open:
-- `http://127.0.0.1:3000`
+The snapshot-based analytics stack is still in the repo for research use:
 
-Legacy Dash frontend remains available with:
-- `make run-dashboard`
-
-Run the dashboard against a published snapshot:
-
-1. `conda activate my_env`
-2. `docker compose up -d postgres`
-3. `make run-dashboard`
-
-Open:
-- `http://127.0.0.1:8050`
+1. `apps/dashboard_api/` — FastAPI backend serving published dashboard feeds.
+2. `apps/dashboard/` — legacy Dash frontend (`make run-dashboard`, requires
+   Postgres and a published snapshot).
 
 ## Ingestion Paths
 
