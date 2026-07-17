@@ -21,14 +21,15 @@ const cache = new Map<string, CacheEntry>();
 
 function cacheGet(key: string): FeedResponse | null {
   const entry = cache.get(key);
-  if (!entry) {
-    return null;
-  }
-  if (entry.expires < Date.now()) {
-    cache.delete(key);
+  if (!entry || entry.expires < Date.now()) {
+    // Expired entries stay in the map as a stale fallback for failures.
     return null;
   }
   return entry.data;
+}
+
+function cacheGetStale(key: string): FeedResponse | null {
+  return cache.get(key)?.data ?? null;
 }
 
 function cacheSet(key: string, data: FeedResponse): void {
@@ -135,38 +136,47 @@ async function queryArxiv(params: URLSearchParams): Promise<FeedResponse> {
     return cached;
   }
 
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    headers: { "User-Agent": "ScholarPulse/1.0 (research feed client)" },
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      headers: { "User-Agent": "ScholarPulse/1.0 (research feed client)" },
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    throw new Error(`arXiv API responded with status ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`arXiv API responded with status ${response.status}`);
+    }
+
+    const xml = await response.text();
+    const doc = parser.parse(xml) as { feed?: AtomEntry };
+    const feed = doc.feed ?? {};
+
+    const papers = asArray(feed.entry as AtomEntry | AtomEntry[])
+      .map((entry) => parseEntry(entry as AtomEntry))
+      // arXiv reports errors as a single entry whose id points at /api/errors.
+      .filter((paper) => paper.id && !paper.id.includes("api/errors"));
+
+    const totalRaw = feed["opensearch:totalResults"] as AtomEntry | string | number | undefined;
+    const totalText =
+      typeof totalRaw === "object" ? totalRaw?.["#text"] : totalRaw;
+    const totalResults = Number.parseInt(String(totalText ?? papers.length), 10) || papers.length;
+
+    const startRaw = feed["opensearch:startIndex"] as AtomEntry | string | number | undefined;
+    const startText =
+      typeof startRaw === "object" ? startRaw?.["#text"] : startRaw;
+    const start = Number.parseInt(String(startText ?? 0), 10) || 0;
+
+    const result: FeedResponse = { papers, totalResults, start };
+    cacheSet(url, result);
+    return result;
+  } catch (error) {
+    // A stale answer beats an error page when arXiv hiccups or rate limits.
+    const stale = cacheGetStale(url);
+    if (stale) {
+      return stale;
+    }
+    throw error;
   }
-
-  const xml = await response.text();
-  const doc = parser.parse(xml) as { feed?: AtomEntry };
-  const feed = doc.feed ?? {};
-
-  const papers = asArray(feed.entry as AtomEntry | AtomEntry[])
-    .map((entry) => parseEntry(entry as AtomEntry))
-    // arXiv reports errors as a single entry whose id points at /api/errors.
-    .filter((paper) => paper.id && !paper.id.includes("api/errors"));
-
-  const totalRaw = feed["opensearch:totalResults"] as AtomEntry | string | number | undefined;
-  const totalText =
-    typeof totalRaw === "object" ? totalRaw?.["#text"] : totalRaw;
-  const totalResults = Number.parseInt(String(totalText ?? papers.length), 10) || papers.length;
-
-  const startRaw = feed["opensearch:startIndex"] as AtomEntry | string | number | undefined;
-  const startText =
-    typeof startRaw === "object" ? startRaw?.["#text"] : startRaw;
-  const start = Number.parseInt(String(startText ?? 0), 10) || 0;
-
-  const result: FeedResponse = { papers, totalResults, start };
-  cacheSet(url, result);
-  return result;
 }
 
 /** Latest submissions across the given categories, newest first. */

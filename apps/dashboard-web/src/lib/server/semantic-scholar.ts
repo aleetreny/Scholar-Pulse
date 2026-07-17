@@ -4,6 +4,10 @@ const S2_API_BASE = (
   process.env.S2_API_BASE ?? "https://api.semanticscholar.org"
 ).replace(/\/$/, "");
 
+// Optional: a Semantic Scholar API key lifts the shared unauthenticated
+// rate limit pool, which saturates easily. https://api.semanticscholar.org
+const S2_API_KEY = process.env.S2_API_KEY?.trim() || null;
+
 const REQUEST_TIMEOUT_MS = 12_000;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 300;
@@ -13,14 +17,15 @@ const cache = new Map<string, CacheEntry>();
 
 function cacheGet(key: string): PaperExtras | null {
   const entry = cache.get(key);
-  if (!entry) {
-    return null;
-  }
-  if (entry.expires < Date.now()) {
-    cache.delete(key);
+  if (!entry || entry.expires < Date.now()) {
+    // Expired entries stay in the map as a stale fallback for failures.
     return null;
   }
   return entry.data;
+}
+
+function cacheGetStale(key: string): PaperExtras | null {
+  return cache.get(key)?.data ?? null;
 }
 
 function cacheSet(key: string, data: PaperExtras): void {
@@ -36,7 +41,10 @@ function cacheSet(key: string, data: PaperExtras): void {
 async function fetchJson<T>(path: string): Promise<T> {
   const response = await fetch(`${S2_API_BASE}${path}`, {
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    headers: { "User-Agent": "ScholarPulse/1.0 (research feed client)" },
+    headers: {
+      "User-Agent": "ScholarPulse/1.0 (research feed client)",
+      ...(S2_API_KEY ? { "x-api-key": S2_API_KEY } : null),
+    },
     cache: "no-store",
   });
   if (!response.ok) {
@@ -143,7 +151,8 @@ export async function fetchPaperExtras(arxivId: string): Promise<PaperExtras> {
   // Cache only complete answers so transient upstream failures retry sooner.
   if (!extras.partial) {
     cacheSet(arxivId, extras);
+    return extras;
   }
-
-  return extras;
+  // Prefer an expired complete answer over a fresh partial one.
+  return cacheGetStale(arxivId) ?? extras;
 }

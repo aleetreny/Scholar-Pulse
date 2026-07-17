@@ -50,6 +50,7 @@ Open `http://localhost:3000`. No environment variables are required.
 | --- | --- |
 | `ARXIV_API_BASE` | Override the arXiv API base URL (testing/mirrors). |
 | `S2_API_BASE` | Override the Semantic Scholar base URL. |
+| `S2_API_KEY` | Semantic Scholar API key. Without one, requests share the public rate-limit pool and citation data can be temporarily unavailable under load. Request a free key at <https://www.semanticscholar.org/product/api>. |
 
 ## Scripts
 
