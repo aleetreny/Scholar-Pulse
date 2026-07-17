@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, ArrowRight, Loader2, Rss, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, Loader2, Rss, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
@@ -18,9 +18,6 @@ function Onboarding() {
 
   return (
     <div className="onboard">
-      <span className="onboard__mark">
-        <Activity size={30} strokeWidth={2.3} />
-      </span>
       <h1>What are you researching?</h1>
       <p>
         Pick the fields you care about and ScholarPulse turns them into a daily

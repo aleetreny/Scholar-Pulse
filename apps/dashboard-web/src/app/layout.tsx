@@ -13,6 +13,7 @@ const inter = Inter({
 
 const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
+  style: ["normal", "italic"],
   variable: "--font-source-serif",
 });
 
@@ -33,8 +34,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f3ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1218" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f2e8" },
+    { media: "(prefers-color-scheme: dark)", color: "#16130d" },
   ],
 };
 
