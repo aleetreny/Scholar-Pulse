@@ -20,6 +20,7 @@ export function SaveButton({ paper }: { paper: Paper }) {
       type="button"
       className="icon-btn"
       data-active={saved}
+      aria-pressed={saved}
       aria-label={saved ? "Remove from library" : "Save to library"}
       title={saved ? "Remove from library" : "Save to library"}
       onClick={(event) => {

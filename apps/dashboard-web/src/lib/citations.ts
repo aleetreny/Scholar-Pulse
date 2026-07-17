@@ -1,4 +1,4 @@
-import type { Paper } from "@/lib/types";
+import type { LibraryEntry, Paper } from "@/lib/types";
 
 function lastName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
@@ -23,7 +23,24 @@ function bibEscape(value: string): string {
   return value.replace(/([%&#])/g, "\\$1");
 }
 
-export function toBibtex(paper: Paper): string {
+/** Free-form user text: unbalanced braces would break the entry, drop them. */
+function annoteEscape(value: string): string {
+  let depth = 0;
+  for (const char of value) {
+    if (char === "{") {
+      depth += 1;
+    } else if (char === "}") {
+      depth -= 1;
+      if (depth < 0) {
+        break;
+      }
+    }
+  }
+  const safe = depth === 0 ? value : value.replace(/[{}]/g, "");
+  return bibEscape(safe.replace(/\s+/g, " ").trim());
+}
+
+export function toBibtex(paper: Paper, note = ""): string {
   const year = paper.published.slice(0, 4);
   const lines = [
     `@misc{${citeKey(paper)},`,
@@ -39,6 +56,10 @@ export function toBibtex(paper: Paper): string {
   }
   if (paper.journalRef) {
     lines.push(`  note = {${bibEscape(paper.journalRef)}},`);
+  }
+  const annote = annoteEscape(note);
+  if (annote) {
+    lines.push(`  annote = {${annote}},`);
   }
   lines.push(`  url = {${paper.absUrl}},`, `}`);
   return lines.join("\n");
@@ -64,6 +85,7 @@ export function toApaCitation(paper: Paper): string {
   return `${authorText} (${year}). ${paper.title}. ${venue}. ${paper.absUrl}`;
 }
 
-export function libraryToBibtex(papers: Paper[]): string {
-  return papers.map(toBibtex).join("\n\n") + "\n";
+/** Personal notes travel along as `annote`, which Zotero/JabRef import. */
+export function libraryToBibtex(entries: LibraryEntry[]): string {
+  return entries.map((entry) => toBibtex(entry.paper, entry.note)).join("\n\n") + "\n";
 }

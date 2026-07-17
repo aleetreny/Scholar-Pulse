@@ -73,6 +73,7 @@ function LibraryCard({ entry }: { entry: LibraryEntry }) {
               type="button"
               data-status={option.value}
               data-active={entry.status === option.value}
+              aria-pressed={entry.status === option.value}
               onClick={() => setStatus(paper.id, option.value)}
             >
               {option.label}
@@ -119,7 +120,7 @@ export function LibraryView() {
       : allEntries.filter((entry) => entry.status === filter);
 
   function exportBibtex() {
-    const content = libraryToBibtex(allEntries.map((entry) => entry.paper));
+    const content = libraryToBibtex(allEntries);
     const blob = new Blob([content], { type: "application/x-bibtex" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -174,6 +175,7 @@ export function LibraryView() {
                   key={option.value}
                   type="button"
                   data-active={filter === option.value}
+                  aria-pressed={filter === option.value}
                   onClick={() => setFilter(option.value)}
                 >
                   {option.label}

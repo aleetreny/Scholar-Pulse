@@ -101,6 +101,7 @@ function Feed({ topics }: { topics: string[] }) {
             type="button"
             className="topic-pill"
             data-active={focus === null}
+            aria-pressed={focus === null}
             onClick={() => setFocus(null)}
           >
             All fields
@@ -111,6 +112,7 @@ function Feed({ topics }: { topics: string[] }) {
               type="button"
               className="topic-pill"
               data-active={focus === id}
+              aria-pressed={focus === id}
               onClick={() => setFocus((current) => (current === id ? null : id))}
               title={id}
             >
