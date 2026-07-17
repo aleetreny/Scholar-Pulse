@@ -1,20 +1,12 @@
 "use client";
 
-import {
-  Activity,
-  Bookmark,
-  Compass,
-  Moon,
-  Search,
-  SlidersHorizontal,
-  Sun,
-} from "lucide-react";
+import { Bookmark, Compass, Moon, Search, SlidersHorizontal, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Toaster } from "@/components/toast";
-import { useLibrary, useTheme } from "@/lib/store";
+import { useHydrated, useLibrary, useTheme } from "@/lib/store";
 
 const NAV_ITEMS = [
   { href: "/", label: "For you", icon: Compass },
@@ -30,10 +22,46 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function BrandMark() {
+/**
+ * The wordmark IS the logo: "ScholarPulse" in the serif with a hand-set
+ * pulse line running under "Pulse" — no icon-in-a-rounded-box.
+ */
+function Wordmark() {
   return (
-    <span className="brand__mark" aria-hidden>
-      <Activity size={19} strokeWidth={2.4} />
+    <span className="brand__name">
+      Scholar<em>Pulse</em>
+      <svg
+        className="brand__pulse"
+        viewBox="0 0 56 10"
+        aria-hidden="true"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M0 6.5 H14 L18 6.5 22 1 27 9 31 3.5 33.5 6.5 H56"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
+function DateLine() {
+  const hydrated = useHydrated();
+  if (!hydrated) {
+    return <span className="masthead__date" />;
+  }
+  const now = new Date();
+  return (
+    <span className="masthead__date">
+      {now.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })}
     </span>
   );
 }
@@ -80,52 +108,58 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="shell">
-      <aside className="sidebar">
-        <Link href="/" className="brand">
-          <BrandMark />
-          <span className="brand__name">
-            Scholar<em>Pulse</em>
-          </span>
-        </Link>
-
-        <nav className="sidebar__nav" aria-label="Main">
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="nav-item"
-              data-active={isActive(pathname, href)}
-            >
-              <Icon />
-              {label}
-              {href === "/library" && savedCount > 0 ? (
-                <span className="nav-item__badge">{savedCount}</span>
-              ) : null}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="sidebar__footer">
-          <p className="sidebar__hint">
-            Press <kbd>/</kbd> to search arXiv from anywhere.
-          </p>
-          {themeButton}
-        </div>
-      </aside>
-
-      <div className="app-wrap">
-        <header className="mobile-topbar">
-          <Link href="/" className="brand">
-            <BrandMark />
-            <span className="brand__name">
-              Scholar<em>Pulse</em>
-            </span>
+      <header className="masthead">
+        <div className="masthead__inner">
+          <Link href="/" className="brand" aria-label="ScholarPulse home">
+            <Wordmark />
           </Link>
-          {themeButton}
-        </header>
 
-        <main className="main">{children}</main>
-      </div>
+          <nav className="masthead__nav" aria-label="Main">
+            {NAV_ITEMS.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="masthead__link"
+                data-active={isActive(pathname, href)}
+              >
+                {label}
+                {href === "/library" && savedCount > 0 ? (
+                  <sup className="masthead__badge">{savedCount}</sup>
+                ) : null}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="masthead__meta">
+            <DateLine />
+            {themeButton}
+          </div>
+        </div>
+      </header>
+
+      <main className="main">{children}</main>
+
+      <footer className="colophon">
+        <div className="colophon__inner">
+          <span>
+            ScholarPulse — a reading companion for{" "}
+            <a href="https://arxiv.org" target="_blank" rel="noreferrer">
+              arXiv
+            </a>
+          </span>
+          <span className="colophon__sep" />
+          <span>
+            Enriched by{" "}
+            <a href="https://www.semanticscholar.org" target="_blank" rel="noreferrer">
+              Semantic Scholar
+            </a>
+          </span>
+          <span className="colophon__sep" />
+          <span className="colophon__hint">
+            Press <kbd>/</kbd> to search
+          </span>
+        </div>
+      </footer>
 
       <nav className="tabbar" aria-label="Main">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
