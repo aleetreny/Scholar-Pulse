@@ -41,7 +41,13 @@ export function SaveButton({ paper }: { paper: Paper }) {
   );
 }
 
-export const PaperCard = memo(function PaperCard({ paper }: { paper: Paper }) {
+export const PaperCard = memo(function PaperCard({
+  paper,
+  isNew = false,
+}: {
+  paper: Paper;
+  isNew?: boolean;
+}) {
   const extraCategories = paper.categories
     .filter((category) => category !== paper.primaryCategory)
     .slice(0, 2);
@@ -81,6 +87,7 @@ export const PaperCard = memo(function PaperCard({ paper }: { paper: Paper }) {
           </span>
         ))}
         <span className="paper-card__date">
+          {isNew ? <span className="paper-card__new">new</span> : null}
           {formatRelativeDate(paper.published)}
         </span>
       </div>

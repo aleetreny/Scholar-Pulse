@@ -37,12 +37,23 @@ export type RelatedPaper = {
 export type PaperExtras = {
   citationCount: number | null;
   influentialCitationCount: number | null;
+  referenceCount: number | null;
   venue: string | null;
   tldr: string | null;
   semanticScholarUrl: string | null;
   related: RelatedPaper[];
   /** Present when the enrichment service could not be reached. */
   partial: boolean;
+};
+
+/** One edge of the citation graph: a work this paper cites, or one citing it. */
+export type GraphPaper = {
+  title: string;
+  authors: string[];
+  year: number | null;
+  arxivId: string | null;
+  externalUrl: string | null;
+  citationCount: number | null;
 };
 
 export type ReadingStatus = "to-read" | "reading" | "read";
