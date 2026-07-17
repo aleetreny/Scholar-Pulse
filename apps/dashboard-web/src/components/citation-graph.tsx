@@ -7,6 +7,7 @@ import { useState } from "react";
 import { TexText } from "@/components/tex-text";
 import { getCitations, getReferences } from "@/lib/data/s2";
 import { formatCount } from "@/lib/format";
+import { paperHref } from "@/lib/paper-link";
 import type { GraphPaper } from "@/lib/types";
 
 const PAGE = 25;
@@ -42,10 +43,7 @@ function GraphRow({ paper }: { paper: GraphPaper }) {
   );
 
   return paper.arxivId ? (
-    <Link
-      className="graph-row"
-      href={`/paper?id=${encodeURIComponent(paper.arxivId)}`}
-    >
+    <Link className="graph-row" href={paperHref(paper.arxivId)}>
       {inner}
     </Link>
   ) : (

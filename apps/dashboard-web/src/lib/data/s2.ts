@@ -25,7 +25,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 120;
 
-export const RATE_LIMIT_MESSAGE =
+const RATE_LIMIT_MESSAGE =
   "Semantic Scholar didn't answer — usually its rate limit, which clears in a few seconds. Try again.";
 
 type CacheEntry = { expires: number; data: unknown };
@@ -195,10 +195,126 @@ export const SEARCH_FIELDS_OF_STUDY = [
 type S2SearchPage = { total?: number; data?: S2PaperItem[] };
 type S2BulkPage = { total?: number; token?: string | null; data?: S2PaperItem[] };
 
-// "Newest" uses the bulk endpoint (the only one that sorts by date), which
-// pages ~1000 records per token. One page is cached per query and sliced
-// locally; the token is kept so "load more" past it keeps working.
-const bulkPages = new Map<string, { items: Paper[]; total: number; token: string | null }>();
+/**
+ * Search results accumulate per query: S2 pages in ITS index space while the
+ * app pages over the arXiv-only subset, so the app's `start` can never be
+ * used as an S2 offset directly. Each accumulator remembers how far into the
+ * upstream result set it has consumed.
+ */
+type SearchAccumulator = {
+  items: Paper[];
+  total: number;
+  /** relevance: next upstream offset; newest: next page token. */
+  s2Offset: number;
+  token: string | null;
+  exhausted: boolean;
+};
+
+const SEARCH_CACHE_MAX = 20;
+const searchCache = new Map<string, SearchAccumulator>();
+
+function accumulatorFor(key: string): SearchAccumulator {
+  const existing = searchCache.get(key);
+  if (existing) {
+    return existing;
+  }
+  if (searchCache.size >= SEARCH_CACHE_MAX) {
+    const oldest = searchCache.keys().next().value;
+    if (oldest !== undefined) {
+      searchCache.delete(oldest);
+    }
+  }
+  const fresh: SearchAccumulator = {
+    items: [],
+    total: 0,
+    s2Offset: 0,
+    token: null,
+    exhausted: false,
+  };
+  searchCache.set(key, fresh);
+  return fresh;
+}
+
+function appendMapped(acc: SearchAccumulator, data: S2PaperItem[]): void {
+  for (const item of data) {
+    const paper = toPaper(item);
+    if (paper) {
+      acc.items.push(paper);
+    }
+  }
+}
+
+function accumulatorResponse(
+  acc: SearchAccumulator,
+  start: number,
+  max: number,
+): FeedResponse {
+  return {
+    papers: acc.items.slice(start, start + max),
+    // Once upstream is exhausted the pager needs the exact count so "load
+    // more" disappears; before that, S2's (arXiv-superset) total is an
+    // honest over-estimate.
+    totalResults: acc.exhausted
+      ? acc.items.length
+      : Math.max(Math.min(acc.total, 1000), acc.items.length),
+    start,
+  };
+}
+
+// Cap upstream requests per user action so one deep "load more" can't chew
+// through the shared S2 rate-limit budget.
+const MAX_UPSTREAM_PAGES_PER_CALL = 3;
+const RELEVANCE_PAGE_SIZE = 100;
+const RELEVANCE_OFFSET_LIMIT = 1000; // S2 rejects offset+limit beyond this.
+
+async function searchRelevance(
+  query: string,
+  fieldOfStudy: string | null,
+  start: number,
+  max: number,
+  signal?: AbortSignal,
+): Promise<FeedResponse> {
+  const acc = accumulatorFor(`rel::${query}::${fieldOfStudy ?? ""}`);
+
+  let fetches = 0;
+  while (
+    acc.items.length < start + max &&
+    !acc.exhausted &&
+    fetches < MAX_UPSTREAM_PAGES_PER_CALL
+  ) {
+    const limit = Math.min(
+      RELEVANCE_PAGE_SIZE,
+      RELEVANCE_OFFSET_LIMIT - acc.s2Offset,
+    );
+    if (limit <= 0) {
+      acc.exhausted = true;
+      break;
+    }
+    const params = new URLSearchParams({
+      query,
+      offset: String(acc.s2Offset),
+      limit: String(limit),
+      fields: SEARCH_FIELDS,
+    });
+    if (fieldOfStudy) {
+      params.set("fieldsOfStudy", fieldOfStudy);
+    }
+    const page = await fetchS2Json<S2SearchPage>(
+      `/graph/v1/paper/search?${params}`,
+      signal,
+    );
+    fetches += 1;
+    const data = page.data ?? [];
+    acc.total = page.total ?? acc.total;
+    acc.s2Offset += data.length;
+    appendMapped(acc, data);
+    if (data.length < limit || acc.s2Offset >= Math.min(acc.total, RELEVANCE_OFFSET_LIMIT)) {
+      acc.exhausted = true;
+    }
+  }
+
+  return accumulatorResponse(acc, start, max);
+}
 
 async function searchNewest(
   query: string,
@@ -207,8 +323,7 @@ async function searchNewest(
   max: number,
   signal?: AbortSignal,
 ): Promise<FeedResponse> {
-  const key = `${query}::${fieldOfStudy ?? ""}`;
-  let page = bulkPages.get(key);
+  const acc = accumulatorFor(`new::${query}::${fieldOfStudy ?? ""}`);
 
   const paramsFor = (token: string | null) => {
     const params = new URLSearchParams({
@@ -225,68 +340,35 @@ async function searchNewest(
     return params;
   };
 
-  if (!page) {
-    const first = await fetchS2Json<S2BulkPage>(
-      `/graph/v1/paper/search/bulk?${paramsFor(null)}`,
+  let fetches = 0;
+  while (
+    acc.items.length < start + max &&
+    !acc.exhausted &&
+    fetches < MAX_UPSTREAM_PAGES_PER_CALL
+  ) {
+    // First call has no token; afterwards a null token means done.
+    if (fetches > 0 || acc.s2Offset > 0) {
+      if (!acc.token) {
+        acc.exhausted = true;
+        break;
+      }
+    }
+    const page = await fetchS2Json<S2BulkPage>(
+      `/graph/v1/paper/search/bulk?${paramsFor(acc.token)}`,
       signal,
     );
-    page = {
-      items: (first.data ?? []).map(toPaper).filter((paper): paper is Paper => paper !== null),
-      total: first.total ?? 0,
-      token: first.token ?? null,
-    };
-    bulkPages.set(key, page);
+    fetches += 1;
+    const data = page.data ?? [];
+    acc.total = page.total ?? acc.total;
+    acc.s2Offset += data.length;
+    acc.token = page.token ?? null;
+    appendMapped(acc, data);
+    if (!acc.token) {
+      acc.exhausted = true;
+    }
   }
 
-  while (page.items.length < start + max && page.token) {
-    const next = await fetchS2Json<S2BulkPage>(
-      `/graph/v1/paper/search/bulk?${paramsFor(page.token)}`,
-      signal,
-    );
-    page.items = [
-      ...page.items,
-      ...(next.data ?? []).map(toPaper).filter((paper): paper is Paper => paper !== null),
-    ];
-    page.token = next.token ?? null;
-  }
-
-  return {
-    papers: page.items.slice(start, start + max),
-    totalResults: page.token ? page.total : page.items.length,
-    start,
-  };
-}
-
-async function searchRelevance(
-  query: string,
-  fieldOfStudy: string | null,
-  start: number,
-  max: number,
-  signal?: AbortSignal,
-): Promise<FeedResponse> {
-  const params = new URLSearchParams({
-    query,
-    offset: String(start),
-    limit: String(max),
-    fields: SEARCH_FIELDS,
-  });
-  if (fieldOfStudy) {
-    params.set("fieldsOfStudy", fieldOfStudy);
-  }
-  const page = await fetchS2Json<S2SearchPage>(
-    `/graph/v1/paper/search?${params}`,
-    signal,
-  );
-  const papers = (page.data ?? [])
-    .map(toPaper)
-    .filter((paper): paper is Paper => paper !== null);
-  // The relevance endpoint rejects offset+limit beyond 1000, so stop the
-  // pager there even when more results exist.
-  return {
-    papers,
-    totalResults: Math.min(page.total ?? papers.length, 1000),
-    start,
-  };
+  return accumulatorResponse(acc, start, max);
 }
 
 /**

@@ -25,6 +25,7 @@ import { categoryLabel } from "@/lib/categories";
 import { toApaCitation, toBibtex } from "@/lib/citations";
 import { recallPaper, stashPaper } from "@/lib/data/paper-cache";
 import { getPaperExtras, getPaperFromS2 } from "@/lib/data/s2";
+import { paperHref } from "@/lib/paper-link";
 import { formatAbsoluteDate, formatCount } from "@/lib/format";
 import { useLibrary } from "@/lib/store";
 import type { Paper, PaperExtras } from "@/lib/types";
@@ -69,7 +70,7 @@ function RelatedPapers({ extras }: { extras: PaperExtras }) {
           return related.arxivId ? (
             <Link
               key={`${related.arxivId}-${index}`}
-              href={`/paper?id=${encodeURIComponent(related.arxivId)}`}
+              href={paperHref(related.arxivId)}
               className="related-card"
             >
               {inner}

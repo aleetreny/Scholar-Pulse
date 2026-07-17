@@ -46,11 +46,15 @@ export function toBibtex(paper: Paper, note = ""): string {
     `@misc{${citeKey(paper)},`,
     `  title = {${bibEscape(paper.title)}},`,
     `  author = {${paper.authors.map(bibEscape).join(" and ")}},`,
-    `  year = {${year}},`,
-    `  eprint = {${paper.id}},`,
-    `  archivePrefix = {arXiv},`,
-    `  primaryClass = {${paper.primaryCategory}},`,
   ];
+  if (year) {
+    lines.push(`  year = {${year}},`);
+  }
+  lines.push(`  eprint = {${paper.id}},`, `  archivePrefix = {arXiv},`);
+  // Papers reconstructed from Semantic Scholar carry no arXiv category.
+  if (paper.primaryCategory) {
+    lines.push(`  primaryClass = {${paper.primaryCategory}},`);
+  }
   if (paper.doi) {
     lines.push(`  doi = {${paper.doi}},`);
   }

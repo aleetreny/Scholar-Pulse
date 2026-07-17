@@ -17,6 +17,30 @@ export type CategorySnapshot = {
   papers: Paper[];
 };
 
+export type FeedManifest = {
+  generatedAt: string;
+  categories: string[];
+};
+
+let manifestPromise: Promise<FeedManifest> | null = null;
+
+/** Build metadata: when snapshots were generated and which categories exist. */
+export function getManifest(): Promise<FeedManifest> {
+  if (!manifestPromise) {
+    manifestPromise = (async () => {
+      const response = await fetch(withBase("/data/manifest.json"));
+      if (!response.ok) {
+        throw new Error(`No feed manifest (HTTP ${response.status})`);
+      }
+      return (await response.json()) as FeedManifest;
+    })();
+    manifestPromise.catch(() => {
+      manifestPromise = null;
+    });
+  }
+  return manifestPromise;
+}
+
 const snapshots = new Map<string, Promise<CategorySnapshot>>();
 
 function fetchCategorySnapshot(category: string): Promise<CategorySnapshot> {

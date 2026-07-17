@@ -16,6 +16,7 @@ import { TexText } from "@/components/tex-text";
 import { categoryLabel } from "@/lib/categories";
 import { libraryToBibtex } from "@/lib/citations";
 import { stashPaper } from "@/lib/data/paper-cache";
+import { paperHref } from "@/lib/paper-link";
 import { formatAuthors, formatRelativeDate } from "@/lib/format";
 import { sortedLibraryEntries, useHydrated, useLibrary } from "@/lib/store";
 import type { LibraryEntry, ReadingStatus } from "@/lib/types";
@@ -40,7 +41,7 @@ function LibraryCard({ entry }: { entry: LibraryEntry }) {
     <div className="library-entry">
       <div className="library-entry__body">
         <Link
-          href={`/paper?id=${encodeURIComponent(paper.id)}`}
+          href={paperHref(paper.id)}
           style={{ display: "block" }}
           onClick={() => stashPaper(paper)}
         >

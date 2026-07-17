@@ -8,7 +8,8 @@ import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TopicPicker } from "@/components/topic-picker";
 import { categoryLabel } from "@/lib/categories";
-import { getFeed } from "@/lib/data/feed";
+import { getFeed, getManifest } from "@/lib/data/feed";
+import { formatRelativeDate } from "@/lib/format";
 import { useHydrated, useTopics } from "@/lib/store";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
@@ -79,6 +80,28 @@ function Feed({ topics }: { topics: string[] }) {
     }
   }, []);
 
+  // Snapshot metadata: when the feed was last rebuilt, and whether any
+  // followed field has no snapshot in this deployment.
+  const [manifest, setManifest] = useState<{ generatedAt: string; categories: string[] } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getManifest()
+      .then((data) => {
+        if (!cancelled) {
+          setManifest(data);
+        }
+      })
+      .catch(() => {
+        // The feed itself will surface an error if snapshots are missing.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const missingTopics = manifest
+    ? topics.filter((id) => !manifest.categories.includes(id))
+    : [];
+
   const activeCategories = useMemo(
     () => (focus ? [focus] : topics),
     [focus, topics],
@@ -100,6 +123,12 @@ function Feed({ topics }: { topics: string[] }) {
           <h1>For you</h1>
           <p className="page-head__sub">
             The newest submissions across the fields you follow.
+            {manifest ? (
+              <span className="page-head__stamp">
+                {" "}
+                Updated {formatRelativeDate(manifest.generatedAt)}.
+              </span>
+            ) : null}
           </p>
         </div>
         <div className="page-head__actions">
@@ -136,6 +165,13 @@ function Feed({ topics }: { topics: string[] }) {
           ))}
         </div>
       </div>
+
+      {missingTopics.length > 0 ? (
+        <p className="notice notice--quiet">
+          No snapshot yet for {missingTopics.map(categoryLabel).join(", ")} —
+          these fields will appear after the next site update.
+        </p>
+      ) : null}
 
       {loading ? (
         <PaperListSkeleton />
