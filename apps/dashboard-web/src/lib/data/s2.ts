@@ -2,6 +2,7 @@
 
 import type {
   FeedResponse,
+  GraphPaper,
   Paper,
   PaperExtras,
   RelatedPaper,
@@ -335,6 +336,7 @@ export async function getPaperFromS2(
 type S2PaperDetail = {
   citationCount?: number;
   influentialCitationCount?: number;
+  referenceCount?: number;
   venue?: string;
   url?: string;
   tldr?: { text?: string } | null;
@@ -395,7 +397,8 @@ export async function getPaperExtras(
   arxivId: string,
   signal?: AbortSignal,
 ): Promise<PaperExtras> {
-  const detailFields = "citationCount,influentialCitationCount,venue,url,tldr";
+  const detailFields =
+    "citationCount,influentialCitationCount,referenceCount,venue,url,tldr";
 
   const [detailResult, recommendationsResult] = await Promise.allSettled([
     fetchS2Json<S2PaperDetail>(
@@ -412,6 +415,7 @@ export async function getPaperExtras(
   return {
     citationCount: detail?.citationCount ?? null,
     influentialCitationCount: detail?.influentialCitationCount ?? null,
+    referenceCount: detail?.referenceCount ?? null,
     venue: detail?.venue?.trim() || null,
     tldr: detail?.tldr?.text?.trim() || null,
     semanticScholarUrl: detail?.url ?? null,
@@ -420,4 +424,72 @@ export async function getPaperExtras(
       .filter((paper) => paper.title !== "Untitled"),
     partial: detail === null || recommendationsResult.status === "rejected",
   };
+}
+
+/* --------------------------- Citation graph -------------------------- */
+
+type S2GraphEdge = {
+  citedPaper?: S2GraphNode;
+  citingPaper?: S2GraphNode;
+};
+
+type S2GraphNode = {
+  title?: string;
+  year?: number | null;
+  authors?: S2Author[];
+  externalIds?: { ArXiv?: string } | null;
+  url?: string;
+  citationCount?: number | null;
+};
+
+function toGraphPaper(node: S2GraphNode | undefined): GraphPaper | null {
+  if (!node) {
+    return null;
+  }
+  const title = clean(node.title);
+  if (!title) {
+    return null;
+  }
+  return {
+    title,
+    authors: (node.authors ?? []).map((author) => clean(author.name)).filter(Boolean),
+    year: node.year ?? null,
+    arxivId: node.externalIds?.ArXiv ?? null,
+    externalUrl: node.url ?? null,
+    citationCount: node.citationCount ?? null,
+  };
+}
+
+const GRAPH_FIELDS = "title,year,authors,externalIds,url,citationCount";
+
+/** Works this paper cites (its bibliography), most-cited first. */
+export async function getReferences(
+  arxivId: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<GraphPaper[]> {
+  const page = await fetchS2Json<{ data?: S2GraphEdge[] }>(
+    `/graph/v1/paper/arXiv:${arxivId}/references?fields=${GRAPH_FIELDS}&limit=${limit}`,
+    signal,
+  );
+  return (page.data ?? [])
+    .map((edge) => toGraphPaper(edge.citedPaper))
+    .filter((paper): paper is GraphPaper => paper !== null)
+    .sort((a, b) => (b.citationCount ?? 0) - (a.citationCount ?? 0));
+}
+
+/** Works citing this paper, most-cited first (influence at a glance). */
+export async function getCitations(
+  arxivId: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<GraphPaper[]> {
+  const page = await fetchS2Json<{ data?: S2GraphEdge[] }>(
+    `/graph/v1/paper/arXiv:${arxivId}/citations?fields=${GRAPH_FIELDS}&limit=${limit}`,
+    signal,
+  );
+  return (page.data ?? [])
+    .map((edge) => toGraphPaper(edge.citingPaper))
+    .filter((paper): paper is GraphPaper => paper !== null)
+    .sort((a, b) => (b.citationCount ?? 0) - (a.citationCount ?? 0));
 }

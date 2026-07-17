@@ -2,7 +2,7 @@
 
 import { Activity, ArrowRight, Loader2, Rss, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
@@ -58,10 +58,29 @@ function Onboarding() {
   );
 }
 
+const LAST_VISIT_KEY = "scholarpulse.feed-last-visit.v1";
+
 function Feed({ topics }: { topics: string[] }) {
   const [focusRaw, setFocus] = useState<string | null>(null);
   // A focused topic the user stopped following silently falls back to "all".
   const focus = focusRaw && topics.includes(focusRaw) ? focusRaw : null;
+
+  // What was new when this visit started; recorded once, so the markers
+  // stay stable while the user browses. (Feed only mounts post-hydration.)
+  const [lastVisit] = useState<string | null>(() => {
+    try {
+      return window.localStorage.getItem(LAST_VISIT_KEY);
+    } catch {
+      return null;
+    }
+  });
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LAST_VISIT_KEY, new Date().toISOString());
+    } catch {
+      // Private browsing: every visit simply counts as the first.
+    }
+  }, []);
 
   const activeCategories = useMemo(
     () => (focus ? [focus] : topics),
@@ -134,9 +153,21 @@ function Feed({ topics }: { topics: string[] }) {
       ) : (
         <>
           <div className="paper-list">
-            {papers.map((paper) => (
-              <PaperCard key={paper.id} paper={paper} />
-            ))}
+            {papers.map((paper, index) => {
+              const isNew = lastVisit !== null && paper.published > lastVisit;
+              const prevWasNew =
+                index > 0 && lastVisit !== null && papers[index - 1].published > lastVisit;
+              return (
+                <Fragment key={paper.id}>
+                  {prevWasNew && !isNew ? (
+                    <div className="feed-divider" role="separator">
+                      <span>You&apos;re caught up — earlier papers below</span>
+                    </div>
+                  ) : null}
+                  <PaperCard paper={paper} isNew={isNew} />
+                </Fragment>
+              );
+            })}
           </div>
           {hasMore ? (
             <div className="load-more">

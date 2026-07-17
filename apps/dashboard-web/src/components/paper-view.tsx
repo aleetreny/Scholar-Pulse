@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { CitationGraph } from "@/components/citation-graph";
 import { showToast } from "@/components/toast";
 import { ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TexText } from "@/components/tex-text";
@@ -375,6 +376,14 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           </span>
         </div>
       </section>
+
+      {extras && !extras.partial ? (
+        <CitationGraph
+          arxivId={paper.id}
+          referenceCount={extras.referenceCount}
+          citationCount={extras.citationCount}
+        />
+      ) : null}
 
       {extras ? <RelatedPapers extras={extras} /> : null}
 
