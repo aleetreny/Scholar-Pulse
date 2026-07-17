@@ -6,8 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
-import { CATEGORY_GROUPS } from "@/lib/categories";
-import { getSearch } from "@/lib/client-api";
+import { searchPapers, SEARCH_FIELDS_OF_STUDY } from "@/lib/data/s2";
 import { formatCount } from "@/lib/format";
 import { useRecentSearches } from "@/lib/store";
 import type { SearchSort } from "@/lib/types";
@@ -18,7 +17,6 @@ const DEBOUNCE_MS = 450;
 const SORT_OPTIONS: { value: SearchSort; label: string }[] = [
   { value: "relevance", label: "Relevance" },
   { value: "recent", label: "Newest" },
-  { value: "updated", label: "Recently updated" },
 ];
 
 export function SearchView() {
@@ -28,7 +26,7 @@ export function SearchView() {
 
   const [input, setInput] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery.trim());
-  const [category, setCategory] = useState<string>("");
+  const [field, setField] = useState<string>("");
   const [sort, setSort] = useState<SearchSort>("relevance");
   const inputRef = useRef<HTMLInputElement>(null);
   const { searches, addSearch, clearSearches } = useRecentSearches();
@@ -48,13 +46,13 @@ export function SearchView() {
     return () => window.clearTimeout(handle);
   }, [input, router]);
 
-  const enabled = query.length > 0 || category.length > 0;
-  const queryKey = `${query}::${category}::${sort}`;
+  const enabled = query.length > 0;
+  const queryKey = `${query}::${field}::${sort}`;
 
   const fetchPage = useCallback(
     (start: number, signal: AbortSignal) =>
-      getSearch(query, category || null, sort, start, PAGE_SIZE, signal),
-    [query, category, sort],
+      searchPapers(query, field || null, sort, start, PAGE_SIZE, signal),
+    [query, field, sort],
   );
 
   const { papers, total, loading, loadingMore, error, hasMore, loadMore, retry } =
@@ -74,8 +72,8 @@ export function SearchView() {
         <div>
           <h1>Search arXiv</h1>
           <p className="page-head__sub">
-            The full arXiv corpus. Use quotes for exact phrases, e.g. &quot;state
-            space models&quot;.
+            Every arXiv paper, by title, abstract, or author — powered by
+            Semantic Scholar.
           </p>
         </div>
       </div>
@@ -133,19 +131,15 @@ export function SearchView() {
 
         <div className="select-wrap">
           <select
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            aria-label="Filter by field"
+            value={field}
+            onChange={(event) => setField(event.target.value)}
+            aria-label="Filter by field of study"
           >
             <option value="">All fields</option>
-            {CATEGORY_GROUPS.map((group) => (
-              <optgroup key={group.label} label={group.label}>
-                {group.categories.map(({ id, label }) => (
-                  <option key={id} value={id}>
-                    {label} ({id})
-                  </option>
-                ))}
-              </optgroup>
+            {SEARCH_FIELDS_OF_STUDY.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
             ))}
           </select>
           <ChevronDown />
@@ -190,15 +184,12 @@ export function SearchView() {
       ) : loading ? (
         <PaperListSkeleton />
       ) : error ? (
-        <ErrorBox
-          message={`Couldn't reach arXiv right now. ${error}`}
-          onRetry={retry}
-        />
+        <ErrorBox message={error} onRetry={retry} />
       ) : papers.length === 0 ? (
         <EmptyState
           icon={SearchX}
           title="No results"
-          body={`Nothing on arXiv matches “${query}”${category ? ` in ${category}` : ""}. Try fewer or broader terms.`}
+          body={`Nothing on arXiv matches “${query}”${field ? ` in ${field}` : ""}. Try fewer or broader terms.`}
         />
       ) : (
         <>
