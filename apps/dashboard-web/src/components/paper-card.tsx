@@ -7,6 +7,7 @@ import { memo } from "react";
 import { TexText } from "@/components/tex-text";
 import { showToast } from "@/components/toast";
 import { categoryLabel } from "@/lib/categories";
+import { stashPaper } from "@/lib/data/paper-cache";
 import { formatAuthors, formatRelativeDate } from "@/lib/format";
 import { useLibrary } from "@/lib/store";
 import type { Paper } from "@/lib/types";
@@ -46,7 +47,11 @@ export const PaperCard = memo(function PaperCard({ paper }: { paper: Paper }) {
     .slice(0, 2);
 
   return (
-    <Link href={`/paper/${paper.id}`} className="paper-card">
+    <Link
+      href={`/paper?id=${encodeURIComponent(paper.id)}`}
+      className="paper-card"
+      onClick={() => stashPaper(paper)}
+    >
       <div className="paper-card__top">
         <h3 className="paper-card__title">
           <TexText text={paper.title} />
@@ -65,9 +70,11 @@ export const PaperCard = memo(function PaperCard({ paper }: { paper: Paper }) {
       ) : null}
 
       <div className="paper-card__meta">
-        <span className="chip" title={paper.primaryCategory}>
-          {categoryLabel(paper.primaryCategory)}
-        </span>
+        {paper.primaryCategory ? (
+          <span className="chip" title={paper.primaryCategory}>
+            {categoryLabel(paper.primaryCategory)}
+          </span>
+        ) : null}
         {extraCategories.map((category) => (
           <span key={category} className="chip chip--plain" title={category}>
             {category}

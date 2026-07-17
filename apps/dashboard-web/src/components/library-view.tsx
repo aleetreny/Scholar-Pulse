@@ -15,6 +15,7 @@ import { EmptyState } from "@/components/states";
 import { TexText } from "@/components/tex-text";
 import { categoryLabel } from "@/lib/categories";
 import { libraryToBibtex } from "@/lib/citations";
+import { stashPaper } from "@/lib/data/paper-cache";
 import { formatAuthors, formatRelativeDate } from "@/lib/format";
 import { sortedLibraryEntries, useHydrated, useLibrary } from "@/lib/store";
 import type { LibraryEntry, ReadingStatus } from "@/lib/types";
@@ -38,16 +39,22 @@ function LibraryCard({ entry }: { entry: LibraryEntry }) {
   return (
     <div className="library-entry">
       <div className="library-entry__body">
-        <Link href={`/paper/${paper.id}`} style={{ display: "block" }}>
+        <Link
+          href={`/paper?id=${encodeURIComponent(paper.id)}`}
+          style={{ display: "block" }}
+          onClick={() => stashPaper(paper)}
+        >
           <h3 className="paper-card__title">
             <TexText text={paper.title} />
           </h3>
           <p className="paper-card__authors">{formatAuthors(paper.authors)}</p>
         </Link>
         <div className="paper-card__meta">
-          <span className="chip" title={paper.primaryCategory}>
-            {categoryLabel(paper.primaryCategory)}
-          </span>
+          {paper.primaryCategory ? (
+            <span className="chip" title={paper.primaryCategory}>
+              {categoryLabel(paper.primaryCategory)}
+            </span>
+          ) : null}
           <span className="paper-card__date">
             saved {formatRelativeDate(entry.savedAt)}
           </span>

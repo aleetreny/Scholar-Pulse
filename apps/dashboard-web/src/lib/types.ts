@@ -23,7 +23,7 @@ export type FeedResponse = {
   start: number;
 };
 
-export type SearchSort = "relevance" | "recent" | "updated";
+export type SearchSort = "relevance" | "recent";
 
 export type RelatedPaper = {
   title: string;

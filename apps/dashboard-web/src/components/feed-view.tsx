@@ -8,7 +8,7 @@ import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TopicPicker } from "@/components/topic-picker";
 import { categoryLabel } from "@/lib/categories";
-import { getFeed } from "@/lib/client-api";
+import { getFeed } from "@/lib/data/feed";
 import { useHydrated, useTopics } from "@/lib/store";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
@@ -70,8 +70,7 @@ function Feed({ topics }: { topics: string[] }) {
 
   const queryKey = activeCategories.join(",");
   const fetchPage = useCallback(
-    (start: number, signal: AbortSignal) =>
-      getFeed(queryKey.split(","), start, PAGE_SIZE, signal),
+    (start: number) => getFeed(queryKey.split(","), start, PAGE_SIZE),
     [queryKey],
   );
 
@@ -125,15 +124,12 @@ function Feed({ topics }: { topics: string[] }) {
       {loading ? (
         <PaperListSkeleton />
       ) : error ? (
-        <ErrorBox
-          message={`Couldn't reach arXiv right now. ${error}`}
-          onRetry={retry}
-        />
+        <ErrorBox message={error} onRetry={retry} />
       ) : papers.length === 0 ? (
         <EmptyState
           icon={Rss}
           title="Nothing here yet"
-          body="arXiv returned no recent papers for this selection. Try another topic or widen your feed."
+          body="No recent papers for this selection. Try another topic or widen your feed."
         />
       ) : (
         <>

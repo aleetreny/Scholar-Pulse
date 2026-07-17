@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated feed snapshots (built by scripts/build-feed-snapshots.mjs)
+/public/data/

@@ -15,14 +15,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { showToast } from "@/components/toast";
 import { ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TexText } from "@/components/tex-text";
 import { categoryLabel } from "@/lib/categories";
 import { toApaCitation, toBibtex } from "@/lib/citations";
-import { getPaper, getPaperExtras } from "@/lib/client-api";
+import { recallPaper, stashPaper } from "@/lib/data/paper-cache";
+import { getPaperExtras, getPaperFromS2 } from "@/lib/data/s2";
 import { formatAbsoluteDate, formatCount } from "@/lib/format";
 import { useLibrary } from "@/lib/store";
 import type { Paper, PaperExtras } from "@/lib/types";
@@ -67,7 +68,7 @@ function RelatedPapers({ extras }: { extras: PaperExtras }) {
           return related.arxivId ? (
             <Link
               key={`${related.arxivId}-${index}`}
-              href={`/paper/${related.arxivId}`}
+              href={`/paper?id=${encodeURIComponent(related.arxivId)}`}
               className="related-card"
             >
               {inner}
@@ -89,6 +90,8 @@ function RelatedPapers({ extras }: { extras: PaperExtras }) {
   );
 }
 
+const emptySubscribe = () => () => {};
+
 export function PaperView({ arxivId }: { arxivId: string }) {
   const router = useRouter();
   // Results are keyed by the request they answer, so switching papers
@@ -101,25 +104,42 @@ export function PaperView({ arxivId }: { arxivId: string }) {
 
   const key = `${arxivId}#${reloadToken}`;
 
+  // Cards stash the full arXiv record before navigating; reading it as an
+  // external-store snapshot (null on the server) keeps SSR output stable.
+  const stashed = useSyncExternalStore(
+    emptySubscribe,
+    () => recallPaper(arxivId),
+    () => null,
+  );
+
+  const fetched = paperResult?.key === key ? paperResult.paper : null;
+  const paper = fetched ?? stashed;
+  const extras = extrasResult?.key === key ? extrasResult.extras : null;
+  const error = errorResult?.key === key ? errorResult.message : null;
+
   useEffect(() => {
     const controller = new AbortController();
 
-    getPaper(arxivId, controller.signal)
-      .then((response) => {
-        if (!controller.signal.aborted) {
-          setPaperResult({ key, paper: response.paper });
-        }
-      })
-      .catch((fetchError: unknown) => {
-        if (controller.signal.aborted) {
-          return;
-        }
-        setErrorResult({
-          key,
-          message:
-            fetchError instanceof Error ? fetchError.message : "Request failed",
+    // Deep links have no stash; reconstruct what we can from S2.
+    if (!recallPaper(arxivId)) {
+      getPaperFromS2(arxivId, controller.signal)
+        .then((freshPaper) => {
+          if (!controller.signal.aborted) {
+            stashPaper(freshPaper);
+            setPaperResult({ key, paper: freshPaper });
+          }
+        })
+        .catch((fetchError: unknown) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+          setErrorResult({
+            key,
+            message:
+              fetchError instanceof Error ? fetchError.message : "Request failed",
+          });
         });
-      });
+    }
 
     getPaperExtras(arxivId, controller.signal)
       .then((extras) => {
@@ -133,10 +153,6 @@ export function PaperView({ arxivId }: { arxivId: string }) {
 
     return () => controller.abort();
   }, [arxivId, key]);
-
-  const paper = paperResult?.key === key ? paperResult.paper : null;
-  const extras = extrasResult?.key === key ? extrasResult.extras : null;
-  const error = errorResult?.key === key ? errorResult.message : null;
 
   useEffect(() => {
     if (paper) {
@@ -206,9 +222,11 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           <CalendarDays />
           {formatAbsoluteDate(paper.published)}
         </span>
-        <span className="chip" title={paper.primaryCategory}>
-          {categoryLabel(paper.primaryCategory)}
-        </span>
+        {paper.primaryCategory ? (
+          <span className="chip" title={paper.primaryCategory}>
+            {categoryLabel(paper.primaryCategory)}
+          </span>
+        ) : null}
         {extras?.citationCount !== null && extras?.citationCount !== undefined ? (
           <span
             className="stat-chip"
@@ -301,14 +319,18 @@ export function PaperView({ arxivId }: { arxivId: string }) {
               </a>
             </div>
           </div>
-          <div className="fact">
-            <div className="fact__label">Categories</div>
-            <div className="fact__value">{paper.categories.join(", ")}</div>
-          </div>
-          <div className="fact">
-            <div className="fact__label">Last updated</div>
-            <div className="fact__value">{formatAbsoluteDate(paper.updated)}</div>
-          </div>
+          {paper.categories.length > 0 ? (
+            <div className="fact">
+              <div className="fact__label">Categories</div>
+              <div className="fact__value">{paper.categories.join(", ")}</div>
+            </div>
+          ) : null}
+          {paper.updated !== paper.published ? (
+            <div className="fact">
+              <div className="fact__label">Last updated</div>
+              <div className="fact__value">{formatAbsoluteDate(paper.updated)}</div>
+            </div>
+          ) : null}
           {paper.journalRef ? (
             <div className="fact">
               <div className="fact__label">Journal reference</div>
