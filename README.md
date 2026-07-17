@@ -30,14 +30,17 @@ The platform maps scientific frontier dynamics using embedding-space geometry, d
 ## Web App (`apps/dashboard-web/`)
 
 The user-facing product is a standalone researcher app: a personalized feed of
-the newest arXiv papers, full search, paper pages with citations/TL;DR/similar
-papers (Semantic Scholar), and a local reading library with BibTeX export. It
-needs **no local pipeline or backend** — it consumes public scholarly APIs
-through its own Next.js route handlers.
+the newest arXiv papers with new-since-last-visit markers, search, paper pages
+with citations/TL;DR/similar papers and a citation-graph explorer (Semantic
+Scholar), and a local reading library with BibTeX export. It is **fully
+static** — deployed to GitHub Pages at
+<https://aleetreny.github.io/Scholar-Pulse/>, with feed data prebuilt on a CI
+schedule and everything else fetched client-side.
 
 ```bash
 cd apps/dashboard-web
 npm install
+npm run snapshots -- --cats cs.LG,cs.CL --max 60
 npm run dev
 ```
 

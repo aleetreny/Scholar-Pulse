@@ -9,6 +9,7 @@ import { showToast } from "@/components/toast";
 import { categoryLabel } from "@/lib/categories";
 import { stashPaper } from "@/lib/data/paper-cache";
 import { formatAuthors, formatRelativeDate } from "@/lib/format";
+import { paperHref } from "@/lib/paper-link";
 import { useLibrary } from "@/lib/store";
 import type { Paper } from "@/lib/types";
 
@@ -54,7 +55,7 @@ export const PaperCard = memo(function PaperCard({
 
   return (
     <Link
-      href={`/paper?id=${encodeURIComponent(paper.id)}`}
+      href={paperHref(paper.id)}
       className="paper-card"
       onClick={() => stashPaper(paper)}
     >

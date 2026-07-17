@@ -16,7 +16,7 @@
   --rule: #2b2418;
   --ink: #211d14;
   --muted: #6b6353;
-  --faint: #97907e;
+  --faint: #756d5b;
   --accent: #8e2f22;
   --accent-strong: #6f2118;
   --accent-ink: #f6f2e8;
@@ -46,7 +46,7 @@
   --rule: #e6dcc4;
   --ink: #eae2d0;
   --muted: #a89e88;
-  --faint: #7c745f;
+  --faint: #8d8571;
   --accent: #dc9a80;
   --accent-strong: #eab4a0;
   --accent-ink: #241207;
@@ -135,15 +135,6 @@ kbd {
   border-radius: 3px;
   font-family: var(--font-mono);
   font-size: 11px;
-}
-
-/* Small-caps label utility, reused across meta lines and headers. */
-.smallcaps,
-.page-head__eyebrow {
-  font-size: 11px;
-  font-weight: 620;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
 }
 
 /* ================================================================== */
@@ -1248,6 +1239,16 @@ kbd {
   flex-shrink: 0;
   margin-top: 1px;
   color: var(--amber);
+}
+
+.notice--quiet {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.page-head__stamp {
+  color: var(--faint);
 }
 
 /* Related papers */
