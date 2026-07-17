@@ -123,6 +123,7 @@ export function SearchView() {
               key={option.value}
               type="button"
               data-active={sort === option.value}
+              aria-pressed={sort === option.value}
               onClick={() => setSort(option.value)}
             >
               {option.label}
