@@ -187,7 +187,19 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         <TexText text={paper.title} />
       </h1>
 
-      <p className="paper-page__byline">{paper.authors.join(", ")}</p>
+      <p className="paper-page__byline">
+        {paper.authors.map((author, index) => (
+          <span key={`${author}-${index}`}>
+            {index > 0 ? ", " : null}
+            <Link
+              href={`/search?q=${encodeURIComponent(`"${author}"`)}`}
+              title={`Search papers by ${author}`}
+            >
+              {author}
+            </Link>
+          </span>
+        ))}
+      </p>
 
       <div className="paper-page__stats">
         <span className="stat-chip">
