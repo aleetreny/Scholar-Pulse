@@ -21,12 +21,66 @@ const ARXIV_API_BASE = (
   process.env.ARXIV_API_BASE ?? "https://export.arxiv.org/api"
 ).replace(/\/$/, "");
 
+// Where the deployed site lives — RSS items link back into the app.
+const SITE_BASE_URL = (
+  process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
+).replace(/\/$/, "");
+
 const PAPERS_PER_CATEGORY = 100;
+const RSS_ITEMS = 40;
 const POLITE_DELAY_MS = 3200; // arXiv asks for ~1 request every 3 seconds.
 const RETRIES = 3;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "..", "public", "data", "feed");
+const rssDir = path.join(here, "..", "public", "data", "rss");
+
+/* ------------------------------- RSS -------------------------------- */
+
+function xmlEscape(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * RSS 2.0 per category — the static replacement for e-mail alerts: follow
+ * a field from any feed reader, no server required.
+ */
+function toRss(category, label, papers, generatedAt) {
+  const items = papers.slice(0, RSS_ITEMS).map((paper) => {
+    const link = `${SITE_BASE_URL}/paper/?id=${encodeURIComponent(paper.id)}`;
+    return [
+      "    <item>",
+      `      <title>${xmlEscape(paper.title)}</title>`,
+      `      <link>${xmlEscape(link)}</link>`,
+      `      <guid isPermaLink="false">arxiv:${xmlEscape(paper.id)}</guid>`,
+      `      <pubDate>${new Date(paper.published).toUTCString()}</pubDate>`,
+      `      <description>${xmlEscape(
+        `${paper.authors.join(", ")} — ${paper.abstract}`,
+      )}</description>`,
+      "    </item>",
+    ].join("\n");
+  });
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<rss version="2.0">',
+    "  <channel>",
+    `    <title>ScholarPulse — ${xmlEscape(label)} (${xmlEscape(category)})</title>`,
+    `    <link>${xmlEscape(SITE_BASE_URL)}/</link>`,
+    `    <description>${xmlEscape(
+      `The newest arXiv submissions in ${label}, via ScholarPulse.`,
+    )}</description>`,
+    `    <lastBuildDate>${new Date(generatedAt).toUTCString()}</lastBuildDate>`,
+    items.join("\n"),
+    "  </channel>",
+    "</rss>",
+    "",
+  ].join("\n");
+}
 
 function parseArgs(argv) {
   const args = { cats: null, max: PAPERS_PER_CATEGORY };
@@ -90,7 +144,13 @@ async function main() {
   }
 
   await mkdir(outDir, { recursive: true });
+  await mkdir(rssDir, { recursive: true });
   const generatedAt = new Date().toISOString();
+  const labelFor = new Map(
+    CATEGORY_GROUPS.flatMap((group) =>
+      group.categories.map(({ id, label }) => [id, label]),
+    ),
+  );
   const succeeded = [];
   const failed = [];
 
@@ -102,6 +162,10 @@ async function main() {
       await writeFile(
         path.join(outDir, `${category}.json`),
         JSON.stringify(snapshot),
+      );
+      await writeFile(
+        path.join(rssDir, `${category}.xml`),
+        toRss(category, labelFor.get(category) ?? category, papers, generatedAt),
       );
       succeeded.push(category);
       console.log(`  ${category}: ${papers.length} papers`);
