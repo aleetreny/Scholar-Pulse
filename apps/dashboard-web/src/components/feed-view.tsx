@@ -10,21 +10,19 @@ import { TopicPicker } from "@/components/topic-picker";
 import { categoryLabel } from "@/lib/categories";
 import { getFeed, getManifest } from "@/lib/data/feed";
 import { formatRelativeDate } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { useHydrated, useTopics } from "@/lib/store";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
 function Onboarding() {
   const { topics, setTopics } = useTopics();
   const [draft, setDraft] = useState<string[]>(topics);
+  const { t } = useT();
 
   return (
     <div className="onboard">
-      <h1>What are you researching?</h1>
-      <p>
-        Pick the fields you care about and ScholarPulse turns them into a daily
-        feed of the newest papers on arXiv — searchable, citable, and yours to
-        collect.
-      </p>
+      <h1>{t("onboard.title")}</h1>
+      <p>{t("onboard.body")}</p>
 
       <div className="onboard__topics">
         <TopicPicker
@@ -47,8 +45,10 @@ function Onboarding() {
           onClick={() => setTopics(draft)}
         >
           {draft.length === 0
-            ? "Pick at least one field"
-            : `Build my feed (${draft.length} ${draft.length === 1 ? "field" : "fields"})`}
+            ? t("onboard.pickOne")
+            : draft.length === 1
+              ? t("onboard.buildOne")
+              : t("onboard.buildMany", { n: draft.length })}
           <ArrowRight />
         </button>
       </div>
@@ -60,6 +60,7 @@ const LAST_VISIT_KEY = "scholarpulse.feed-last-visit.v1";
 
 function Feed({ topics }: { topics: string[] }) {
   const [focusRaw, setFocus] = useState<string | null>(null);
+  const { t, lang } = useT();
   // A focused topic the user stopped following silently falls back to "all".
   const focus = focusRaw && topics.includes(focusRaw) ? focusRaw : null;
 
@@ -120,13 +121,15 @@ function Feed({ topics }: { topics: string[] }) {
     <div className="main__column">
       <div className="page-head">
         <div>
-          <h1>For you</h1>
+          <h1>{t("feed.title")}</h1>
           <p className="page-head__sub">
-            The newest submissions across the fields you follow.
+            {t("feed.sub")}
             {manifest ? (
               <span className="page-head__stamp">
                 {" "}
-                Updated {formatRelativeDate(manifest.generatedAt)}.
+                {t("feed.updated", {
+                  when: formatRelativeDate(manifest.generatedAt, lang),
+                })}
               </span>
             ) : null}
           </p>
@@ -134,13 +137,13 @@ function Feed({ topics }: { topics: string[] }) {
         <div className="page-head__actions">
           <Link href="/topics" className="btn btn--ghost btn--small">
             <SlidersHorizontal />
-            Edit topics
+            {t("feed.editTopics")}
           </Link>
         </div>
       </div>
 
       <div className="feed-toolbar">
-        <div className="feed-toolbar__topics" role="group" aria-label="Filter by topic">
+        <div className="feed-toolbar__topics" role="group" aria-label={t("feed.filterAria")}>
           <button
             type="button"
             className="topic-pill"
@@ -148,7 +151,7 @@ function Feed({ topics }: { topics: string[] }) {
             aria-pressed={focus === null}
             onClick={() => setFocus(null)}
           >
-            All fields
+            {t("feed.allFields")}
           </button>
           {topics.map((id) => (
             <button
@@ -168,8 +171,9 @@ function Feed({ topics }: { topics: string[] }) {
 
       {missingTopics.length > 0 ? (
         <p className="notice notice--quiet">
-          No snapshot yet for {missingTopics.map(categoryLabel).join(", ")} —
-          these fields will appear after the next site update.
+          {t("feed.missingSnapshot", {
+            fields: missingTopics.map(categoryLabel).join(", "),
+          })}
         </p>
       ) : null}
 
@@ -180,8 +184,8 @@ function Feed({ topics }: { topics: string[] }) {
       ) : papers.length === 0 ? (
         <EmptyState
           icon={Rss}
-          title="Nothing here yet"
-          body="No recent papers for this selection. Try another topic or widen your feed."
+          title={t("feed.emptyTitle")}
+          body={t("feed.emptyBody")}
         />
       ) : (
         <>
@@ -194,7 +198,7 @@ function Feed({ topics }: { topics: string[] }) {
                 <Fragment key={paper.id}>
                   {prevWasNew && !isNew ? (
                     <div className="feed-divider" role="separator">
-                      <span>You&apos;re caught up — earlier papers below</span>
+                      <span>{t("feed.caughtUp")}</span>
                     </div>
                   ) : null}
                   <PaperCard paper={paper} isNew={isNew} />
@@ -211,7 +215,7 @@ function Feed({ topics }: { topics: string[] }) {
                 disabled={loadingMore}
               >
                 {loadingMore ? <Loader2 className="spin" /> : null}
-                {loadingMore ? "Loading" : "Load more papers"}
+                {loadingMore ? t("feed.loading") : t("feed.loadMore")}
               </button>
             </div>
           ) : null}

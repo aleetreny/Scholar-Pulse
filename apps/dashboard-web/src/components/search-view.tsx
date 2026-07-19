@@ -8,15 +8,16 @@ import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
 import { searchPapers, SEARCH_FIELDS_OF_STUDY } from "@/lib/data/s2";
 import { formatCount } from "@/lib/format";
+import { useT, type StringKey } from "@/lib/i18n";
 import { useRecentSearches } from "@/lib/store";
 import type { SearchSort } from "@/lib/types";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
 const DEBOUNCE_MS = 450;
 
-const SORT_OPTIONS: { value: SearchSort; label: string }[] = [
-  { value: "relevance", label: "Relevance" },
-  { value: "recent", label: "Newest" },
+const SORT_OPTIONS: { value: SearchSort; labelKey: StringKey }[] = [
+  { value: "relevance", labelKey: "search.relevance" },
+  { value: "recent", labelKey: "search.newest" },
 ];
 
 export function SearchView() {
@@ -30,6 +31,7 @@ export function SearchView() {
   const [sort, setSort] = useState<SearchSort>("relevance");
   const inputRef = useRef<HTMLInputElement>(null);
   const { searches, addSearch, clearSearches } = useRecentSearches();
+  const { t } = useT();
 
   // Debounce typing into the executed query, and mirror it into the URL so
   // searches are shareable and survive reloads.
@@ -70,11 +72,8 @@ export function SearchView() {
     <div className="main__column">
       <div className="page-head">
         <div>
-          <h1>Search arXiv</h1>
-          <p className="page-head__sub">
-            Every arXiv paper, by title, abstract, or author — powered by
-            Semantic Scholar.
-          </p>
+          <h1>{t("search.title")}</h1>
+          <p className="page-head__sub">{t("search.sub")}</p>
         </div>
       </div>
 
@@ -92,8 +91,8 @@ export function SearchView() {
           type="search"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Search titles, abstracts, authors…"
-          aria-label="Search arXiv"
+          placeholder={t("search.placeholder")}
+          aria-label={t("search.inputAria")}
           autoFocus
           enterKeyHint="search"
           autoComplete="off"
@@ -103,7 +102,7 @@ export function SearchView() {
           <button
             type="button"
             className="searchbar__clear"
-            aria-label="Clear search"
+            aria-label={t("search.clearAria")}
             onClick={() => {
               setInput("");
               inputRef.current?.focus();
@@ -115,7 +114,7 @@ export function SearchView() {
       </form>
 
       <div className="search-controls">
-        <div className="segmented" role="group" aria-label="Sort results">
+        <div className="segmented" role="group" aria-label={t("search.sortAria")}>
           {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -124,7 +123,7 @@ export function SearchView() {
               aria-pressed={sort === option.value}
               onClick={() => setSort(option.value)}
             >
-              {option.label}
+              {t(option.labelKey)}
             </button>
           ))}
         </div>
@@ -133,9 +132,9 @@ export function SearchView() {
           <select
             value={field}
             onChange={(event) => setField(event.target.value)}
-            aria-label="Filter by field of study"
+            aria-label={t("search.fieldAria")}
           >
-            <option value="">All fields</option>
+            <option value="">{t("search.allFields")}</option>
             {SEARCH_FIELDS_OF_STUDY.map((name) => (
               <option key={name} value={name}>
                 {name}
@@ -151,7 +150,7 @@ export function SearchView() {
           <div className="recent-searches">
             <span className="recent-searches__label">
               <Clock size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
-              Recent
+              {t("search.recent")}
             </span>
             {searches.map((recent) => (
               <button
@@ -171,14 +170,14 @@ export function SearchView() {
               className="btn btn--ghost btn--small"
               onClick={clearSearches}
             >
-              Clear
+              {t("search.clearRecent")}
             </button>
           </div>
         ) : (
           <EmptyState
             icon={Search}
-            title="Find your next reference"
-            body="Search across every arXiv paper by keyword, phrase, or author — then filter by field and sort by freshness."
+            title={t("search.emptyTitle")}
+            body={t("search.emptyBody")}
           />
         )
       ) : loading ? (
@@ -188,13 +187,18 @@ export function SearchView() {
       ) : papers.length === 0 ? (
         <EmptyState
           icon={SearchX}
-          title="No results"
-          body={`Nothing on arXiv matches “${query}”${field ? ` in ${field}` : ""}. Try fewer or broader terms.`}
+          title={t("search.noResultsTitle")}
+          body={t("search.noResultsBody", {
+            query,
+            inField: field ? t("search.inField", { field }) : "",
+          })}
         />
       ) : (
         <>
           <p className="result-count">
-            {formatCount(total)} result{total === 1 ? "" : "s"}
+            {total === 1
+              ? t("search.resultsOne", { n: formatCount(total) })
+              : t("search.resultsMany", { n: formatCount(total) })}
           </p>
           <div className="paper-list">
             {papers.map((paper) => (
