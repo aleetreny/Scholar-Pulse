@@ -53,6 +53,10 @@ export default function RootLayout({
       className={`${inter.variable} ${sourceSerif.variable} ${plexMono.variable}`}
     >
       <body>
+        {/* React hoists these; shaving the TLS handshake off the first
+            search/enrichment request matters on a static site. */}
+        <link rel="preconnect" href="https://api.openalex.org" />
+        <link rel="preconnect" href="https://api.semanticscholar.org" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         <AppShell>{children}</AppShell>
       </body>

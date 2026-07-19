@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { TexText } from "@/components/tex-text";
-import { getCitations, getReferences } from "@/lib/data/s2";
+import { getCitations, getReferences } from "@/lib/data/openalex";
 import { formatCount } from "@/lib/format";
 import { useT, type Translate } from "@/lib/i18n";
 import { paperHref } from "@/lib/paper-link";
@@ -146,16 +146,15 @@ function GraphSection({
 
 /**
  * The paper's place in the literature: what it builds on and what built
- * on it. Each list loads only when expanded — Semantic Scholar's shared
- * rate-limit pool is precious.
+ * on it, via OpenAlex. Each list loads only when expanded.
  */
 export function CitationGraph({
-  arxivId,
-  referenceCount,
+  workId,
+  referencedWorks,
   citationCount,
 }: {
-  arxivId: string;
-  referenceCount: number | null;
+  workId: string;
+  referencedWorks: string[];
   citationCount: number | null;
 }) {
   const { t } = useT();
@@ -165,15 +164,15 @@ export function CitationGraph({
       <GraphSection
         label={t("paper.buildsOn")}
         hint={t("paper.buildsOnHint")}
-        count={referenceCount}
-        load={() => getReferences(arxivId, PAGE)}
+        count={referencedWorks.length}
+        load={() => getReferences(referencedWorks, PAGE)}
         t={t}
       />
       <GraphSection
         label={t("paper.citedBy")}
         hint={t("paper.citedByHint")}
         count={citationCount}
-        load={() => getCitations(arxivId, PAGE)}
+        load={() => getCitations(workId, PAGE)}
         t={t}
       />
     </section>

@@ -8,8 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "snapshots": "node scripts/build-feed-snapshots.mjs",
-    "rss": "node scripts/build-rss-from-json.mjs"
+    "snapshots": "node scripts/build-feed-snapshots.mjs"
   },
   "dependencies": {
     "katex": "^0.17.0",

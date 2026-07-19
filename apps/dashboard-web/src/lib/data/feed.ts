@@ -116,3 +116,63 @@ export async function getFeed(
     missing,
   };
 }
+
+/**
+ * Last-resort search over the shipped snapshots (title/author/abstract
+ * substring match) — instant and offline-friendly, but only covers each
+ * category's latest ~100 submissions. Used when the live search upstream
+ * is unreachable. Followed categories are scanned first so their
+ * already-cached snapshots cover the common case without extra fetches.
+ */
+export async function searchSnapshots(
+  query: string,
+  followed: string[],
+  start: number,
+  max: number,
+): Promise<FeedResponse> {
+  const needle = query.replace(/^"|"$/g, "").toLowerCase().trim();
+  if (!needle) {
+    return { papers: [], totalResults: 0, start };
+  }
+
+  let categories = followed;
+  try {
+    const manifest = await getManifest();
+    const rest = manifest.categories.filter((id) => !followed.includes(id));
+    categories = [...followed, ...rest].slice(0, 20);
+  } catch {
+    // No manifest: scan whatever the caller follows.
+  }
+
+  const results = await Promise.allSettled(
+    categories.map((category) => fetchCategorySnapshot(category)),
+  );
+
+  const seen = new Set<string>();
+  const matches: Paper[] = [];
+  for (const result of results) {
+    if (result.status !== "fulfilled") {
+      continue;
+    }
+    for (const paper of result.value.papers) {
+      if (seen.has(paper.id)) {
+        continue;
+      }
+      if (
+        paper.title.toLowerCase().includes(needle) ||
+        paper.abstract.toLowerCase().includes(needle) ||
+        paper.authors.some((author) => author.toLowerCase().includes(needle))
+      ) {
+        seen.add(paper.id);
+        matches.push(paper);
+      }
+    }
+  }
+  matches.sort((a, b) => b.published.localeCompare(a.published));
+
+  return {
+    papers: matches.slice(start, start + max),
+    totalResults: matches.length,
+    start,
+  };
+}

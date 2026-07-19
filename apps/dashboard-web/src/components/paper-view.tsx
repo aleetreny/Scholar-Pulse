@@ -23,6 +23,11 @@ import { ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TexText } from "@/components/tex-text";
 import { categoryLabel } from "@/lib/categories";
 import { toApaCitation, toBibtex } from "@/lib/citations";
+import {
+  getPaperFromOpenAlex,
+  resolveWork,
+  type ResolvedWork,
+} from "@/lib/data/openalex";
 import { recallPaper, stashPaper } from "@/lib/data/paper-cache";
 import { getPaperExtras, getPaperFromS2 } from "@/lib/data/s2";
 import { paperHref } from "@/lib/paper-link";
@@ -102,6 +107,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
   // presents as "loading" without imperative state resets.
   const [paperResult, setPaperResult] = useState<{ key: string; paper: Paper } | null>(null);
   const [extrasResult, setExtrasResult] = useState<{ key: string; extras: PaperExtras } | null>(null);
+  const [oaResult, setOaResult] = useState<{ key: string; work: ResolvedWork | null } | null>(null);
   const [errorResult, setErrorResult] = useState<{ key: string; message: string } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const { isSaved, save, remove } = useLibrary();
@@ -120,14 +126,21 @@ export function PaperView({ arxivId }: { arxivId: string }) {
   const fetched = paperResult?.key === key ? paperResult.paper : null;
   const paper = fetched ?? stashed;
   const extras = extrasResult?.key === key ? extrasResult.extras : null;
+  const oa = oaResult?.key === arxivId ? oaResult.work : null;
   const error = errorResult?.key === key ? errorResult.message : null;
 
   useEffect(() => {
     const controller = new AbortController();
 
-    // Deep links have no stash; reconstruct what we can from S2.
+    // Deep links have no stash; reconstruct from OpenAlex, then S2.
     if (!recallPaper(arxivId)) {
-      getPaperFromS2(arxivId, controller.signal)
+      getPaperFromOpenAlex(arxivId, controller.signal)
+        .catch((firstError: unknown) => {
+          if (controller.signal.aborted) {
+            throw firstError;
+          }
+          return getPaperFromS2(arxivId, controller.signal);
+        })
         .then((freshPaper) => {
           if (!controller.signal.aborted) {
             stashPaper(freshPaper);
@@ -163,6 +176,25 @@ export function PaperView({ arxivId }: { arxivId: string }) {
     if (paper) {
       document.title = `${paper.title} · ScholarPulse`;
     }
+  }, [paper]);
+
+  // Locate the paper's OpenAlex work — powers the citation graph and the
+  // fallback citation count. Needs the title, so it waits for the paper.
+  useEffect(() => {
+    if (!paper) {
+      return;
+    }
+    const controller = new AbortController();
+    resolveWork(paper.id, paper.title, controller.signal)
+      .then((work) => {
+        if (!controller.signal.aborted) {
+          setOaResult({ key: paper.id, work });
+        }
+      })
+      .catch(() => {
+        // No graph, no fallback count — the page still works.
+      });
+    return () => controller.abort();
   }, [paper]);
 
   if (error) {
@@ -213,7 +245,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           <span key={`${author}-${index}`}>
             {index > 0 ? ", " : null}
             <Link
-              href={`/search?q=${encodeURIComponent(`"${author}"`)}`}
+              href={`/search?q=${encodeURIComponent(`author:${author}`)}`}
               title={t("paper.searchByAuthor", { author })}
             >
               {author}
@@ -232,17 +264,21 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             {categoryLabel(paper.primaryCategory)}
           </span>
         ) : null}
-        {extras?.citationCount !== null && extras?.citationCount !== undefined ? (
+        {(extras?.citationCount ?? oa?.citedByCount) !== null &&
+        (extras?.citationCount ?? oa?.citedByCount) !== undefined ? (
           <span
             className="stat-chip"
             title={
-              extras.influentialCitationCount
+              extras?.influentialCitationCount
                 ? t("paper.influential", { n: extras.influentialCitationCount })
                 : undefined
             }
           >
             <TrendingUp />
-            <strong>{formatCount(extras.citationCount)}</strong> {t("paper.citations")}
+            <strong>
+              {formatCount((extras?.citationCount ?? oa?.citedByCount) as number)}
+            </strong>{" "}
+            {t("paper.citations")}
           </span>
         ) : null}
         {extras?.venue ? <span className="chip chip--green">{extras.venue}</span> : null}
@@ -383,11 +419,11 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         </div>
       </section>
 
-      {extras && !extras.partial ? (
+      {oa ? (
         <CitationGraph
-          arxivId={paper.id}
-          referenceCount={extras.referenceCount}
-          citationCount={extras.citationCount}
+          workId={oa.workId}
+          referencedWorks={oa.referencedWorks}
+          citationCount={extras?.citationCount ?? oa.citedByCount}
         />
       ) : null}
 
