@@ -20,9 +20,15 @@ plain files on GitHub Pages; there is no backend at all.
   APA copy, clickable authors.
 - **Library** — save papers locally, track reading status (to read / reading /
   read), attach notes, and export everything as a `.bib` file (notes travel
-  as BibTeX `annote`).
-- Light & dark theme, `/` to search, responsive (masthead on desktop, tab bar
-  on mobile).
+  as BibTeX `annote`) or as JSON — which can be imported back on another
+  browser or machine (non-destructive merge).
+- **RSS per field** — every category ships an RSS feed (`/data/rss/<cat>.xml`,
+  linked from *Topics*), so a feed reader can watch your fields without any
+  server-side alert infrastructure.
+- **English / Spanish UI** — toggle in the masthead; defaults to the browser
+  language. arXiv taxonomy names stay in English in both.
+- Installable (web manifest), light & dark theme, `/` to search, responsive
+  (masthead on desktop, tab bar on mobile).
 
 All personal state (topics, library, notes, recent searches) lives in
 `localStorage` — no account, no tracking, nothing leaves the browser except
@@ -57,6 +63,7 @@ all categories (takes a few minutes — it's polite to arXiv).
 | `ARXIV_API_BASE` | Override the arXiv API base URL for the snapshot script. |
 | `NEXT_PUBLIC_S2_API_BASE` | Override the Semantic Scholar base URL (testing/mirrors). |
 | `PAGES_BASE_PATH` | Base path when deploying under a subpath (set by CI from `actions/configure-pages`). |
+| `SITE_BASE_URL` | Absolute site URL used inside generated RSS feeds (defaults to the live Pages URL). |
 
 ## Scripts
 
