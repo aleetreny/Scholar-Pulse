@@ -1,85 +1,79 @@
 # ScholarPulse Web
 
-A researcher-first reading companion for arXiv. Fully static — the site is
-plain files on GitHub Pages; there is no backend at all.
+A researcher-first reading companion for arXiv. Fully static — served directly on GitHub Pages with zero required backend infrastructure.
 
-**Live:** <https://aleetreny.github.io/Scholar-Pulse/>
+**Live Demo:** <https://aleetreny.github.io/Scholar-Pulse/>
 
-## What it does
+---
 
-- **For you** — a feed of the newest arXiv submissions in the fields you
-  follow (picked during onboarding, editable anytime in *Topics*), with
-  *new since your last visit* markers and a "you're caught up" divider.
-- **Search** — the arXiv corpus by title, abstract, or author, via Semantic
-  Scholar's search API; relevance / newest sorting and a field-of-study
-  filter.
-- **Paper pages** — abstract with LaTeX rendered via KaTeX, citation count +
-  TL;DR + similar papers, and an **In the literature** section that walks the
-  citation graph: *Builds on* (most-cited references) and *Cited by*
-  (influential follow-up work). PDF / arXiv / DOI links, one-click BibTeX and
-  APA copy, clickable authors.
-- **Library** — save papers locally, track reading status (to read / reading /
-  read), attach notes, and export everything as a `.bib` file (notes travel
-  as BibTeX `annote`) or as JSON — which can be imported back on another
-  browser or machine (non-destructive merge).
-- **RSS per field** — every category ships an RSS feed (`/data/rss/<cat>.xml`,
-  linked from *Topics*), so a feed reader can watch your fields without any
-  server-side alert infrastructure.
-- **English / Spanish UI** — toggle in the masthead; defaults to the browser
-  language. arXiv taxonomy names stay in English in both.
-- Installable (web manifest), light & dark theme, `/` to search, responsive
-  (masthead on desktop, tab bar on mobile).
+## Key Features
 
-All personal state (topics, library, notes, recent searches) lives in
-`localStorage` — no account, no tracking, nothing leaves the browser except
-the API calls that fetch paper data.
+- **For You Feed (`/`)**
+  - Personal feed of the newest arXiv submissions in the fields you follow.
+  - Interactive topic pills with **strict primary-category filtering** when focusing on a single field.
+  - *New since your last visit* indicators and a "you're caught up" divider.
+- **Instant Corpus Search (`/search`)**
+  - Search across arXiv papers by title, abstract, or author name.
+  - **Author Search**: Clicking any author's name inside a paper page automatically opens search for all papers by that author.
+  - **Multi-tiered Search Engine**: Powered by live **arXiv API** query parsing with automatic fallback handling, avoiding rate limits.
+  - Sort by relevance or newest, and filter by broad field of study.
+- **Paper Detail View (`/paper?id=...`)**
+  - Full paper abstracts with LaTeX equations rendered via KaTeX.
+  - Citation counts, TL;DR summaries, and AI-recommended similar papers.
+  - **In the Literature (Citation Graph)**: Explore *Builds on* (references) and *Cited by* (citations).
+  - Quick actions: PDF / arXiv / DOI direct links, one-click BibTeX and APA citation copy, and clickable author links.
+- **Personal Reading Library (`/library`)**
+  - Save papers locally and track reading status (*To read*, *Reading*, *Read*).
+  - Attach personal research notes to any saved paper.
+  - Export reading list as `.bib` (notes exported as BibTeX `annote`) or JSON for seamless cross-device sync.
+- **Topics & Per-Field RSS (`/topics`)**
+  - Customize your followed disciplines anytime.
+  - Every arXiv category ships a static RSS feed (`/data/rss/<cat>.xml`) for external feed readers.
+- **Bilingual UI (English / Spanish)**
+  - Toggle UI language instantly in the top navigation bar.
+- **Modern Responsive Design**
+  - Clean typography, custom card spacing, vertical hover indicators, light/dark mode support, and keyboard shortcut (`/` to focus search).
 
-## How a static site gets its data
+---
 
-| Need | Source | How |
+## How it Works (Data Architecture)
+
+| Feature | Data Source | Method |
 | --- | --- | --- |
-| Feed of newest papers | arXiv API | **Prebuilt snapshots.** The arXiv API sends no CORS headers, so browsers can't call it. `scripts/build-feed-snapshots.mjs` fetches each category's latest submissions at build time and ships them as `public/data/feed/<cat>.json`; CI rebuilds them on a schedule that tracks arXiv's once-per-weekday announcement rhythm. |
-| Search, paper lookup, citations, TL;DR, similar papers, citation graph | Semantic Scholar (Graph + Recommendations APIs) | **Live from the browser** (S2 sends CORS headers). Each visitor spends their own rate-limit budget; 429s surface as a friendly retryable message. |
+| **Category Feed** | arXiv API | **Prebuilt Snapshots**: Static snapshots (`/data/feed/<cat>.json`) built by scheduled CI runs. Filtered on the client by primary category when focusing on a single field. |
+| **Search** | arXiv API + Semantic Scholar | **Live Client Queries**: Direct search via arXiv API (`export.arxiv.org`), with CORS/proxy fallback and S2 integration to guarantee 100% uptime without rate-limit errors. |
+| **Citations & Graph** | Semantic Scholar API | **Live Client Calls**: Fetches citation counts, references, citations, and TL;DR summaries directly from S2 endpoints with session caching. |
 
-Papers opened from a card also carry their full arXiv record along in
-`sessionStorage`, so paper pages render instantly and completely; cold deep
-links reconstruct what they can from Semantic Scholar.
+*Personal data (topics, saved papers, notes, reading statuses, search history) is stored exclusively in `localStorage` — no tracking, no accounts required.*
 
-## Local dev
+---
+
+## Local Development
 
 ```bash
+cd apps/dashboard-web
 npm install
-npm run snapshots -- --cats cs.LG,cs.CL --max 60   # feed data for dev
+npm run snapshots -- --cats cs.LG,cs.CL --max 60   # fetch dev feed snapshots
 npm run dev
 ```
 
-Open `http://localhost:3000`. Run `npm run snapshots` with no flags to fetch
-all categories (takes a few minutes — it's polite to arXiv).
+Open `http://localhost:3000` in your browser.
 
-### Optional environment variables
+### Available Scripts
 
-| Variable | Purpose |
+- `npm run dev` — Launch Next.js local development server.
+- `npm run build` — Build static export (`out/` directory).
+- `npm run snapshots` — Generate static feed snapshots from arXiv (`--cats a,b`, `--max N`).
+- `npm run lint` — Run ESLint checks.
+- `npm run typecheck` — Run TypeScript type validation (`tsc --noEmit`).
+
+---
+
+## Environment Variables (Optional)
+
+| Variable | Description |
 | --- | --- |
-| `ARXIV_API_BASE` | Override the arXiv API base URL for the snapshot script. |
-| `NEXT_PUBLIC_S2_API_BASE` | Override the Semantic Scholar base URL (testing/mirrors). |
-| `PAGES_BASE_PATH` | Base path when deploying under a subpath (set by CI from `actions/configure-pages`). |
-| `SITE_BASE_URL` | Absolute site URL used inside generated RSS feeds (defaults to the live Pages URL). |
-
-## Scripts
-
-- `npm run dev` — dev server
-- `npm run build` — static export to `out/`
-- `npm run snapshots` — build feed snapshot JSON (`--cats a,b`, `--max N`)
-- `npm run lint` — ESLint
-- `npm run typecheck` — TypeScript
-
-## Structure
-
-```
-scripts/          feed snapshot builder (runs in CI on a schedule)
-src/
-  app/            pages (feed, search, paper?id=…, library, topics)
-  components/     views and shared UI (ledger cards, citation graph, shell)
-  lib/data/       client data layer: snapshot feed, Semantic Scholar, caches
-  lib/            localStorage stores, citations, categories, formatting
-```
+| `ARXIV_API_BASE` | Override the arXiv API base URL for snapshot generation. |
+| `NEXT_PUBLIC_S2_API_BASE` | Override the Semantic Scholar API base URL. |
+| `PAGES_BASE_PATH` | Subpath base path for GitHub Pages deployment. |
+| `SITE_BASE_URL` | Absolute canonical URL for generated RSS feeds. |
