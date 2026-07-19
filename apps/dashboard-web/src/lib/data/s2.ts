@@ -1,5 +1,7 @@
 "use client";
 
+import { parseArxivFeed } from "@/lib/arxiv-atom";
+import { withBase } from "@/lib/data/base";
 import type {
   FeedResponse,
   GraphPaper,
@@ -371,12 +373,7 @@ async function searchNewest(
   return accumulatorResponse(acc, start, max);
 }
 
-/**
- * Full-corpus search. Results are limited to papers that exist on arXiv
- * (this is an arXiv companion), so a page can come back shorter than
- * `max` even when more results exist — the pager tolerates that.
- */
-export function searchPapers(
+async function fetchArxivSearch(
   query: string,
   fieldOfStudy: string | null,
   sort: SearchSort,
@@ -384,9 +381,139 @@ export function searchPapers(
   max: number,
   signal?: AbortSignal,
 ): Promise<FeedResponse> {
-  return sort === "recent"
-    ? searchNewest(query, fieldOfStudy, start, max, signal)
-    : searchRelevance(query, fieldOfStudy, start, max, signal);
+  const cleaned = query.trim();
+  if (!cleaned) {
+    return { papers: [], totalResults: 0, start };
+  }
+
+  let arxivSearchQuery = "";
+  if (/^"[^"]+"$/.test(cleaned)) {
+    const unquoted = cleaned.slice(1, -1).trim();
+    arxivSearchQuery = `(au:"${unquoted}"+OR+all:"${unquoted}")`;
+  } else if (/^(au|ti|abs|cat|all):/.test(cleaned)) {
+    arxivSearchQuery = cleaned;
+  } else {
+    const terms = cleaned.split(/\s+/).filter(Boolean);
+    arxivSearchQuery = terms.map((t) => `all:${encodeURIComponent(t)}`).join("+AND+");
+  }
+
+  if (fieldOfStudy) {
+    const fieldMap: Record<string, string> = {
+      "Computer Science": "cat:cs.*",
+      "Mathematics": "cat:math.*",
+      "Physics": "cat:physics.*+OR+cat:quant-ph+OR+cat:hep-*+OR+cat:astro-ph.*",
+      "Statistics": "cat:stat.*",
+      "Biology": "cat:q-bio.*",
+      "Economics": "cat:econ.*+OR+cat:q-fin.*",
+      "Engineering": "cat:eess.*",
+    };
+    const catQuery = fieldMap[fieldOfStudy];
+    if (catQuery) {
+      arxivSearchQuery = `(${arxivSearchQuery})+AND+(${catQuery})`;
+    }
+  }
+
+  const sortBy = sort === "recent" ? "submittedDate" : "relevance";
+  const url = `https://export.arxiv.org/api/query?search_query=${arxivSearchQuery}&start=${start}&max_results=${max}&sortBy=${sortBy}&sortOrder=descending`;
+
+  let xmlText = "";
+  try {
+    const res = await fetch(url, {
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
+    });
+    if (res.ok) {
+      xmlText = await res.text();
+    } else {
+      throw new Error(`HTTP ${res.status}`);
+    }
+  } catch {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl, {
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000),
+    });
+    if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
+    xmlText = await res.text();
+  }
+
+  return parseArxivFeed(xmlText);
+}
+
+async function searchLocalSnapshots(
+  query: string,
+  start: number,
+  max: number,
+): Promise<FeedResponse> {
+  const cleaned = query.replace(/^"|"$/g, "").toLowerCase().trim();
+  if (!cleaned) {
+    return { papers: [], totalResults: 0, start };
+  }
+
+  try {
+    const manifestRes = await fetch(withBase("/data/manifest.json"));
+    if (!manifestRes.ok) return { papers: [], totalResults: 0, start };
+    const manifest = (await manifestRes.json()) as { categories: string[] };
+
+    const matchingPapers: Paper[] = [];
+    const seen = new Set<string>();
+
+    for (const cat of manifest.categories.slice(0, 20)) {
+      try {
+        const catRes = await fetch(withBase(`/data/feed/${cat}.json`));
+        if (!catRes.ok) continue;
+        const snapshot = (await catRes.json()) as { papers: Paper[] };
+
+        for (const paper of snapshot.papers) {
+          if (seen.has(paper.id)) continue;
+          const matchTitle = paper.title.toLowerCase().includes(cleaned);
+          const matchAuthor = paper.authors.some((a) => a.toLowerCase().includes(cleaned));
+          const matchAbstract = paper.abstract?.toLowerCase().includes(cleaned);
+
+          if (matchTitle || matchAuthor || matchAbstract) {
+            seen.add(paper.id);
+            matchingPapers.push(paper);
+          }
+        }
+      } catch {
+        // Ignore single snapshot fetch failure
+      }
+    }
+
+    return {
+      papers: matchingPapers.slice(start, start + max),
+      totalResults: matchingPapers.length,
+      start,
+    };
+  } catch {
+    return { papers: [], totalResults: 0, start };
+  }
+}
+
+/**
+ * Full-corpus search. Fallbacks gracefully to arXiv API and local feed
+ * snapshots when Semantic Scholar limits or fails.
+ */
+export async function searchPapers(
+  query: string,
+  fieldOfStudy: string | null,
+  sort: SearchSort,
+  start: number,
+  max: number,
+  signal?: AbortSignal,
+): Promise<FeedResponse> {
+  try {
+    return await (sort === "recent"
+      ? searchNewest(query, fieldOfStudy, start, max, signal)
+      : searchRelevance(query, fieldOfStudy, start, max, signal));
+  } catch (error) {
+    if (isAbort(error, signal)) {
+      throw error;
+    }
+    try {
+      return await fetchArxivSearch(query, fieldOfStudy, sort, start, max, signal);
+    } catch {
+      return await searchLocalSnapshots(query, start, max);
+    }
+  }
 }
 
 /* ---------------------------- Paper lookup --------------------------- */

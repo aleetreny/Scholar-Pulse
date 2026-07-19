@@ -110,8 +110,8 @@ function Feed({ topics }: { topics: string[] }) {
 
   const queryKey = activeCategories.join(",");
   const fetchPage = useCallback(
-    (start: number) => getFeed(queryKey.split(","), start, PAGE_SIZE),
-    [queryKey],
+    (start: number) => getFeed(queryKey.split(","), start, PAGE_SIZE, focus),
+    [queryKey, focus],
   );
 
   const { papers, loading, loadingMore, error, hasMore, loadMore, retry } =

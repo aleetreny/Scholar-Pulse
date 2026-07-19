@@ -697,7 +697,7 @@ kbd {
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) 34px;
   gap: 0 14px;
-  padding: 18px 2px 19px;
+  padding: 18px 12px 19px;
   border-top: 1px solid var(--line-soft);
   transition: background 0.12s ease;
 }
