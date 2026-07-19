@@ -1,13 +1,12 @@
-name: Deploy ScholarPulse to Pages
+name: Deploy Scholar Pulse to Pages
 
 on:
   push:
     branches:
       - main
+      - agent/scholar-pulse-showroom
   schedule:
-    # Refresh feed snapshots ~every 6h. arXiv announces new papers once per
-    # weekday around 00:00 UTC; the 02:20 run picks the fresh batch up.
-    - cron: "20 2,8,14,20 * * *"
+    - cron: "17 5 * * *"
   workflow_dispatch:
 
 permissions:
@@ -30,6 +29,14 @@ jobs:
         id: pages
         uses: actions/configure-pages@v6
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Refresh the open paper feed
+        run: python scripts/fetch_recent_papers.py
+
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
@@ -37,12 +44,8 @@ jobs:
           cache: npm
           cache-dependency-path: apps/dashboard-web/package-lock.json
 
-      - name: Install dependencies
+      - name: Install web dependencies
         run: npm ci
-        working-directory: apps/dashboard-web
-
-      - name: Build feed snapshots from arXiv
-        run: node scripts/build-feed-snapshots.mjs
         working-directory: apps/dashboard-web
 
       - name: Build static site

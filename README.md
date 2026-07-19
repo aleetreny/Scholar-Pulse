@@ -1,131 +1,76 @@
-# ScholarPulse
-> [!WARNING]  
-> **Work in Progress**: This project is under active development. Expect breaking changes and incomplete features.
+# Scholar Pulse
 
-ScholarPulse is a dual-track repository for:
+**Scholar Pulse is a compact thematic monitor for active literature review.** It helps a
+researcher see what is arriving in each field, browse a recent archive without an endless feed,
+inspect a paper in context, and keep a portable reading set.
 
-1. **Scientific research and publication** (PhD-grade, Quarto-based)
-2. **Product-facing analytics** (interactive dashboard for findings)
+[Open the public site](https://aleetreny.github.io/Scholar-Pulse/)
 
-The platform maps scientific frontier dynamics using embedding-space geometry, deterministic topic modeling, and metric-driven inference.
+## Why the project changed
 
-## Repository Architecture
+The science-map experience lives in a separate project. Scholar Pulse is focused on one narrower
+job: helping someone who already has a research question keep up with the moving edge of that
+field.
 
-- `research/quarto-study/` — Long-form technical research, methods, and reproducible reports in Quarto.
-- `apps/dashboard/` — Interactive dashboard for exploration and communication of findings.
-- `pipelines/` — Data and modeling workflows (ingestion, embeddings, clustering, metrics, inference).
-- `data/` — Data lifecycle folders (`raw`, `interim`, `processed`, `external`).
-- `infra/` — Operational assets for Colab and AWS Bedrock integration.
-- `docs/` — System documentation, decision logs, and architecture notes.
-- `tests/` — Cross-module validation for metrics and pipeline reliability.
+The current public beta includes:
 
-## Design Principles
+- 240 recent papers refreshed from arXiv, 40 per field;
+- a six-field overview with seven-day activity and recurring topic signals;
+- four-paper pages ordered by recency instead of a long scrolling list;
+- query matching across title, abstract, author, field, and category;
+- an in-context reading pane with explained related-paper suggestions;
+- a persistent reading list, BibTeX copy, and `.bib` export;
+- a daily GitHub Pages deployment.
 
-- **Research/Product Separation:** Quarto output remains publication-grade; dashboard remains user-facing and lightweight.
-- **Single Source of Truth:** Pipelines generate canonical artifacts consumed by both Quarto and dashboard.
-- **Deterministic Core:** PCA + UMAP map space, ANN index manifests, and feed artifacts are reproducible and versioned.
-- **Scalable UX:** Dashboard uses density + semantic zoom + detail-on-demand instead of loading every point at once.
-- **Modular Inference:** Enrichment and downstream synthesis remain pluggable layers over the deterministic evidence base.
+Selection is currently newest-first within transparent category lenses. It is not a quality
+ranking. The rationale and next product stages are in
+[`docs/PRODUCT_DIRECTION.md`](docs/PRODUCT_DIRECTION.md).
 
-## Web App (`apps/dashboard-web/`)
-
-The user-facing product is a standalone researcher app: a personalized feed of
-the newest arXiv papers with new-since-last-visit markers, search, paper pages
-with citations/TL;DR/similar papers and a citation-graph explorer (Semantic
-Scholar), and a local reading library with BibTeX export. It is **fully
-static** — deployed to GitHub Pages at
-<https://aleetreny.github.io/Scholar-Pulse/>, with feed data prebuilt on a CI
-schedule and everything else fetched client-side.
+## Run the public site locally
 
 ```bash
+python scripts/fetch_recent_papers.py
 cd apps/dashboard-web
-npm install
-npm run snapshots -- --cats cs.LG,cs.CL --max 60
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`. See `apps/dashboard-web/README.md` for details.
+Open `http://localhost:3000`.
 
-### Legacy research dashboards
+Validate the static build with:
 
-The snapshot-based analytics stack is still in the repo for research use:
+```bash
+cd apps/dashboard-web
+npm run typecheck
+npm run lint
+npm run build
+```
 
-1. `apps/dashboard_api/` — FastAPI backend serving published dashboard feeds.
-2. `apps/dashboard/` — legacy Dash frontend (`make run-dashboard`, requires
-   Postgres and a published snapshot).
+The build output is written to `apps/dashboard-web/out/` and can be hosted without a server.
 
-## Ingestion Paths
+## Public data flow
 
-- `python -m pipelines.ingestion.cli kaggle-bootstrap ...` as the primary historical bootstrap path.
-- `python -m pipelines.ingestion.cli incremental ...` for ongoing API delta sync after bootstrap.
-- `python -m pipelines.ingestion.cli backfill ...` as a slower fallback historical API path.
+```text
+arXiv API -> scripts/fetch_recent_papers.py -> showroom.json -> Next.js static export -> GitHub Pages
+```
 
-Important incremental behavior:
-- If no ingestion watermark exists yet, incremental now starts from the latest paper already stored in DB (plus overlap), so it catches up from your current corpus frontier to now.
+The scheduled workflow in `.github/workflows/deploy-pages.yml` refreshes and republishes the
+edition every day. If arXiv is temporarily unavailable, the fetcher keeps the last committed feed
+for the affected field.
 
-## Minimal Dashboard (v1)
+## Repository map
 
-`v1` ships with only two tabs:
-1. `Research Map`
-2. `Latest Papers (7d)`
+- `apps/dashboard-web/` — the public Scholar Pulse research index.
+- `scripts/fetch_recent_papers.py` — lightweight feed refresh for the public edition.
+- `pipelines/` — ingestion, embeddings, similarity, enrichment, and publication work retained for
+  richer future signals.
+- `apps/dashboard_api/` — optional API layer for published analytical snapshots.
+- `apps/dashboard/` — legacy Dash research interface.
+- `research/` — long-form research and reproducible study material.
+- `tests/` — validation for the analytical and ingestion layers.
 
-Map pipeline (deterministic):
-- fit map space with `PCA(50) -> UMAP(2D, cosine)` on deterministic sample.
-- generate full-corpus density layer + sample layer + viewport detail layer.
-- support point click + nearest-neighbor lookup through ANN index.
+## Large local artifacts
 
-Similarity pipeline:
-- ANN index uses `HNSW (cosine)` on PCA-compressed vectors.
-- query flow reranks ANN candidates with exact cosine on original embeddings.
-
-Publish artifacts:
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_density.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_sample.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/map_points_detail_index.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/latest_papers.parquet`
-- `data/processed/publish/<snapshot_id>/dashboard_feeds/build_manifest.json`
-
-Latest score (deterministic v1):
-- `score = 0.60 * recency + 0.40 * novelty`
-
-## Local Runbook (Embeddings Already Downloaded)
-
-If you already have Colab outputs in `data/processed/embeddings/<snapshot_id>/`, run:
-
-1. `conda activate my_env`
-2. `python -m pip install -e '.[dashboard,analytics,similarity]'`
-3. `docker compose up -d postgres`
-4. `make import-embeddings SNAPSHOT_ID=<snapshot_id>`
-5. `make build-space SNAPSHOT_ID=<snapshot_id>`
-6. `make build-similarity SNAPSHOT_ID=<snapshot_id>`
-7. `make publish-dashboard SNAPSHOT_ID=<snapshot_id>`
-8. `make run-dashboard`
-
-Notes:
-- Embedding generation is the only GPU-heavy phase. Dashboard publish and app runtime can run on CPU.
-- If Postgres is not running, `import-embeddings` validation cannot be registered in DB.
-- Use Python `>=3.11` (`conda activate my_env` first). System `python3` on macOS often points to `3.9` and will fail with current SQLAlchemy typing.
-
-## Weekly Local Pipeline (API -> Embeddings -> Map -> Similarity -> Dashboard -> Enrichment)
-
-This path keeps everything local and only processes newly updated papers:
-
-1. `conda activate my_env`
-2. `docker compose up -d postgres`
-3. `make weekly-refresh`
-
-What `make weekly-refresh` does:
-1. Incremental arXiv API sync to current UTC time.
-2. Delta export for embeddings (`--since` inferred from embedding watermark or latest imported snapshot).
-3. Local resumable embedding generation (`BAAI/bge-m3`) over new shards only.
-4. Manifest validation and DB registration.
-5. Deterministic map-space build (`PCA + UMAP`).
-6. ANN similarity index build (`HNSW + exact rerank metadata`).
-7. Minimal dashboard feed publication.
-8. Incremental enrichment sync (OpenAlex + Semantic Scholar + Crossref).
-
-Useful overrides:
-- `make weekly-refresh TAXONOMY=cs,stat,physics`
-- `make weekly-refresh SINCE=2026-03-01T00:00:00+00:00`
-- `make weekly-refresh BATCH_SIZE=12 CHUNK_SIZE=6 SAMPLE_POINTS=120000`
-- `make weekly-refresh SKIP_ENRICHMENT=1`
+The public beta does not need the local embedding shards or historical matrices. Those files only
+become necessary when the site adds novelty scoring, semantic recommendations, or corpus-level
+analytics.

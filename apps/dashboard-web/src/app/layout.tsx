@@ -1,45 +1,29 @@
-import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Inter, Source_Serif_4 } from "next/font/google";
-
-import "katex/dist/katex.min.css";
+import type { Metadata } from "next";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-import { AppShell } from "@/components/app-shell";
-
-const inter = Inter({
+const archivo = Archivo({
+  variable: "--font-display",
   subsets: ["latin"],
-  variable: "--font-inter",
 });
 
-const sourceSerif = Source_Serif_4({
-  subsets: ["latin"],
-  style: ["normal", "italic"],
-  variable: "--font-source-serif",
-});
-
-const plexMono = IBM_Plex_Mono({
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-mono",
   weight: ["400", "500"],
   subsets: ["latin"],
-  variable: "--font-plex-mono",
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "ScholarPulse — your research feed",
-    template: "%s · ScholarPulse",
-  },
+  metadataBase: new URL("https://aleetreny.github.io/Scholar-Pulse/"),
+  title: "Scholar Pulse — Find what's new in your field",
   description:
-    "Follow the latest papers in your field, search arXiv, and keep a reading library with citations ready to export.",
+    "A compact thematic view of the newest open papers for active literature review.",
+  openGraph: {
+    title: "Scholar Pulse — Find what's new in your field",
+    description: "Browse the newest open papers field by field, without an endless feed.",
+    type: "website",
+  },
 };
-
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f2e8" },
-    { media: "(prefers-color-scheme: dark)", color: "#16130d" },
-  ],
-};
-
-const THEME_INIT = `(function(){try{var t=localStorage.getItem("scholarpulse.theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"}document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme="light"}})()`;
 
 export default function RootLayout({
   children,
@@ -47,15 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${inter.variable} ${sourceSerif.variable} ${plexMono.variable}`}
-    >
-      <body>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
-        <AppShell>{children}</AppShell>
-      </body>
+    <html lang="en" className={`${archivo.variable} ${ibmPlexMono.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }

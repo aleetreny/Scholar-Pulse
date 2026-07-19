@@ -1,30 +1,25 @@
 {
-  "name": "dashboard-web",
+  "name": "scholar-pulse-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "typecheck": "tsc --noEmit",
-    "snapshots": "node scripts/build-feed-snapshots.mjs"
+    "lint": "eslint src next.config.ts --no-warn-ignored",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "katex": "^0.17.0",
-    "lucide-react": "^1.7.0",
-    "next": "16.2.1",
+    "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "fast-xml-parser": "^5.10.1",
-    "@types/katex": "^0.16.8",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "16.2.10",
     "typescript": "^5"
   }
 }
