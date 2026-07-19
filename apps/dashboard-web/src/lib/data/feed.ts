@@ -74,6 +74,7 @@ export async function getFeed(
   categories: string[],
   start: number,
   max: number,
+  focus?: string | null,
 ): Promise<FeedPage> {
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
@@ -93,6 +94,9 @@ export async function getFeed(
   for (const { value } of loaded) {
     for (const paper of value.papers) {
       if (!seen.has(paper.id)) {
+        if (focus && paper.primaryCategory !== focus) {
+          continue;
+        }
         seen.add(paper.id);
         merged.push(paper);
       }
