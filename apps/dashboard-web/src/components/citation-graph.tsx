@@ -7,6 +7,7 @@ import { useState } from "react";
 import { TexText } from "@/components/tex-text";
 import { getCitations, getReferences } from "@/lib/data/s2";
 import { formatCount } from "@/lib/format";
+import { useT, type Translate } from "@/lib/i18n";
 import { paperHref } from "@/lib/paper-link";
 import type { GraphPaper } from "@/lib/types";
 
@@ -18,7 +19,7 @@ type LoadState =
   | { phase: "error"; message: string }
   | { phase: "loaded"; papers: GraphPaper[] };
 
-function GraphRow({ paper }: { paper: GraphPaper }) {
+function GraphRow({ paper, t }: { paper: GraphPaper; t: Translate }) {
   const meta = [
     paper.authors.slice(0, 3).join(", ") + (paper.authors.length > 3 ? " et al." : ""),
     paper.year ? String(paper.year) : null,
@@ -35,7 +36,10 @@ function GraphRow({ paper }: { paper: GraphPaper }) {
         <span className="graph-row__meta">{meta}</span>
       </span>
       {paper.citationCount !== null && paper.citationCount > 0 ? (
-        <span className="graph-row__count" title={`${paper.citationCount} citations`}>
+        <span
+          className="graph-row__count"
+          title={`${paper.citationCount} ${t("paper.citations")}`}
+        >
           {formatCount(paper.citationCount)}
         </span>
       ) : null}
@@ -63,11 +67,13 @@ function GraphSection({
   hint,
   count,
   load,
+  t,
 }: {
   label: string;
   hint: string;
   count: number | null;
   load: () => Promise<GraphPaper[]>;
+  t: Translate;
 }) {
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<LoadState>({ phase: "idle" });
@@ -111,21 +117,25 @@ function GraphSection({
       {open ? (
         state.phase === "loading" ? (
           <div className="graph-section__status">
-            <Loader2 className="spin" /> Loading…
+            <Loader2 className="spin" /> {t("paper.graphLoading")}
           </div>
         ) : state.phase === "error" ? (
           <div className="graph-section__status">
             {state.message}{" "}
             <button type="button" className="btn btn--ghost btn--small" onClick={fetchPapers}>
-              Retry
+              {t("paper.retry")}
             </button>
           </div>
         ) : state.phase === "loaded" && state.papers.length === 0 ? (
-          <div className="graph-section__status">Nothing indexed here yet.</div>
+          <div className="graph-section__status">{t("paper.graphEmpty")}</div>
         ) : state.phase === "loaded" ? (
           <div className="graph-list">
             {state.papers.map((paper, index) => (
-              <GraphRow key={`${paper.arxivId ?? paper.title}-${index}`} paper={paper} />
+              <GraphRow
+                key={`${paper.arxivId ?? paper.title}-${index}`}
+                paper={paper}
+                t={t}
+              />
             ))}
           </div>
         ) : null
@@ -148,20 +158,23 @@ export function CitationGraph({
   referenceCount: number | null;
   citationCount: number | null;
 }) {
+  const { t } = useT();
   return (
     <section className="paper-section">
-      <h2>In the literature</h2>
+      <h2>{t("paper.literature")}</h2>
       <GraphSection
-        label="Builds on"
-        hint="its most-cited references"
+        label={t("paper.buildsOn")}
+        hint={t("paper.buildsOnHint")}
         count={referenceCount}
         load={() => getReferences(arxivId, PAGE)}
+        t={t}
       />
       <GraphSection
-        label="Cited by"
-        hint="influential follow-up work"
+        label={t("paper.citedBy")}
+        hint={t("paper.citedByHint")}
         count={citationCount}
         load={() => getCitations(arxivId, PAGE)}
+        t={t}
       />
     </section>
   );

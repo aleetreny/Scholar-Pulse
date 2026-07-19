@@ -27,19 +27,21 @@ import { recallPaper, stashPaper } from "@/lib/data/paper-cache";
 import { getPaperExtras, getPaperFromS2 } from "@/lib/data/s2";
 import { paperHref } from "@/lib/paper-link";
 import { formatAbsoluteDate, formatCount } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { useLibrary } from "@/lib/store";
 import type { Paper, PaperExtras } from "@/lib/types";
 
-async function copyText(value: string, doneMessage: string) {
+async function copyText(value: string, doneMessage: string, failMessage: string) {
   try {
     await navigator.clipboard.writeText(value);
     showToast(doneMessage);
   } catch {
-    showToast("Copy failed — clipboard unavailable");
+    showToast(failMessage);
   }
 }
 
 function RelatedPapers({ extras }: { extras: PaperExtras }) {
+  const { t } = useT();
   if (extras.related.length === 0) {
     return null;
   }
@@ -47,7 +49,7 @@ function RelatedPapers({ extras }: { extras: PaperExtras }) {
     <section className="paper-section">
       <h2>
         <Sparkles />
-        Similar papers
+        {t("paper.similar")}
       </h2>
       <div className="related-list">
         {extras.related.map((related, index) => {
@@ -103,6 +105,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
   const [errorResult, setErrorResult] = useState<{ key: string; message: string } | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const { isSaved, save, remove } = useLibrary();
+  const { t, lang } = useT();
 
   const key = `${arxivId}#${reloadToken}`;
 
@@ -170,10 +173,10 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           className="paper-page__back"
           onClick={() => router.back()}
         >
-          <ArrowLeft /> Back
+          <ArrowLeft /> {t("paper.back")}
         </button>
         <ErrorBox
-          message={`Couldn't load this paper. ${error}`}
+          message={`${t("paper.loadError")} ${error}`}
           onRetry={() => setReloadToken((token) => token + 1)}
         />
       </div>
@@ -198,7 +201,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         className="paper-page__back"
         onClick={() => router.back()}
       >
-        <ArrowLeft /> Back
+        <ArrowLeft /> {t("paper.back")}
       </button>
 
       <h1>
@@ -211,7 +214,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             {index > 0 ? ", " : null}
             <Link
               href={`/search?q=${encodeURIComponent(`"${author}"`)}`}
-              title={`Search papers by ${author}`}
+              title={t("paper.searchByAuthor", { author })}
             >
               {author}
             </Link>
@@ -222,7 +225,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
       <div className="paper-page__stats">
         <span className="stat-chip">
           <CalendarDays />
-          {formatAbsoluteDate(paper.published)}
+          {formatAbsoluteDate(paper.published, lang)}
         </span>
         {paper.primaryCategory ? (
           <span className="chip" title={paper.primaryCategory}>
@@ -234,12 +237,12 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             className="stat-chip"
             title={
               extras.influentialCitationCount
-                ? `${extras.influentialCitationCount} influential citations`
+                ? t("paper.influential", { n: extras.influentialCitationCount })
                 : undefined
             }
           >
             <TrendingUp />
-            <strong>{formatCount(extras.citationCount)}</strong> citations
+            <strong>{formatCount(extras.citationCount)}</strong> {t("paper.citations")}
           </span>
         ) : null}
         {extras?.venue ? <span className="chip chip--green">{extras.venue}</span> : null}
@@ -252,15 +255,15 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           onClick={() => {
             if (saved) {
               remove(paper.id);
-              showToast("Removed from library");
+              showToast(t("lib.removed"));
             } else {
               save(paper);
-              showToast("Saved to library");
+              showToast(t("lib.saved"));
             }
           }}
         >
           {saved ? <BookmarkCheck /> : <Bookmark />}
-          {saved ? "In library" : "Save"}
+          {saved ? t("paper.inLibrary") : t("paper.save")}
         </button>
         <a className="btn" href={paper.pdfUrl} target="_blank" rel="noreferrer">
           <FileText />
@@ -284,10 +287,12 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         <button
           type="button"
           className="btn"
-          onClick={() => copyText(toApaCitation(paper), "Citation copied")}
+          onClick={() =>
+            copyText(toApaCitation(paper), t("paper.citationCopied"), t("paper.copyFailed"))
+          }
         >
           <Quote />
-          Cite
+          {t("paper.cite")}
         </button>
       </div>
 
@@ -303,7 +308,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
       <section className="paper-section">
         <h2>
           <FileText />
-          Abstract
+          {t("paper.abstract")}
         </h2>
         <p className="paper-abstract">
           <TexText text={paper.abstract} />
@@ -311,10 +316,10 @@ export function PaperView({ arxivId }: { arxivId: string }) {
       </section>
 
       <section className="paper-section">
-        <h2>Details</h2>
+        <h2>{t("paper.details")}</h2>
         <div className="fact-grid">
           <div className="fact">
-            <div className="fact__label">arXiv ID</div>
+            <div className="fact__label">{t("paper.arxivId")}</div>
             <div className="fact__value">
               <a href={paper.absUrl} target="_blank" rel="noreferrer">
                 {paper.versionedId}
@@ -323,31 +328,31 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           </div>
           {paper.categories.length > 0 ? (
             <div className="fact">
-              <div className="fact__label">Categories</div>
+              <div className="fact__label">{t("paper.categories")}</div>
               <div className="fact__value">{paper.categories.join(", ")}</div>
             </div>
           ) : null}
           {paper.updated !== paper.published ? (
             <div className="fact">
-              <div className="fact__label">Last updated</div>
-              <div className="fact__value">{formatAbsoluteDate(paper.updated)}</div>
+              <div className="fact__label">{t("paper.lastUpdated")}</div>
+              <div className="fact__value">{formatAbsoluteDate(paper.updated, lang)}</div>
             </div>
           ) : null}
           {paper.journalRef ? (
             <div className="fact">
-              <div className="fact__label">Journal reference</div>
+              <div className="fact__label">{t("paper.journalRef")}</div>
               <div className="fact__value">{paper.journalRef}</div>
             </div>
           ) : null}
           {paper.comment ? (
             <div className="fact">
-              <div className="fact__label">Author comment</div>
+              <div className="fact__label">{t("paper.comment")}</div>
               <div className="fact__value">{paper.comment}</div>
             </div>
           ) : null}
           {extras?.semanticScholarUrl ? (
             <div className="fact">
-              <div className="fact__label">Also on</div>
+              <div className="fact__label">{t("paper.alsoOn")}</div>
               <div className="fact__value">
                 <a href={extras.semanticScholarUrl} target="_blank" rel="noreferrer">
                   Semantic Scholar
@@ -369,10 +374,10 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             <button
               type="button"
               className="btn btn--small"
-              onClick={() => copyText(bibtex, "BibTeX copied")}
+              onClick={() => copyText(bibtex, t("paper.bibtexCopied"), t("paper.copyFailed"))}
             >
               <Copy />
-              Copy
+              {t("paper.copy")}
             </button>
           </span>
         </div>
@@ -392,8 +397,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         <section className="paper-section">
           <div className="notice">
             <AlertTriangle />
-            Citation metrics and similar papers are temporarily unavailable
-            (Semantic Scholar rate limit). They will appear on the next visit.
+            {t("paper.partialNotice")}
           </div>
         </section>
       ) : null}

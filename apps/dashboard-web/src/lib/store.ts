@@ -129,6 +129,32 @@ export function useTheme() {
   return { theme, toggle };
 }
 
+/* ----------------------------- Language ----------------------------- */
+
+export type Lang = "en" | "es";
+
+// null = follow the browser's language.
+const langStore = createLocalStore<Lang | null>("scholarpulse.lang", null);
+
+function browserLang(): Lang {
+  if (typeof navigator !== "undefined" && navigator.language?.startsWith("es")) {
+    return "es";
+  }
+  return "en";
+}
+
+export function useLang(): { lang: Lang; setLang: (lang: Lang) => void } {
+  const stored = useSyncExternalStore(
+    langStore.subscribe,
+    langStore.getSnapshot,
+    langStore.getServerSnapshot,
+  );
+  return {
+    lang: stored ?? browserLang(),
+    setLang: (lang: Lang) => langStore.set(lang),
+  };
+}
+
 /* ------------------------------ Topics ------------------------------ */
 
 const topicsStore = createLocalStore<string[]>("scholarpulse.topics.v1", []);
@@ -208,6 +234,28 @@ export function useLibrary() {
         }
         return { ...current, [paperId]: { ...entry, note } };
       }),
+    /**
+     * Merge imported entries in without clobbering local state: papers
+     * already in the library keep their status and notes. Returns how many
+     * were added vs already present.
+     */
+    importEntries: (entries: LibraryEntry[]) => {
+      let added = 0;
+      let skipped = 0;
+      libraryStore.set((current) => {
+        const next = { ...current };
+        for (const entry of entries) {
+          if (entry.paper.id in next) {
+            skipped += 1;
+          } else {
+            next[entry.paper.id] = entry;
+            added += 1;
+          }
+        }
+        return next;
+      });
+      return { added, skipped };
+    },
   };
 }
 

@@ -6,14 +6,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { Toaster } from "@/components/toast";
+import { useT, type StringKey } from "@/lib/i18n";
 import { useHydrated, useLibrary, useTheme } from "@/lib/store";
 
-const NAV_ITEMS = [
-  { href: "/", label: "For you", icon: Compass },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/library", label: "Library", icon: Bookmark },
-  { href: "/topics", label: "Topics", icon: SlidersHorizontal },
-] as const;
+const NAV_ITEMS: { href: string; labelKey: StringKey; icon: typeof Compass }[] = [
+  { href: "/", labelKey: "nav.forYou", icon: Compass },
+  { href: "/search", labelKey: "nav.search", icon: Search },
+  { href: "/library", labelKey: "nav.library", icon: Bookmark },
+  { href: "/topics", labelKey: "nav.topics", icon: SlidersHorizontal },
+];
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") {
@@ -24,7 +25,7 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * The wordmark IS the logo: "ScholarPulse" in the serif with a hand-set
- * pulse line running under "Pulse" — no icon-in-a-rounded-box.
+ * pulse line running under "Pulse" — no icon in a rounded box.
  */
 function Wordmark() {
   return (
@@ -49,7 +50,7 @@ function Wordmark() {
   );
 }
 
-function DateLine() {
+function DateLine({ locale }: { locale: string }) {
   const hydrated = useHydrated();
   if (!hydrated) {
     return <span className="masthead__date" />;
@@ -57,7 +58,7 @@ function DateLine() {
   const now = new Date();
   return (
     <span className="masthead__date">
-      {now.toLocaleDateString("en-US", {
+      {now.toLocaleDateString(locale, {
         weekday: "short",
         month: "short",
         day: "numeric",
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { theme, toggle } = useTheme();
   const { entries } = useLibrary();
+  const { t, lang, setLang } = useT();
   const savedCount = Object.keys(entries).length;
 
   useEffect(() => {
@@ -99,10 +101,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       type="button"
       className="icon-btn"
       onClick={toggle}
-      aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-      title={theme === "dark" ? "Light theme" : "Dark theme"}
+      aria-label={theme === "dark" ? t("theme.toLight") : t("theme.toDark")}
+      title={theme === "dark" ? t("theme.light") : t("theme.dark")}
     >
       {theme === "dark" ? <Sun /> : <Moon />}
+    </button>
+  );
+
+  const langButton = (
+    <button
+      type="button"
+      className="lang-btn"
+      onClick={() => setLang(lang === "es" ? "en" : "es")}
+      aria-label={t("lang.switch")}
+      title={t("lang.switch")}
+    >
+      {lang === "es" ? "EN" : "ES"}
     </button>
   );
 
@@ -110,19 +124,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="shell">
       <header className="masthead">
         <div className="masthead__inner">
-          <Link href="/" className="brand" aria-label="ScholarPulse home">
+          <Link href="/" className="brand" aria-label={t("nav.home")}>
             <Wordmark />
           </Link>
 
           <nav className="masthead__nav" aria-label="Main">
-            {NAV_ITEMS.map(({ href, label }) => (
+            {NAV_ITEMS.map(({ href, labelKey }) => (
               <Link
                 key={href}
                 href={href}
                 className="masthead__link"
                 data-active={isActive(pathname, href)}
               >
-                {label}
+                {t(labelKey)}
                 {href === "/library" && savedCount > 0 ? (
                   <sup className="masthead__badge">{savedCount}</sup>
                 ) : null}
@@ -131,7 +145,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="masthead__meta">
-            <DateLine />
+            <DateLine locale={lang === "es" ? "es-ES" : "en-US"} />
+            {langButton}
             {themeButton}
           </div>
         </div>
@@ -142,27 +157,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <footer className="colophon">
         <div className="colophon__inner">
           <span>
-            ScholarPulse — a reading companion for{" "}
+            {t("colophon.tagline")}{" "}
             <a href="https://arxiv.org" target="_blank" rel="noreferrer">
               arXiv
             </a>
           </span>
           <span className="colophon__sep" />
           <span>
-            Enriched by{" "}
+            {t("colophon.enriched")}{" "}
             <a href="https://www.semanticscholar.org" target="_blank" rel="noreferrer">
               Semantic Scholar
             </a>
           </span>
           <span className="colophon__sep" />
           <span className="colophon__hint">
-            Press <kbd>/</kbd> to search
+            {t("colophon.press")} <kbd>/</kbd> {t("colophon.toSearch")}
           </span>
         </div>
       </footer>
 
       <nav className="tabbar" aria-label="Main">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => (
+        {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => (
           <Link
             key={href}
             href={href}
@@ -170,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             data-active={isActive(pathname, href)}
           >
             <Icon />
-            {label}
+            {t(labelKey)}
           </Link>
         ))}
       </nav>
