@@ -30,3 +30,6 @@ __pycache__/
 .ipynb_checkpoints/
 research/quarto-study/.quarto/
 research/quarto-study/reports/_site/
+
+# Local Claude Code tooling (machine-specific paths)
+.claude/
