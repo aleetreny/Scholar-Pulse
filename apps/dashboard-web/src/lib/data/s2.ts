@@ -1,22 +1,14 @@
 "use client";
 
-import { parseArxivFeed } from "@/lib/arxiv-atom";
-import { withBase } from "@/lib/data/base";
-import type {
-  FeedResponse,
-  GraphPaper,
-  Paper,
-  PaperExtras,
-  RelatedPaper,
-  SearchSort,
-} from "@/lib/types";
+import { withSignal } from "@/lib/data/with-signal";
+import type { Paper, PaperExtras, RelatedPaper } from "@/lib/types";
 
 /**
- * Client-side Semantic Scholar access. S2 sends CORS headers, so the static
- * site talks to it directly — every visitor spends their own rate-limit
- * budget instead of funneling through one server IP. 429s are still routine
- * on the shared pool, so responses are cached and a friendly, retryable
- * error is surfaced.
+ * Semantic Scholar client. S2's anonymous pool throttles hard, so it is
+ * only used for what OpenAlex cannot provide — TLDRs, similar-paper
+ * recommendations, and version-merged citation metrics — always with a
+ * graceful degradation path. Search, author lookups, paper fallback and
+ * the citation graph live in lib/data/openalex.ts.
  */
 
 const S2_API_BASE = (
@@ -52,30 +44,18 @@ function cacheSet(key: string, data: unknown): void {
   cache.set(key, { expires: Date.now() + CACHE_TTL_MS, data });
 }
 
-function isAbort(error: unknown, signal?: AbortSignal): boolean {
-  return (
-    signal?.aborted === true ||
-    (error instanceof DOMException && error.name === "AbortError")
-  );
-}
-
 /**
  * One attempt. S2's 429 responses carry no CORS headers, so in a browser a
  * rate limit surfaces as a thrown TypeError ("Failed to fetch"), not as a
  * readable 429 — both paths funnel into RATE_LIMIT_MESSAGE.
  */
-async function requestOnce(url: string, signal?: AbortSignal): Promise<Response> {
+async function requestOnce(url: string): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(url, {
-      signal: signal
-        ? AbortSignal.any([signal, AbortSignal.timeout(REQUEST_TIMEOUT_MS)])
-        : AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
-    if (isAbort(error, signal)) {
-      throw error;
-    }
     if (error instanceof DOMException && error.name === "TimeoutError") {
       throw new Error("Semantic Scholar took too long to respond. Try again.");
     }
@@ -96,21 +76,18 @@ async function fetchS2Json<T>(path: string, signal?: AbortSignal): Promise<T> {
   }
   const pending = inflight.get(url);
   if (pending) {
-    return pending as Promise<T>;
+    return withSignal(pending as Promise<T>, signal);
   }
 
+  // The shared request (with its one polite retry) runs signal-free; each
+  // caller races it against its own signal — see lib/data/with-signal.ts.
   const promise = (async () => {
     let response: Response;
     try {
-      response = await requestOnce(url, signal);
-    } catch (firstError) {
-      if (isAbort(firstError, signal)) {
-        throw firstError;
-      }
-      // One polite retry after a short wait, then surface the friendly
-      // message for the error UI to show verbatim.
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      response = await requestOnce(url, signal);
+      response = await requestOnce(url);
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      response = await requestOnce(url);
     }
     if (response.status === 404) {
       throw new Error("Not found on Semantic Scholar");
@@ -124,11 +101,8 @@ async function fetchS2Json<T>(path: string, signal?: AbortSignal): Promise<T> {
   })();
 
   inflight.set(url, promise);
-  try {
-    return await promise;
-  } finally {
-    inflight.delete(url);
-  }
+  promise.catch(() => {}).finally(() => inflight.delete(url));
+  return withSignal(promise, signal);
 }
 
 /* ------------------------------ Mapping ------------------------------ */
@@ -177,351 +151,12 @@ function toPaper(item: S2PaperItem): Paper | null {
   };
 }
 
-/* ------------------------------- Search ------------------------------ */
-
-const SEARCH_FIELDS =
-  "title,abstract,year,publicationDate,authors,externalIds,venue";
-
-/** Broad S2 fields of study offered as the search filter. */
-export const SEARCH_FIELDS_OF_STUDY = [
-  "Computer Science",
-  "Mathematics",
-  "Physics",
-  "Engineering",
-  "Biology",
-  "Materials Science",
-  "Chemistry",
-  "Economics",
-] as const;
-
-type S2SearchPage = { total?: number; data?: S2PaperItem[] };
-type S2BulkPage = { total?: number; token?: string | null; data?: S2PaperItem[] };
-
-/**
- * Search results accumulate per query: S2 pages in ITS index space while the
- * app pages over the arXiv-only subset, so the app's `start` can never be
- * used as an S2 offset directly. Each accumulator remembers how far into the
- * upstream result set it has consumed.
- */
-type SearchAccumulator = {
-  items: Paper[];
-  total: number;
-  /** relevance: next upstream offset; newest: next page token. */
-  s2Offset: number;
-  token: string | null;
-  exhausted: boolean;
-};
-
-const SEARCH_CACHE_MAX = 20;
-const searchCache = new Map<string, SearchAccumulator>();
-
-function accumulatorFor(key: string): SearchAccumulator {
-  const existing = searchCache.get(key);
-  if (existing) {
-    return existing;
-  }
-  if (searchCache.size >= SEARCH_CACHE_MAX) {
-    const oldest = searchCache.keys().next().value;
-    if (oldest !== undefined) {
-      searchCache.delete(oldest);
-    }
-  }
-  const fresh: SearchAccumulator = {
-    items: [],
-    total: 0,
-    s2Offset: 0,
-    token: null,
-    exhausted: false,
-  };
-  searchCache.set(key, fresh);
-  return fresh;
-}
-
-function appendMapped(acc: SearchAccumulator, data: S2PaperItem[]): void {
-  for (const item of data) {
-    const paper = toPaper(item);
-    if (paper) {
-      acc.items.push(paper);
-    }
-  }
-}
-
-function accumulatorResponse(
-  acc: SearchAccumulator,
-  start: number,
-  max: number,
-): FeedResponse {
-  return {
-    papers: acc.items.slice(start, start + max),
-    // Once upstream is exhausted the pager needs the exact count so "load
-    // more" disappears; before that, S2's (arXiv-superset) total is an
-    // honest over-estimate.
-    totalResults: acc.exhausted
-      ? acc.items.length
-      : Math.max(Math.min(acc.total, 1000), acc.items.length),
-    start,
-  };
-}
-
-// Cap upstream requests per user action so one deep "load more" can't chew
-// through the shared S2 rate-limit budget.
-const MAX_UPSTREAM_PAGES_PER_CALL = 3;
-const RELEVANCE_PAGE_SIZE = 100;
-const RELEVANCE_OFFSET_LIMIT = 1000; // S2 rejects offset+limit beyond this.
-
-async function searchRelevance(
-  query: string,
-  fieldOfStudy: string | null,
-  start: number,
-  max: number,
-  signal?: AbortSignal,
-): Promise<FeedResponse> {
-  const acc = accumulatorFor(`rel::${query}::${fieldOfStudy ?? ""}`);
-
-  let fetches = 0;
-  while (
-    acc.items.length < start + max &&
-    !acc.exhausted &&
-    fetches < MAX_UPSTREAM_PAGES_PER_CALL
-  ) {
-    const limit = Math.min(
-      RELEVANCE_PAGE_SIZE,
-      RELEVANCE_OFFSET_LIMIT - acc.s2Offset,
-    );
-    if (limit <= 0) {
-      acc.exhausted = true;
-      break;
-    }
-    const params = new URLSearchParams({
-      query,
-      offset: String(acc.s2Offset),
-      limit: String(limit),
-      fields: SEARCH_FIELDS,
-    });
-    if (fieldOfStudy) {
-      params.set("fieldsOfStudy", fieldOfStudy);
-    }
-    const page = await fetchS2Json<S2SearchPage>(
-      `/graph/v1/paper/search?${params}`,
-      signal,
-    );
-    fetches += 1;
-    const data = page.data ?? [];
-    acc.total = page.total ?? acc.total;
-    acc.s2Offset += data.length;
-    appendMapped(acc, data);
-    if (data.length < limit || acc.s2Offset >= Math.min(acc.total, RELEVANCE_OFFSET_LIMIT)) {
-      acc.exhausted = true;
-    }
-  }
-
-  return accumulatorResponse(acc, start, max);
-}
-
-async function searchNewest(
-  query: string,
-  fieldOfStudy: string | null,
-  start: number,
-  max: number,
-  signal?: AbortSignal,
-): Promise<FeedResponse> {
-  const acc = accumulatorFor(`new::${query}::${fieldOfStudy ?? ""}`);
-
-  const paramsFor = (token: string | null) => {
-    const params = new URLSearchParams({
-      query,
-      sort: "publicationDate:desc",
-      fields: SEARCH_FIELDS,
-    });
-    if (fieldOfStudy) {
-      params.set("fieldsOfStudy", fieldOfStudy);
-    }
-    if (token) {
-      params.set("token", token);
-    }
-    return params;
-  };
-
-  let fetches = 0;
-  while (
-    acc.items.length < start + max &&
-    !acc.exhausted &&
-    fetches < MAX_UPSTREAM_PAGES_PER_CALL
-  ) {
-    // First call has no token; afterwards a null token means done.
-    if (fetches > 0 || acc.s2Offset > 0) {
-      if (!acc.token) {
-        acc.exhausted = true;
-        break;
-      }
-    }
-    const page = await fetchS2Json<S2BulkPage>(
-      `/graph/v1/paper/search/bulk?${paramsFor(acc.token)}`,
-      signal,
-    );
-    fetches += 1;
-    const data = page.data ?? [];
-    acc.total = page.total ?? acc.total;
-    acc.s2Offset += data.length;
-    acc.token = page.token ?? null;
-    appendMapped(acc, data);
-    if (!acc.token) {
-      acc.exhausted = true;
-    }
-  }
-
-  return accumulatorResponse(acc, start, max);
-}
-
-async function fetchArxivSearch(
-  query: string,
-  fieldOfStudy: string | null,
-  sort: SearchSort,
-  start: number,
-  max: number,
-  signal?: AbortSignal,
-): Promise<FeedResponse> {
-  const cleaned = query.trim();
-  if (!cleaned) {
-    return { papers: [], totalResults: 0, start };
-  }
-
-  let arxivSearchQuery = "";
-  if (/^"[^"]+"$/.test(cleaned)) {
-    const unquoted = cleaned.slice(1, -1).trim();
-    arxivSearchQuery = `(au:"${unquoted}"+OR+all:"${unquoted}")`;
-  } else if (/^(au|ti|abs|cat|all):/.test(cleaned)) {
-    arxivSearchQuery = cleaned;
-  } else {
-    const terms = cleaned.split(/\s+/).filter(Boolean);
-    arxivSearchQuery = terms.map((t) => `all:${encodeURIComponent(t)}`).join("+AND+");
-  }
-
-  if (fieldOfStudy) {
-    const fieldMap: Record<string, string> = {
-      "Computer Science": "cat:cs.*",
-      "Mathematics": "cat:math.*",
-      "Physics": "cat:physics.*+OR+cat:quant-ph+OR+cat:hep-*+OR+cat:astro-ph.*",
-      "Statistics": "cat:stat.*",
-      "Biology": "cat:q-bio.*",
-      "Economics": "cat:econ.*+OR+cat:q-fin.*",
-      "Engineering": "cat:eess.*",
-    };
-    const catQuery = fieldMap[fieldOfStudy];
-    if (catQuery) {
-      arxivSearchQuery = `(${arxivSearchQuery})+AND+(${catQuery})`;
-    }
-  }
-
-  const sortBy = sort === "recent" ? "submittedDate" : "relevance";
-  const url = `https://export.arxiv.org/api/query?search_query=${arxivSearchQuery}&start=${start}&max_results=${max}&sortBy=${sortBy}&sortOrder=descending`;
-
-  let xmlText = "";
-  try {
-    const res = await fetch(url, {
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(10000)]) : AbortSignal.timeout(10000),
-    });
-    if (res.ok) {
-      xmlText = await res.text();
-    } else {
-      throw new Error(`HTTP ${res.status}`);
-    }
-  } catch {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, {
-      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(12000)]) : AbortSignal.timeout(12000),
-    });
-    if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
-    xmlText = await res.text();
-  }
-
-  return parseArxivFeed(xmlText);
-}
-
-async function searchLocalSnapshots(
-  query: string,
-  start: number,
-  max: number,
-): Promise<FeedResponse> {
-  const cleaned = query.replace(/^"|"$/g, "").toLowerCase().trim();
-  if (!cleaned) {
-    return { papers: [], totalResults: 0, start };
-  }
-
-  try {
-    const manifestRes = await fetch(withBase("/data/manifest.json"));
-    if (!manifestRes.ok) return { papers: [], totalResults: 0, start };
-    const manifest = (await manifestRes.json()) as { categories: string[] };
-
-    const matchingPapers: Paper[] = [];
-    const seen = new Set<string>();
-
-    for (const cat of manifest.categories.slice(0, 20)) {
-      try {
-        const catRes = await fetch(withBase(`/data/feed/${cat}.json`));
-        if (!catRes.ok) continue;
-        const snapshot = (await catRes.json()) as { papers: Paper[] };
-
-        for (const paper of snapshot.papers) {
-          if (seen.has(paper.id)) continue;
-          const matchTitle = paper.title.toLowerCase().includes(cleaned);
-          const matchAuthor = paper.authors.some((a) => a.toLowerCase().includes(cleaned));
-          const matchAbstract = paper.abstract?.toLowerCase().includes(cleaned);
-
-          if (matchTitle || matchAuthor || matchAbstract) {
-            seen.add(paper.id);
-            matchingPapers.push(paper);
-          }
-        }
-      } catch {
-        // Ignore single snapshot fetch failure
-      }
-    }
-
-    return {
-      papers: matchingPapers.slice(start, start + max),
-      totalResults: matchingPapers.length,
-      start,
-    };
-  } catch {
-    return { papers: [], totalResults: 0, start };
-  }
-}
-
-/**
- * Full-corpus search. Fallbacks gracefully to arXiv API and local feed
- * snapshots when Semantic Scholar limits or fails.
- */
-export async function searchPapers(
-  query: string,
-  fieldOfStudy: string | null,
-  sort: SearchSort,
-  start: number,
-  max: number,
-  signal?: AbortSignal,
-): Promise<FeedResponse> {
-  try {
-    return await (sort === "recent"
-      ? searchNewest(query, fieldOfStudy, start, max, signal)
-      : searchRelevance(query, fieldOfStudy, start, max, signal));
-  } catch (error) {
-    if (isAbort(error, signal)) {
-      throw error;
-    }
-    try {
-      return await fetchArxivSearch(query, fieldOfStudy, sort, start, max, signal);
-    } catch {
-      return await searchLocalSnapshots(query, start, max);
-    }
-  }
-}
-
 /* ---------------------------- Paper lookup --------------------------- */
 
 const PAPER_FIELDS =
   "title,abstract,year,publicationDate,authors,externalIds,venue";
 
-/** Metadata for a deep-linked paper the snapshots don't cover. */
+/** Metadata for a deep-linked paper (fallback source after OpenAlex). */
 export async function getPaperFromS2(
   arxivId: string,
   signal?: AbortSignal,
@@ -633,72 +268,4 @@ export async function getPaperExtras(
       .filter((paper) => paper.title !== "Untitled"),
     partial: detail === null || recommendationsResult.status === "rejected",
   };
-}
-
-/* --------------------------- Citation graph -------------------------- */
-
-type S2GraphEdge = {
-  citedPaper?: S2GraphNode;
-  citingPaper?: S2GraphNode;
-};
-
-type S2GraphNode = {
-  title?: string;
-  year?: number | null;
-  authors?: S2Author[];
-  externalIds?: { ArXiv?: string } | null;
-  url?: string;
-  citationCount?: number | null;
-};
-
-function toGraphPaper(node: S2GraphNode | undefined): GraphPaper | null {
-  if (!node) {
-    return null;
-  }
-  const title = clean(node.title);
-  if (!title) {
-    return null;
-  }
-  return {
-    title,
-    authors: (node.authors ?? []).map((author) => clean(author.name)).filter(Boolean),
-    year: node.year ?? null,
-    arxivId: node.externalIds?.ArXiv ?? null,
-    externalUrl: node.url ?? null,
-    citationCount: node.citationCount ?? null,
-  };
-}
-
-const GRAPH_FIELDS = "title,year,authors,externalIds,url,citationCount";
-
-/** Works this paper cites (its bibliography), most-cited first. */
-export async function getReferences(
-  arxivId: string,
-  limit: number,
-  signal?: AbortSignal,
-): Promise<GraphPaper[]> {
-  const page = await fetchS2Json<{ data?: S2GraphEdge[] }>(
-    `/graph/v1/paper/arXiv:${arxivId}/references?fields=${GRAPH_FIELDS}&limit=${limit}`,
-    signal,
-  );
-  return (page.data ?? [])
-    .map((edge) => toGraphPaper(edge.citedPaper))
-    .filter((paper): paper is GraphPaper => paper !== null)
-    .sort((a, b) => (b.citationCount ?? 0) - (a.citationCount ?? 0));
-}
-
-/** Works citing this paper, most-cited first (influence at a glance). */
-export async function getCitations(
-  arxivId: string,
-  limit: number,
-  signal?: AbortSignal,
-): Promise<GraphPaper[]> {
-  const page = await fetchS2Json<{ data?: S2GraphEdge[] }>(
-    `/graph/v1/paper/arXiv:${arxivId}/citations?fields=${GRAPH_FIELDS}&limit=${limit}`,
-    signal,
-  );
-  return (page.data ?? [])
-    .map((edge) => toGraphPaper(edge.citingPaper))
-    .filter((paper): paper is GraphPaper => paper !== null)
-    .sort((a, b) => (b.citationCount ?? 0) - (a.citationCount ?? 0));
 }

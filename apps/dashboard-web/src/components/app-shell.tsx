@@ -165,6 +165,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <span className="colophon__sep" />
           <span>
             {t("colophon.enriched")}{" "}
+            <a href="https://openalex.org" target="_blank" rel="noreferrer">
+              OpenAlex
+            </a>{" "}
+            &amp;{" "}
             <a href="https://www.semanticscholar.org" target="_blank" rel="noreferrer">
               Semantic Scholar
             </a>

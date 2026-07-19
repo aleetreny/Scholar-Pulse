@@ -928,7 +928,7 @@ kbd {
   color: var(--amber);
 }
 
-.rss-row a {
+.rss-row button {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--ink);
@@ -937,7 +937,7 @@ kbd {
   text-underline-offset: 3px;
 }
 
-.rss-row a:hover {
+.rss-row button:hover {
   color: var(--accent);
   text-decoration-color: currentColor;
 }
@@ -1071,6 +1071,14 @@ kbd {
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 14px;
+}
+
+.author-mode {
+  font-size: 11px;
+  font-weight: 640;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .recent-searches {

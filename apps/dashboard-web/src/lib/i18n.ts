@@ -23,7 +23,7 @@ const EN = {
   "theme.dark": "Dark theme",
   "lang.switch": "Cambiar a español",
   "colophon.tagline": "ScholarPulse — a reading companion for",
-  "colophon.enriched": "Enriched by",
+  "colophon.enriched": "Data from",
   "colophon.press": "Press",
   "colophon.toSearch": "to search",
 
@@ -52,7 +52,8 @@ const EN = {
 
   "search.title": "Search arXiv",
   "search.sub":
-    "Every arXiv paper, by title, abstract, or author — powered by Semantic Scholar.",
+    "Every arXiv paper, by title, abstract, or author — powered by OpenAlex.",
+  "search.authorMode": "Author search: {author}",
   "search.placeholder": "Search titles, abstracts, authors…",
   "search.inputAria": "Search arXiv",
   "search.clearAria": "Clear search",
@@ -147,7 +148,9 @@ const EN = {
   "topics.subCountOne": "1 field feeding your home page.",
   "topics.subCountMany": "{n} fields feeding your home page.",
   "topics.goToFeed": "Go to feed",
-  "topics.rss": "Follow a field from your feed reader instead:",
+  "topics.rss": "RSS for your feed reader — click a field to copy its URL:",
+  "topics.rssCopied": "Feed URL copied — paste it into your reader",
+  "topics.rssCopyAria": "Copy the {cat} RSS feed URL",
 
   "notFound.title": "This page doesn't exist",
   "notFound.body":
@@ -175,7 +178,7 @@ const ES: Record<StringKey, string> = {
   "theme.dark": "Tema oscuro",
   "lang.switch": "Switch to English",
   "colophon.tagline": "ScholarPulse — un compañero de lectura para",
-  "colophon.enriched": "Enriquecido con",
+  "colophon.enriched": "Con datos de",
   "colophon.press": "Pulsa",
   "colophon.toSearch": "para buscar",
 
@@ -204,7 +207,8 @@ const ES: Record<StringKey, string> = {
 
   "search.title": "Buscar en arXiv",
   "search.sub":
-    "Todos los papers de arXiv por título, abstract o autor — con la búsqueda de Semantic Scholar.",
+    "Todos los papers de arXiv por título, abstract o autor — con datos de OpenAlex.",
+  "search.authorMode": "Búsqueda por autor: {author}",
   "search.placeholder": "Busca títulos, abstracts, autores…",
   "search.inputAria": "Buscar en arXiv",
   "search.clearAria": "Borrar búsqueda",
@@ -299,7 +303,9 @@ const ES: Record<StringKey, string> = {
   "topics.subCountOne": "1 campo alimenta tu página principal.",
   "topics.subCountMany": "{n} campos alimentan tu página principal.",
   "topics.goToFeed": "Ir al feed",
-  "topics.rss": "Sigue un campo desde tu lector de feeds:",
+  "topics.rss": "RSS para tu lector de feeds — pulsa un campo para copiar su URL:",
+  "topics.rssCopied": "URL del feed copiada — pégala en tu lector",
+  "topics.rssCopyAria": "Copiar la URL del feed RSS de {cat}",
 
   "notFound.title": "Esta página no existe",
   "notFound.body":

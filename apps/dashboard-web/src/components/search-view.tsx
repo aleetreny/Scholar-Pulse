@@ -6,10 +6,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
-import { searchPapers, SEARCH_FIELDS_OF_STUDY } from "@/lib/data/s2";
+import { FIELDS_OF_STUDY } from "@/lib/data/openalex";
+import { searchPapers } from "@/lib/data/search";
 import { formatCount } from "@/lib/format";
 import { useT, type StringKey } from "@/lib/i18n";
-import { useRecentSearches } from "@/lib/store";
+import { useRecentSearches, useTopics } from "@/lib/store";
 import type { SearchSort } from "@/lib/types";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
@@ -31,7 +32,14 @@ export function SearchView() {
   const [sort, setSort] = useState<SearchSort>("relevance");
   const inputRef = useRef<HTMLInputElement>(null);
   const { searches, addSearch, clearSearches } = useRecentSearches();
+  const { topics } = useTopics();
   const { t } = useT();
+
+  // "author:Grace Hopper" switches to an exact author-name filter (what the
+  // author links on paper pages produce). Derived from the query itself so
+  // it survives URL mirroring and remounts with zero state juggling.
+  const authorQuery = query.match(/^author:\s*(.+)$/i)?.[1]?.trim() ?? null;
+  const effectiveQuery = authorQuery ?? query;
 
   // Debounce typing into the executed query, and mirror it into the URL so
   // searches are shareable and survive reloads.
@@ -48,13 +56,23 @@ export function SearchView() {
     return () => window.clearTimeout(handle);
   }, [input, router]);
 
-  const enabled = query.length > 0;
-  const queryKey = `${query}::${field}::${sort}`;
+  const enabled = effectiveQuery.length > 0;
+  const queryKey = `${effectiveQuery}::${field}::${sort}::${authorQuery !== null}`;
+  const topicsKey = topics.join(",");
 
   const fetchPage = useCallback(
     (start: number, signal: AbortSignal) =>
-      searchPapers(query, field || null, sort, start, PAGE_SIZE, signal),
-    [query, field, sort],
+      searchPapers(
+        effectiveQuery,
+        field ? Number(field) : null,
+        sort,
+        start,
+        PAGE_SIZE,
+        signal,
+        authorQuery !== null,
+        topicsKey ? topicsKey.split(",") : [],
+      ),
+    [effectiveQuery, field, sort, authorQuery, topicsKey],
   );
 
   const { papers, total, loading, loadingMore, error, hasMore, loadMore, retry } =
@@ -135,14 +153,20 @@ export function SearchView() {
             aria-label={t("search.fieldAria")}
           >
             <option value="">{t("search.allFields")}</option>
-            {SEARCH_FIELDS_OF_STUDY.map((name) => (
-              <option key={name} value={name}>
-                {name}
+            {FIELDS_OF_STUDY.map(({ id, label }) => (
+              <option key={id} value={String(id)}>
+                {label}
               </option>
             ))}
           </select>
           <ChevronDown />
         </div>
+
+        {authorQuery ? (
+          <span className="author-mode">
+            {t("search.authorMode", { author: authorQuery })}
+          </span>
+        ) : null}
       </div>
 
       {!enabled ? (

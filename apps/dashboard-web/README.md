@@ -41,8 +41,9 @@ A researcher-first reading companion for arXiv. Fully static — served directly
 | Feature | Data Source | Method |
 | --- | --- | --- |
 | **Category Feed** | arXiv API | **Prebuilt Snapshots**: Static snapshots (`/data/feed/<cat>.json`) built by scheduled CI runs. Filtered on the client by primary category when focusing on a single field. |
-| **Search** | arXiv API + Semantic Scholar | **Live Client Queries**: Direct search via arXiv API (`export.arxiv.org`), with CORS/proxy fallback and S2 integration to guarantee 100% uptime without rate-limit errors. |
-| **Citations & Graph** | Semantic Scholar API | **Live Client Calls**: Fetches citation counts, references, citations, and TL;DR summaries directly from S2 endpoints with session caching. |
+| **Search & Author Lookup** | OpenAlex API | **Live Client Queries**: Full-corpus search scoped to arXiv (`locations.source.id`), relevance/newest sorting, field-of-study filter, and an `author:Name` operator (exact `raw_author_name` filter). Sub-second, CORS-enabled, no key required. Falls back to a local scan of the shipped snapshots if unreachable. |
+| **Citations & Graph** | OpenAlex API | **Live Client Calls**: "Builds on" (batched lookup of `referenced_works`) and "Cited by" (`cites:` filter), most-cited first, loaded on expand with session caching. |
+| **TL;DR & Similar Papers** | Semantic Scholar API | **Live Client Calls**: TLDRs, recommendations, and version-merged citation metrics — data OpenAlex doesn't have. Degrades gracefully when S2's shared rate-limit pool is saturated (OpenAlex covers the citation count as fallback). |
 
 *Personal data (topics, saved papers, notes, reading statuses, search history) is stored exclusively in `localStorage` — no tracking, no accounts required.*
 
@@ -74,6 +75,7 @@ Open `http://localhost:3000` in your browser.
 | Variable | Description |
 | --- | --- |
 | `ARXIV_API_BASE` | Override the arXiv API base URL for snapshot generation. |
+| `NEXT_PUBLIC_OPENALEX_API_BASE` | Override the OpenAlex API base URL. |
 | `NEXT_PUBLIC_S2_API_BASE` | Override the Semantic Scholar API base URL. |
 | `PAGES_BASE_PATH` | Subpath base path for GitHub Pages deployment. |
 | `SITE_BASE_URL` | Absolute canonical URL for generated RSS feeds. |
