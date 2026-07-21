@@ -4,7 +4,6 @@ from pipelines.common.hash_utils import deterministic_content_hash
 from pipelines.ingestion.arxiv_utils import parse_arxiv_identifier
 
 
-
 def test_parse_arxiv_identifier_modern() -> None:
     parsed = parse_arxiv_identifier("http://arxiv.org/abs/2401.01234v2")
     assert parsed.base_id == "2401.01234"

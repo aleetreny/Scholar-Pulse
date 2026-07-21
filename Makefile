@@ -1,6 +1,6 @@
 PYTHON ?= $(shell if command -v python >/dev/null 2>&1; then echo python; else echo python3; fi)
 
-.PHONY: install install-dev lint format typecheck test test-unit test-integration test-e2e db-up db-down up down run-dashboard run-dashboard-api run-dashboard-web render-quarto progress quality kaggle-path kaggle-bootstrap import-embeddings publish-dashboard build-space build-similarity enrichment-sync local-embed weekly-refresh
+.PHONY: install install-dev lint format typecheck test test-unit test-integration test-e2e db-up db-down up down run-dashboard run-dashboard-api run-web progress quality kaggle-path kaggle-bootstrap import-embeddings publish-dashboard build-space build-similarity enrichment-sync local-embed weekly-refresh
 
 install:
 	$(PYTHON) -m pip install -e .
@@ -49,11 +49,8 @@ run-dashboard-api:
 	@$(PYTHON) -c "import fastapi, uvicorn" >/dev/null 2>&1 || $(PYTHON) -m pip install -e '.[dashboard_api]'
 	$(PYTHON) -m apps.dashboard_api.main
 
-run-dashboard-web:
-	cd apps/dashboard-web && NEXT_PUBLIC_DASHBOARD_API_URL=$(or $(DASHBOARD_API_URL),http://127.0.0.1:8051/api) npm run dev
-
-render-quarto:
-	cd research/quarto-study && quarto render
+run-web:
+	cd apps/web && npm run dev
 
 progress:
 	$(PYTHON) -m pipelines.ingestion.progress --watch --interval 20

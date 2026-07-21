@@ -16,7 +16,6 @@ from pipelines.common.settings import get_settings
 from pipelines.embeddings.manifest import ShardMeta, aggregate_checksum, shard_metadata
 
 
-
 def set_determinism(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)

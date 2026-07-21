@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Iterator
 
 import feedparser
 import requests

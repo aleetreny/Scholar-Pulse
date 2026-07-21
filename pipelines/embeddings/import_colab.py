@@ -81,7 +81,7 @@ def validate_and_register(snapshot_id: str) -> dict[str, Any]:
             raise ManifestValidationError(f"Detected non-normalized vectors in {relative_path}")
 
         vector_count += vectors.shape[0]
-        aggregate.update(f"{relative_path}:{checksum}:{vectors.shape[0]}".encode("utf-8"))
+        aggregate.update(f"{relative_path}:{checksum}:{vectors.shape[0]}".encode())
 
     if vector_count != int(export_manifest["document_count"]):
         raise ManifestValidationError(

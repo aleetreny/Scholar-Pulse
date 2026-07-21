@@ -29,8 +29,8 @@ class Paper(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    versions: Mapped[list["PaperVersion"]] = relationship(back_populates="paper", cascade="all, delete")
-    categories: Mapped[list["PaperCategory"]] = relationship(
+    versions: Mapped[list[PaperVersion]] = relationship(back_populates="paper", cascade="all, delete")
+    categories: Mapped[list[PaperCategory]] = relationship(
         back_populates="paper", cascade="all, delete"
     )
 
@@ -64,7 +64,7 @@ class PaperVersion(Base):
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
     paper: Mapped[Paper] = relationship(back_populates="versions")
-    authorships: Mapped[list["PaperAuthor"]] = relationship(
+    authorships: Mapped[list[PaperAuthor]] = relationship(
         back_populates="paper_version", cascade="all, delete"
     )
 
@@ -200,7 +200,7 @@ class Author(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
-    papers: Mapped[list["PaperAuthor"]] = relationship(back_populates="author", cascade="all, delete")
+    papers: Mapped[list[PaperAuthor]] = relationship(back_populates="author", cascade="all, delete")
 
 
 class PaperAuthor(Base):

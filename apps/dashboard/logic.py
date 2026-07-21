@@ -11,9 +11,9 @@ from apps.dashboard.constants import (
     GLOBAL_PREVIEW_CAP,
 )
 from apps.dashboard.data_access import (
-    DashboardBundle,
-    MAP_DETAIL_COLUMNS,
     MAP_DENSITY_COLUMNS,
+    MAP_DETAIL_COLUMNS,
+    DashboardBundle,
     query_map_detail,
 )
 from apps.dashboard.taxonomy import build_taxonomy_options, taxonomy_match
