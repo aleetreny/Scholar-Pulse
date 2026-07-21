@@ -24,7 +24,7 @@ services:
   dashboard:
     build:
       context: .
-      dockerfile: Dockerfile.dashboard
+      dockerfile: apps/dashboard/Dockerfile
     container_name: scholarpulse-dashboard
     env_file:
       - .env

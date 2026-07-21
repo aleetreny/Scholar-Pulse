@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import argparse
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 
 from pipelines.common.settings import get_settings
-
 
 # Rough upper-bound estimate used only for a ballpark % readout.
 ARXIV_TOTALS_ESTIMATE = {
@@ -18,7 +17,7 @@ ARXIV_TOTALS_ESTIMATE = {
 
 
 def _print_snapshot(engine: sa.Engine, baseline_count: int, baseline_ts: datetime) -> tuple[int, datetime]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         papers = int(conn.execute(sa.text("select count(*) from papers")).scalar_one())
         running = conn.execute(
@@ -91,7 +90,7 @@ def main() -> None:
     settings = get_settings()
     engine = sa.create_engine(settings.database_url)
 
-    baseline_ts = datetime.now(timezone.utc)
+    baseline_ts = datetime.now(UTC)
     with engine.connect() as conn:
         baseline_count = int(conn.execute(sa.text("select count(*) from papers")).scalar_one())
 

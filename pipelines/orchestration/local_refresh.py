@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select
@@ -27,14 +27,14 @@ EMBEDDING_WATERMARK_KEY = "embedding_incremental_watermark_utc"
 def _parse_utc_datetime(value: str) -> datetime:
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def _snapshot_timestamp(snapshot_id: str) -> datetime | None:
     prefix = snapshot_id.split("__", maxsplit=1)[0]
     try:
-        return datetime.strptime(prefix, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+        return datetime.strptime(prefix, "%Y%m%dT%H%M%SZ").replace(tzinfo=UTC)
     except ValueError:
         return None
 
@@ -108,7 +108,7 @@ def run_weekly_local_refresh(
     enrichment_max_papers: int | None = None,
 ) -> dict[str, Any]:
     settings = get_settings()
-    run_ts = (as_of or datetime.now(timezone.utc)).astimezone(timezone.utc)
+    run_ts = (as_of or datetime.now(UTC)).astimezone(UTC)
     taxonomy_value = taxonomy or settings.taxonomy_default
     taxonomy_tokens = [token.strip() for token in taxonomy_value.split(",") if token.strip()]
 

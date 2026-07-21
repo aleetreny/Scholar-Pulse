@@ -3,10 +3,11 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
-from datetime import datetime, timezone
+from collections.abc import Iterator
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
@@ -22,8 +23,8 @@ logger = get_logger(__name__)
 
 def _create_run(taxonomy_text: str, from_year: int, to_year: int, source_path: Path) -> str:
     run_id = uuid4().hex
-    from_date = datetime(from_year, 1, 1, tzinfo=timezone.utc)
-    to_date = datetime(to_year, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    from_date = datetime(from_year, 1, 1, tzinfo=UTC)
+    to_date = datetime(to_year, 12, 31, 23, 59, 59, tzinfo=UTC)
 
     with session_scope() as session:
         session.add(
@@ -56,7 +57,7 @@ def _finish_run(run_id: str, stats: IngestionStats | None = None, error: BaseExc
         if run is None:
             return
 
-        run.finished_at = datetime.now(timezone.utc)
+        run.finished_at = datetime.now(UTC)
         if error is not None:
             run.status = "failed"
             run.error_message = str(error)
@@ -97,16 +98,16 @@ def _parse_dt(value: str) -> datetime | None:
     try:
         dt = parsedate_to_datetime(value)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
+        return dt.astimezone(UTC)
     except Exception:
         pass
 
     try:
         dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.astimezone(timezone.utc)
+            dt = dt.replace(tzinfo=UTC)
+        return dt.astimezone(UTC)
     except Exception:
         return None
 
@@ -354,7 +355,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--taxonomy", default="cs,stat,physics")
     parser.add_argument("--from-year", type=int, default=1991)
-    parser.add_argument("--to-year", type=int, default=datetime.now(timezone.utc).year)
+    parser.add_argument("--to-year", type=int, default=datetime.now(UTC).year)
     parser.add_argument("--max-records", type=int, default=0)
     parser.add_argument("--commit-every", type=int, default=2000)
     parser.add_argument(

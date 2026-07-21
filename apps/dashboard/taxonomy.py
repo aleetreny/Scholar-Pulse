@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+import json
+import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
-import json
-import re
 from typing import Any
-
 
 CATEGORY_TOKEN_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9.-]*")
 KNOWN_BARE_TOKENS = frozenset({"cs", "stat", "math", "physics", "econ", "eess", "nlin"})

@@ -7,15 +7,12 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .DS_Store
+.idea/
+.vscode/
 
 # Data artifacts
-/data/raw/**
-/data/interim/**
-/data/processed/**
-/data/*.sqlite
-!/data/raw/.gitkeep
-!/data/interim/.gitkeep
-!/data/processed/.gitkeep
+/data/**
+!/data/.gitkeep
 
 # Prefect
 .prefect/
@@ -26,10 +23,12 @@ __pycache__/
 /logs/*.jsonl
 !/logs/.gitkeep
 
-# Jupyter / Quarto
+# Jupyter
 .ipynb_checkpoints/
-research/quarto-study/.quarto/
-research/quarto-study/reports/_site/
+
+# Generated documentation exports
+/README.html
+/README_files/
 
 # Local Claude Code tooling (machine-specific paths)
 .claude/

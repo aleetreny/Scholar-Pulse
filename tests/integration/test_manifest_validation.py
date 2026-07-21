@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -9,7 +8,6 @@ import pandas as pd
 from pipelines.common.files import sha256_file
 from pipelines.common.settings import get_settings
 from pipelines.embeddings.import_colab import validate_and_register
-
 
 
 def _normed_vectors(rows: int, dim: int) -> np.ndarray:

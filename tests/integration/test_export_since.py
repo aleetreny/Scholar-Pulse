@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pandas as pd
 
@@ -35,8 +35,8 @@ def _seed_paper(paper_id: str, version_id: str, dt: datetime, category: str) -> 
 
 
 def test_export_snapshot_since_filters_latest_versions() -> None:
-    old_dt = datetime(2020, 1, 1, tzinfo=timezone.utc)
-    new_dt = datetime(2026, 2, 28, 12, 0, tzinfo=timezone.utc)
+    old_dt = datetime(2020, 1, 1, tzinfo=UTC)
+    new_dt = datetime(2026, 2, 28, 12, 0, tzinfo=UTC)
 
     _seed_paper("2001.00001", "2001.00001v1", old_dt, "cs.AI")
     _seed_paper("2602.00001", "2602.00001v1", new_dt, "cs.LG")
@@ -45,7 +45,7 @@ def test_export_snapshot_since_filters_latest_versions() -> None:
     manifest_path = export_snapshot(
         snapshot_id=snapshot_id,
         taxonomy="cs",
-        updated_since=datetime(2026, 2, 1, tzinfo=timezone.utc),
+        updated_since=datetime(2026, 2, 1, tzinfo=UTC),
     )
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

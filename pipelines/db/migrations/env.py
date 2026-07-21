@@ -6,8 +6,8 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from pipelines.common.settings import get_settings
-from pipelines.db.base import Base
 from pipelines.db import models  # noqa: F401
+from pipelines.db.base import Base
 
 config = context.config
 if config.config_file_name is not None:

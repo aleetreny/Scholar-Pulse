@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pipelines.common.logging_utils import configure_logging, get_logger
@@ -28,7 +28,7 @@ class BulkRunResult:
 
 def _year_windows(from_year: int, to_year: int) -> list[tuple[datetime, datetime]]:
     windows: list[tuple[datetime, datetime]] = []
-    utc = timezone.utc
+    utc = UTC
     now = datetime.now(utc)
 
     for year in range(from_year, to_year + 1):
@@ -50,7 +50,7 @@ def _append_result(path: Path, result: BulkRunResult) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run multi-year backfill by taxonomy")
     parser.add_argument("--from-year", type=int, default=2015)
-    parser.add_argument("--to-year", type=int, default=datetime.now(timezone.utc).year)
+    parser.add_argument("--to-year", type=int, default=datetime.now(UTC).year)
     parser.add_argument("--taxonomy", default="cs,stat,physics")
     parser.add_argument("--log-path", default="logs/bulk_backfill_results.jsonl")
     parser.add_argument("--fail-fast", action="store_true", help="Stop on first failed window")
