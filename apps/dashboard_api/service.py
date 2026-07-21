@@ -6,7 +6,11 @@ from typing import Any
 from fastapi import HTTPException
 
 from apps.dashboard.data_access import available_snapshots, load_bundle, load_doc_detail
-from apps.dashboard.logic import build_control_view_model, build_latest_rows_frame, build_map_view_model
+from apps.dashboard.logic import (
+    build_control_view_model,
+    build_latest_rows_frame,
+    build_map_view_model,
+)
 from apps.dashboard_api.serializers import (
     serialize_control_model,
     serialize_latest_rows,

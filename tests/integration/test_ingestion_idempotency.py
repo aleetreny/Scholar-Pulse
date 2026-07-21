@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 
@@ -10,9 +10,8 @@ from pipelines.ingestion.service import _upsert_record
 from pipelines.ingestion.types import ArxivRecord
 
 
-
 def _record(abstract: str) -> ArxivRecord:
-    now = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, tzinfo=UTC)
     return ArxivRecord(
         paper_id="2401.12345",
         paper_version_id="2401.12345v1",

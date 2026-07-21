@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pipelines.common.hash_utils import deterministic_content_hash
@@ -28,7 +28,7 @@ def parse_arxiv_identifier(identifier: str) -> ParsedArxivId:
 
 def parse_timestamp(value: str) -> datetime:
     dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return dt.astimezone(timezone.utc)
+    return dt.astimezone(UTC)
 
 
 def normalize_record(entry: dict[str, Any]) -> ArxivRecord:

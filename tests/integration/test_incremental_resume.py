@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -14,7 +14,7 @@ def test_incremental_starts_from_latest_known_if_watermark_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     settings = get_settings()
-    latest_updated = datetime(2025, 1, 10, 12, 0, tzinfo=timezone.utc)
+    latest_updated = datetime(2025, 1, 10, 12, 0, tzinfo=UTC)
 
     with session_scope() as session:
         session.add(Paper(paper_id="2501.00001"))
@@ -55,5 +55,5 @@ def test_incremental_starts_from_latest_known_if_watermark_missing(
     expected_from = latest_updated - timedelta(hours=settings.arxiv_overlap_hours)
     observed_from = captured["from_dt"]
     if observed_from.tzinfo is None:
-        observed_from = observed_from.replace(tzinfo=timezone.utc)
+        observed_from = observed_from.replace(tzinfo=UTC)
     assert observed_from == expected_from

@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+import zstandard as zstd
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
-import zstandard as zstd
 
 from pipelines.common.logging_utils import get_logger
 from pipelines.common.settings import get_settings
@@ -70,7 +70,7 @@ def _persist_raw_payload(session: Session, record: ArxivRecord) -> None:
         values={
             "paper_id": record.paper_id,
             "source": "arxiv",
-            "fetched_at": datetime.now(timezone.utc),
+            "fetched_at": datetime.now(UTC),
             "payload_json": record.raw,
             "payload_hash": payload_hash,
             "status": "ok",
@@ -265,7 +265,7 @@ def _finish_run(run_id: str, stats: IngestionStats | None = None, error: BaseExc
         run = session.get(IngestionRun, run_id)
         if run is None:
             return
-        run.finished_at = datetime.now(timezone.utc)
+        run.finished_at = datetime.now(UTC)
         if error is not None:
             run.status = "failed"
             run.error_message = str(error)
@@ -310,7 +310,7 @@ def run_backfill(
         processed_entries = 0
         inserted_versions = 0
         updated_versions = 0
-        run_date = datetime.now(timezone.utc).date().isoformat()
+        run_date = datetime.now(UTC).date().isoformat()
         raw_path = settings.data_dir / "raw" / "arxiv" / run_date / f"{run_id}.records.jsonl.zst"
         raw_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -413,7 +413,7 @@ def run_incremental(
         processed_entries = 0
         inserted_versions = 0
         updated_versions = 0
-        run_date = datetime.now(timezone.utc).date().isoformat()
+        run_date = datetime.now(UTC).date().isoformat()
         raw_path = settings.data_dir / "raw" / "arxiv" / run_date / f"{run_id}.records.jsonl.zst"
         raw_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -470,7 +470,7 @@ def run_incremental(
 
 def run_latest_seed(taxonomy: list[str], max_records: int = 200) -> IngestionStats:
     settings = get_settings()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     run_id = _create_run(mode="latest_seed", taxonomy=",".join(taxonomy), from_date=None, to_date=now)
     client = ArxivClient()
 
@@ -478,7 +478,7 @@ def run_latest_seed(taxonomy: list[str], max_records: int = 200) -> IngestionSta
         processed_entries = 0
         inserted_versions = 0
         updated_versions = 0
-        run_date = datetime.now(timezone.utc).date().isoformat()
+        run_date = datetime.now(UTC).date().isoformat()
         raw_path = settings.data_dir / "raw" / "arxiv" / run_date / f"{run_id}.records.jsonl.zst"
         raw_path.parent.mkdir(parents=True, exist_ok=True)
 

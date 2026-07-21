@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -16,9 +16,8 @@ from pipelines.ingestion.service import run_backfill
 from pipelines.ingestion.types import ArxivRecord
 
 
-
 def _fixture_records() -> list[ArxivRecord]:
-    now = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    now = datetime(2025, 1, 1, tzinfo=UTC)
     return [
         ArxivRecord(
             paper_id="2401.00001",
@@ -57,8 +56,8 @@ def test_e2e_smoke(monkeypatch: pytest.MonkeyPatch, snapshot_id: str) -> None:
     monkeypatch.setattr(service.ArxivClient, "fetch_records", fake_fetch_records)
 
     stats = run_backfill(
-        from_date=datetime(2025, 1, 1, tzinfo=timezone.utc),
-        to_date=datetime(2025, 1, 2, tzinfo=timezone.utc),
+        from_date=datetime(2025, 1, 1, tzinfo=UTC),
+        to_date=datetime(2025, 1, 2, tzinfo=UTC),
         taxonomy=["cs", "stat"],
     )
     assert stats.processed_entries == 2

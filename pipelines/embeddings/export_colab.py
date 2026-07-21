@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -199,8 +199,8 @@ def parse_args() -> argparse.Namespace:
 def _parse_utc_datetime(value: str) -> datetime:
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def main() -> None:
@@ -215,7 +215,7 @@ def main() -> None:
         or build_snapshot_id(
             taxonomy=taxonomy,
             model_version=settings.embedding_model_version,
-            now=datetime.now(timezone.utc),
+            now=datetime.now(UTC),
         )
     )
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pipelines.common.logging_utils import configure_logging
 from pipelines.common.settings import get_settings
@@ -14,8 +14,8 @@ from pipelines.ingestion.service import run_backfill, run_incremental, run_lates
 def parse_utc_date(value: str) -> datetime:
     dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -27,12 +27,12 @@ def _parser() -> argparse.ArgumentParser:
 
     backfill = subparsers.add_parser("backfill", help="Run historical backfill")
     backfill.add_argument("--from", dest="from_date", default="2015-01-01T00:00:00+00:00")
-    backfill.add_argument("--to", dest="to_date", default=datetime.now(timezone.utc).isoformat())
+    backfill.add_argument("--to", dest="to_date", default=datetime.now(UTC).isoformat())
     backfill.add_argument("--taxonomy", default="")
     backfill.add_argument("--max-records", type=int, default=0)
 
     incremental = subparsers.add_parser("incremental", help="Run incremental ingestion")
-    incremental.add_argument("--as-of", dest="as_of", default=datetime.now(timezone.utc).isoformat())
+    incremental.add_argument("--as-of", dest="as_of", default=datetime.now(UTC).isoformat())
     incremental.add_argument("--taxonomy", default="")
     incremental.add_argument("--max-records", type=int, default=0)
 
@@ -52,7 +52,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     kaggle.add_argument("--taxonomy", default="")
     kaggle.add_argument("--from-year", type=int, default=1991)
-    kaggle.add_argument("--to-year", type=int, default=datetime.now(timezone.utc).year)
+    kaggle.add_argument("--to-year", type=int, default=datetime.now(UTC).year)
     kaggle.add_argument("--max-records", type=int, default=0)
     kaggle.add_argument("--commit-every", type=int, default=2000)
     kaggle.add_argument("--show-path-only", action="store_true")

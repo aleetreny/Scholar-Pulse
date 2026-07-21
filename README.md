@@ -1,65 +1,73 @@
 # ScholarPulse
 
-ScholarPulse is an open-source, researcher-first web application and intelligence platform for scientific discovery on **arXiv**.
+ScholarPulse is a researcher-focused discovery platform for exploring recent arXiv literature, following fields, investigating citation networks, and maintaining a private reading library.
 
-**Live Web Application:** <https://aleetreny.github.io/Scholar-Pulse/>
+[Open the live application](https://aleetreny.github.io/Scholar-Pulse/)
 
----
+## Highlights
 
-## Web Application (`apps/dashboard-web/`)
+- Personalized feeds built from scheduled arXiv snapshots.
+- Full-corpus search and author lookup through OpenAlex.
+- Paper details with citations, references, related work, and Semantic Scholar enrichment.
+- Local reading lists, notes, status tracking, and BibTeX or JSON export.
+- English and Spanish interfaces with responsive light and dark themes.
+- Static deployment: the public application requires no hosted backend or user account.
 
-The primary product is a standalone, client-side **arXiv Reading Companion & Discovery Web App**. It requires zero backend infrastructure and runs fully static on GitHub Pages.
+## Repository layout
 
-### Features
+| Path | Purpose |
+| --- | --- |
+| `apps/web/` | Primary Next.js web application deployed to GitHub Pages. |
+| `apps/dashboard/` | Optional Plotly dashboard for locally generated analytics artifacts. |
+| `apps/dashboard_api/` | Optional FastAPI service for dashboard data. |
+| `pipelines/` | Ingestion, enrichment, embeddings, indexing, and orchestration workflows. |
+| `tests/` | Python unit, integration, and end-to-end tests. |
+| `infra/` | Infrastructure-specific setup, including Colab workflows. |
+| `docs/` | Architecture and pipeline documentation. |
 
-- **For You Feed**: Personal feed of the newest arXiv submissions with *new-since-last-visit* markers, "caught up" indicators, and **strict primary-category topic filtering**.
-- **Live Search Engine**: Search arXiv by keyword, phrase, or author name (including one-click author search from paper detail pages). Powered by live **arXiv API** parsing with automatic fallback handling, eliminating 429 rate limit errors.
-- **Paper Detail Pages**: Full abstracts with LaTeX equations rendered via KaTeX, citation counts, TL;DR summaries, AI-recommended similar papers, and an **In the literature** citation-graph explorer (*Builds on* & *Cited by*).
-- **Citation & Export**: One-click BibTeX and APA citation copying, clickable author links, and direct PDF / arXiv / DOI links.
-- **Personal Library & Notes**: Save papers locally, track reading status (*To read*, *Reading*, *Read*), write personal notes, and export/import via `.bib` (with `annote` notes) or JSON.
-- **Per-Field RSS Feeds**: Static RSS 2.0 feed files (`/data/rss/<cat>.xml`) for every arXiv field.
-- **Bilingual (English / Spanish)**: Instant UI language toggle.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for component boundaries and data flow.
 
-### Quick Start (Local Web App)
+## Run the web application
+
+Node.js 24 is used in CI.
 
 ```bash
-cd apps/dashboard-web
-npm install
+cd apps/web
+npm ci
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open <http://localhost:3000>. To generate fresh local feed data before starting the app:
 
----
+```bash
+npm run snapshots -- --cats cs.LG,cs.CL --max 60
+```
 
-## Repository Architecture
+## Run the Python toolchain
 
-- `apps/dashboard-web/` — The primary user-facing Next.js reading & discovery web application.
-- `pipelines/` — Data & modeling workflows (ingestion, embeddings, clustering, metrics, inference).
-- `research/quarto-study/` — Technical research reports, methodologies, and reproducible studies in Quarto.
-- `data/` — Data lifecycle directories (`raw`, `interim`, `processed`, `external`).
-- `infra/` — Deployment and cloud assets (Colab scripts, AWS Bedrock integration).
-- `docs/` — Architecture notes, system documentation, and decision records.
-- `tests/` — Automated test suites for pipelines and web components.
+Python 3.11 or later is required.
 
----
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e ".[dev,dashboard]"
+pytest
+```
 
-## Data & Pipeline Execution
+Copy `.env.example` to `.env` only when running services that need local configuration. Data products, logs, environment files, and generated web snapshots are intentionally excluded from version control.
 
-For research and pipeline tasks (ingestion, snapshot generation, embeddings):
+## Quality checks
 
-- **Snapshot Generation**:
-  ```bash
-  cd apps/dashboard-web
-  npm run snapshots -- --cats cs.LG,cs.CL --max 60
-  ```
-- **Python Ingestion & Pipelines**:
-  ```bash
-  python -m pipelines.ingestion.cli incremental
-  ```
-- **Typecheck & Validation**:
-  ```bash
-  cd apps/dashboard-web
-  npm run typecheck
-  npm run lint
-  ```
+```bash
+cd apps/web
+npm run lint
+npm run typecheck
+npm run build
+```
+
+```bash
+ruff check .
+pytest
+```
+
+The workflow in `.github/workflows/deploy-pages.yml` refreshes feed snapshots, builds the static application, and deploys it to GitHub Pages.

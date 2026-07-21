@@ -53,7 +53,7 @@ class SnapshotManifestPayload:
 def aggregate_checksum(shards: list[ShardMeta]) -> str:
     digest = hashlib.sha256()
     for shard in sorted(shards, key=lambda s: s.relative_path):
-        digest.update(f"{shard.relative_path}:{shard.sha256}:{shard.rows}".encode("utf-8"))
+        digest.update(f"{shard.relative_path}:{shard.sha256}:{shard.rows}".encode())
     return digest.hexdigest()
 
 

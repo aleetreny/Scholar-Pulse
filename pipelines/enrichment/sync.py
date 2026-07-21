@@ -5,7 +5,7 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -98,7 +98,7 @@ def _latest_versions(paper_ids: list[str]) -> list[PaperCandidate]:
 
 
 def _latest_versions_recent(limit: int, horizon_days: int = 120) -> list[PaperCandidate]:
-    cutoff = datetime.now(timezone.utc) - timedelta(days=max(horizon_days, 1))
+    cutoff = datetime.now(UTC) - timedelta(days=max(horizon_days, 1))
     scan_limit = max(limit * 80, 8000)
     statement = (
         select(PaperVersion)
@@ -128,7 +128,7 @@ def _latest_versions_recent(limit: int, horizon_days: int = 120) -> list[PaperCa
 
 
 def _recently_enriched_papers(source: str, horizon_days: int) -> set[str]:
-    cutoff = datetime.now(timezone.utc) - timedelta(days=max(horizon_days, 1))
+    cutoff = datetime.now(UTC) - timedelta(days=max(horizon_days, 1))
     with session_scope() as session:
         rows = session.execute(
             select(PaperMetricEnriched.paper_id).where(
@@ -144,7 +144,7 @@ def _payload_hash(payload: Any) -> str:
 
 
 def _store_raw(paper_id: str, source: str, payload: Any, status: str, error_message: str | None) -> None:
-    fetched_at = datetime.now(timezone.utc)
+    fetched_at = datetime.now(UTC)
     hashed = _payload_hash(payload)
     with session_scope() as session:
         upsert_row(
