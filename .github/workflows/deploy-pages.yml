@@ -5,9 +5,8 @@ on:
     branches:
       - main
   schedule:
-    # Refresh feed snapshots ~every 6h. arXiv announces new papers once per
-    # weekday around 00:00 UTC; the 02:20 run picks the fresh batch up.
-    - cron: "20 2,8,14,20 * * *"
+    # Refresh feed snapshots once a week, after arXiv's Monday announcement.
+    - cron: "20 2 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -61,6 +61,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build
     steps:
       - name: Deploy to GitHub Pages
