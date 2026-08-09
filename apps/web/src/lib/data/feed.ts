@@ -1,6 +1,6 @@
 "use client";
 
-import { interleave } from "@/lib/ranking/score";
+import { orderByPulse } from "@/lib/ranking/score";
 import { withBase } from "@/lib/data/base";
 import type { FeedSort } from "@/lib/store";
 import type { FeedResponse, Paper } from "@/lib/types";
@@ -113,11 +113,7 @@ export async function getFeed(
     }
   }
   if (sort === "pulse" && merged.some((paper) => paper.pulse)) {
-    merged = interleave(
-      merged,
-      (paper) => paper.pulse?.newcomer ?? false,
-      (paper) => paper.pulse?.score ?? -1,
-    );
+    merged = orderByPulse(merged, (paper) => paper.pulse);
   } else {
     merged.sort((a, b) => b.published.localeCompare(a.published));
   }

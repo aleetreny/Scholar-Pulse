@@ -6,6 +6,7 @@ import {
   type Enrichment,
   calibrate,
   interleave,
+  orderByPulse,
   percentileRank,
   scoreCohort,
 } from "./score.ts";
@@ -390,5 +391,67 @@ describe("newcomer interleaving", () => {
     const ordered = interleave(onlyEstablished, (row) => row.newcomer, (row) => row.rank);
     assert.equal(ordered.length, onlyEstablished.length);
     assert.equal(ordered[0].rank, 100);
+  });
+});
+
+describe("display order", () => {
+  const now = monthIndex("2026-03-04T00:00:00Z");
+
+  function board() {
+    const memory = foldIntoMemory(
+      EMPTY_MEMORY,
+      cohort(40, (i) => ({
+        id: `hist-${i}`,
+        authors: [`Known ${i}`, `Known ${(i + 3) % 40}`],
+        published: "2026-01-10T00:00:00Z",
+      })),
+    );
+    const papers = [
+      ...cohort(60, (i) => ({
+        id: `known-${i}`,
+        authors: [`Known ${i % 40}`],
+        title: `Established work on subject ${i} with a longer descriptive title`,
+      })),
+      ...cohort(30, (i) => ({
+        id: `new-${i}`,
+        authors: Array.from({ length: (i % 6) + 1 }, (_, k) => `Stranger ${i}-${k}`),
+        title: i % 3 === 0 ? `Terse: result ${i}` : `A longer newcomer paper about topic ${i}`,
+      })),
+    ];
+    const pulses = scoreCohort(papers, memory, now);
+    return papers.map((paper, i) => ({ paper, pulse: pulses[i] }));
+  }
+
+  it("never shows the same band twice", () => {
+    const ordered = orderByPulse(board(), (row) => row.pulse);
+    const bands = ordered
+      .map((row) => row.pulse.tier)
+      .filter((tier, i, all) => tier !== all[i - 1]);
+    assert.equal(
+      new Set(bands).size,
+      bands.length,
+      `bands oscillate: ${bands.join(" | ")}`,
+    );
+  });
+
+  it("puts the bands in descending order", () => {
+    const order = ["headline", "notable", "rest"];
+    const ordered = orderByPulse(board(), (row) => row.pulse);
+    const seen = ordered.map((row) => order.indexOf(row.pulse.tier));
+    assert.deepEqual(seen, [...seen].sort((a, b) => a - b));
+  });
+
+  it("still reserves room for newcomers inside a band", () => {
+    const ordered = orderByPulse(board(), (row) => row.pulse);
+    const head = ordered.filter((row) => row.pulse.tier !== "rest");
+    const share = head.filter((row) => row.pulse.newcomer).length / head.length;
+    assert.ok(share > 0.1, `newcomers squeezed out of the head: ${share.toFixed(2)}`);
+  });
+
+  it("keeps every paper, and sends unscored ones to the end", () => {
+    const rows = [...board(), { paper: paper({ id: "unscored" }), pulse: undefined }];
+    const ordered = orderByPulse(rows, (row) => row.pulse);
+    assert.equal(ordered.length, rows.length);
+    assert.equal(ordered[ordered.length - 1].paper.id, "unscored");
   });
 });

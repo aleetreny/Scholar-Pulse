@@ -251,6 +251,30 @@ export function interleave<T>(
 }
 
 /** Headline numbers from the fit, for the interface to quote honestly. */
+const BAND_ORDER: PulseTier[] = ["headline", "notable", "rest"];
+
+/**
+ * Final display order: band first, newcomer reservation inside each band.
+ *
+ * The two mechanisms have to compose in this order. Interleaving across the
+ * whole list instead lets a newcomer that is top-of-its-own-lane land between
+ * two established papers from a lower band, and the reader sees the section
+ * headings oscillate — "Front page", "Notable", "Front page" again — which
+ * looks like a bug and is indistinguishable from one. Banding first keeps each
+ * heading appearing exactly once while the reservation still holds inside it.
+ */
+export function orderByPulse<T>(items: T[], pulseOf: (item: T) => Pulse | undefined): T[] {
+  const unscored = items.filter((item) => !pulseOf(item));
+  const ordered = BAND_ORDER.flatMap((band) =>
+    interleave(
+      items.filter((item) => pulseOf(item)?.tier === band),
+      (item) => pulseOf(item)?.newcomer ?? false,
+      (item) => pulseOf(item)?.score ?? 0,
+    ),
+  );
+  return [...ordered, ...unscored];
+}
+
 export const MODEL_INFO = {
   auc: RANKING_MODEL.validation.auc,
   aucLow: RANKING_MODEL.validation.aucLow,
