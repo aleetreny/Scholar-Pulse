@@ -21,9 +21,14 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # The arXiv pass is paced at one request every 3.2s by arXiv's own request,
-    # and the OpenAlex enrichment adds a few minutes on top of that.
-    timeout-minutes: 30
+    # Generous on purpose, because every slow part of this job is slow at
+    # somebody else's discretion. The arXiv pass is paced at one request every
+    # 3.2s by arXiv's own request and normally takes four minutes, but has been
+    # seen to take twenty when arXiv is busy; enrichment then spends up to four
+    # more waiting politely on two indexes that throttle anonymous callers.
+    # Neither is worth failing a deploy over, and the enrichment budget caps the
+    # part we control regardless.
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v7
