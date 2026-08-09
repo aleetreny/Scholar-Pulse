@@ -46,8 +46,24 @@ const CONTACT = process.env.OPENALEX_MAILTO ?? "scholarpulse@users.noreply.githu
 
 const BATCH_SIZE = 50; // OpenAlex caps a single filter at 50 OR-ed values.
 const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
+// S2's unauthenticated pool is shared across every anonymous caller on the
+// internet and throttles at roughly a request a second. Production hit HTTP 429
+// after two batches at 1.2s spacing, so this is deliberately unhurried: even at
+// three seconds apart, fourteen batches cover a whole build inside the budget.
+const S2_SPACING_MS = 3000;
+const S2_BACKOFF_MS = [5000, 15000, 30000];
 const REQUEST_SPACING_MS = 130;
 const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 240_000);
+/**
+ * How much of that budget Semantic Scholar may spend before OpenAlex starts.
+ *
+ * S2 is the only source of reference counts, and references are the strongest
+ * cold-start signal the study found, so it must not be left with whatever the
+ * other index happens not to use. Fourteen batches at three-second spacing need
+ * about ninety seconds; the rest is slack for the retries a throttled build
+ * will certainly need.
+ */
+const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 150_000);
 const RETRIES = 3;
 /** Percentiles need a cohort; below this, papers are pooled with the rest. */
 const MIN_COHORT = 12;
@@ -168,7 +184,10 @@ async function fetchBatch(dois) {
  * of all, therefore had nothing to read and never once activated.
  *
  * Semantic Scholar does parse arXiv PDFs, and its batch endpoint takes arXiv
- * ids directly, four hundred at a time. Eleven requests cover a whole build.
+ * ids directly, four hundred at a time — a dozen or so requests cover a whole
+ * build. It throttles hard in exchange: its anonymous pool is shared with every
+ * other unauthenticated caller on the internet, so HTTP 429 is a normal part of
+ * a run rather than an error, and the backoff below is deliberately patient.
  */
 async function fetchS2Batch(ids) {
   for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
@@ -195,8 +214,7 @@ async function fetchS2Batch(ids) {
         console.warn(`  Semantic Scholar batch failed: ${error.message}`);
         return null;
       }
-      // S2's unauthenticated pool is shared and throttles hard; back off wide.
-      await sleep(2000 * attempt);
+      await sleep(S2_BACKOFF_MS[attempt - 1]);
     }
   }
   return null;
@@ -217,13 +235,174 @@ function describe(label, values) {
 }
 
 /**
- * Ask OpenAlex about as many papers as the time budget allows.
+ * Cut a list into batches that each sample the whole list evenly.
+ *
+ * Not `slice(i, i + size)`, and the difference is the whole point. The paper
+ * list arrives grouped by field, so contiguous batches map almost exactly onto
+ * cohorts — and a throttled request then costs four fields *all* of their
+ * reference counts rather than costing every field a slice of theirs. A cohort
+ * at 60% coverage still ranks well, because a partial lane seats what it does
+ * not know at its neutral midpoint and scales its own influence to its
+ * evidence. A cohort at 0% loses the lane outright.
+ *
+ * So batch b takes every bth paper. Whatever fails, fails evenly.
+ */
+function stripe(items, maxSize) {
+  const count = Math.ceil(items.length / maxSize);
+  const groups = [];
+  for (let b = 0; b < count; b += 1) {
+    const group = [];
+    for (let i = b; i < items.length; i += count) {
+      group.push(items[i]);
+    }
+    groups.push(group);
+  }
+  return groups;
+}
+
+/** How the two indexes' contributions read in the log, side by side. */
+function report(label, enrichment) {
+  const values = [...enrichment.values()];
+  console.log(
+    `    ${describe("references", values.map((e) => e.references))}` +
+      ` | ${describe("citations", values.map((e) => e.citations))}   (${label})`,
+  );
+}
+
+/**
+ * Fold Semantic Scholar's counts into the enrichment map.
+ *
+ * One rule here is load-bearing: a reference count of zero is recorded as
+ * *unknown*, not as zero. S2 returns zero both for a paper whose bibliography it
+ * has not parsed yet and for one that genuinely cites nothing, and among
+ * week-old preprints the first case is overwhelmingly the likelier. Citation
+ * counts are different — they are counted from the citing side, so a zero there
+ * is a real measurement and is kept as one.
+ */
+async function enrichFromS2(papers, enrichment, exhausted) {
+  const ids = papers.map((paper) => paper.id).filter((id) => arxivDoi(id));
+  let matched = 0;
+  let failures = 0;
+  for (const slice of stripe(ids, S2_BATCH_SIZE)) {
+    if (exhausted()) {
+      console.warn("  Semantic Scholar ran out of budget");
+      break;
+    }
+    const results = await fetchS2Batch(slice);
+    if (!results) {
+      // One throttled batch is no reason to abandon the other thirteen — doing
+      // exactly that cost production 85% of its reference counts. Keep going,
+      // and give up only once several batches in a row have come back empty.
+      failures += 1;
+      if (failures >= 3) {
+        console.warn("  Semantic Scholar keeps refusing — giving up after 3 failures in a row");
+        break;
+      }
+      await sleep(S2_SPACING_MS * 2);
+      continue;
+    }
+    failures = 0;
+    results.forEach((work, index) => {
+      if (!work) {
+        return;
+      }
+      matched += 1;
+      const id = slice[index];
+      const current = enrichment.get(id) ?? {};
+      if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
+        current.references = work.referenceCount;
+      }
+      if (typeof work.citationCount === "number") {
+        current.citations = Math.max(current.citations ?? 0, work.citationCount);
+      }
+      enrichment.set(id, current);
+    });
+    await sleep(S2_SPACING_MS);
+  }
+  if (matched > 0) {
+    console.log(
+      `  Semantic Scholar matched ${matched.toLocaleString()} of ` +
+        `${ids.length.toLocaleString()} papers`,
+    );
+    report("S2", enrichment);
+  } else {
+    console.warn("  Semantic Scholar returned nothing — reference lane unavailable");
+  }
+  return matched;
+}
+
+/**
+ * Fold OpenAlex's citation counts into the enrichment map.
+ *
+ * Citations only, and that restriction is the point. OpenAlex holds a record for
+ * essentially every arXiv submission within days — 96.6% of the feed in
+ * production — but it catalogues a preprint without parsing its bibliography, so
+ * `referenced_works_count` comes back zero for every single one. Storing that
+ * zero was worse than storing nothing: it turned "we have not looked this up"
+ * into a confident claim of "this paper cites nothing", and the reference lane
+ * cannot tell the two apart. Four thousand papers were being ranked down for
+ * the sin of not having been fetched, while the lane believed it had full
+ * coverage and weighted itself accordingly. `cited_by_count` is honest — it is
+ * counted from the citing side — so that is all we take.
+ */
+async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
+  const matched = new Set();
+  let done = 0;
+  let failed = 0;
+  for (let i = 0; i < dois.length; i += BATCH_SIZE) {
+    if (exhausted()) {
+      console.warn(
+        `  budget spent after ${done} OpenAlex batches — the rest keep the counts S2 gave`,
+      );
+      break;
+    }
+    const results = await fetchBatch(dois.slice(i, i + BATCH_SIZE));
+    done += 1;
+    if (results === null) {
+      failed += 1;
+      // Several consecutive failures mean the upstream is unhappy, not that we
+      // were unlucky; stop asking rather than burn the whole budget on retries.
+      if (failed >= 3 && failed === done) {
+        console.warn("  OpenAlex is not responding — keeping what Semantic Scholar found");
+        return { matched: matched.size, unreachable: true };
+      }
+    } else {
+      for (const work of results) {
+        const id = idFromDoi(work.doi);
+        const key = id && wanted.get(`10.48550/arxiv.${id}`);
+        if (!key) {
+          continue;
+        }
+        matched.add(key);
+        const current = enrichment.get(key) ?? {};
+        current.citations = Math.max(current.citations ?? 0, work.cited_by_count ?? 0);
+        enrichment.set(key, current);
+      }
+    }
+    await sleep(REQUEST_SPACING_MS);
+  }
+  const rate = matched.size / dois.length;
+  console.log(
+    `  OpenAlex matched ${matched.size.toLocaleString()} of ` +
+      `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
+      (failed ? ` — ${failed} batches failed` : ""),
+  );
+  report("+ OpenAlex", enrichment);
+  return { matched: matched.size, unreachable: false };
+}
+
+/**
+ * Ask both indexes about as many papers as the time budget allows.
  *
  * Deliberately partial-tolerant: the return value is whatever came back, and
  * the caller treats a missing paper as "not indexed yet" rather than as an
  * error. A ranking built on three lanes for some papers and one for others is
  * still a ranking; a build that fails because an upstream index was slow is
  * not.
+ *
+ * Semantic Scholar goes first because it is the only source of the reference
+ * lane. Whoever runs second inherits what is left of the clock, and the lane
+ * that matters most must not be the one living on leftovers.
  */
 async function enrich(papers) {
   const wanted = new Map();
@@ -236,109 +415,40 @@ async function enrich(papers) {
   const dois = [...wanted.keys()];
   const enrichment = new Map();
   if (dois.length === 0) {
-    return { enrichment, diagnosis: "no-candidates", matchRate: 0 };
+    return { enrichment, diagnosis: "no-candidates", matchRate: 0, references: 0 };
   }
 
   const started = Date.now();
-  const batches = Math.ceil(dois.length / BATCH_SIZE);
+  const spent = () => Date.now() - started;
   console.log(
-    `enrichment: ${dois.length.toLocaleString()} papers in ${batches} batches ` +
-      `(budget ${Math.round(ENRICH_BUDGET_MS / 1000)}s)`,
+    `enrichment: ${dois.length.toLocaleString()} papers in ` +
+      `${Math.ceil(dois.length / S2_BATCH_SIZE)} S2 + ` +
+      `${Math.ceil(dois.length / BATCH_SIZE)} OpenAlex batches ` +
+      `(budget ${Math.round(S2_BUDGET_MS / 1000)}s + ` +
+      `${Math.round((ENRICH_BUDGET_MS - S2_BUDGET_MS) / 1000)}s)`,
   );
 
-  let done = 0;
-  let failed = 0;
-  for (let i = 0; i < dois.length; i += BATCH_SIZE) {
-    if (Date.now() - started > ENRICH_BUDGET_MS) {
-      console.warn(
-        `  budget spent after ${done} batches — ranking the rest on metadata alone`,
-      );
-      break;
-    }
-    const results = await fetchBatch(dois.slice(i, i + BATCH_SIZE));
-    done += 1;
-    if (results === null) {
-      failed += 1;
-      // Several consecutive failures mean the upstream is unhappy, not that we
-      // were unlucky; stop asking rather than burn the whole budget on retries.
-      if (failed >= 3 && failed === done) {
-        console.warn("  OpenAlex is not responding — skipping enrichment entirely");
-        return { enrichment: new Map(), diagnosis: "unreachable", matchRate: 0 };
-      }
-    } else {
-      for (const work of results) {
-        const id = idFromDoi(work.doi);
-        if (id && wanted.has(`10.48550/arxiv.${id}`)) {
-          enrichment.set(wanted.get(`10.48550/arxiv.${id}`), {
-            citations: work.cited_by_count ?? 0,
-            references: work.referenced_works_count ?? 0,
-          });
-        }
-      }
-    }
-    await sleep(REQUEST_SPACING_MS);
-  }
-
-  const rate = enrichment.size / dois.length;
-  console.log(
-    `  OpenAlex matched ${enrichment.size.toLocaleString()} of ` +
-      `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
-      (failed ? ` — ${failed} batches failed` : ""),
-  );
-  console.log(
-    `    ${describe("references", [...enrichment.values()].map((e) => e.references))}` +
-      ` | ${describe("citations", [...enrichment.values()].map((e) => e.citations))}`,
+  await enrichFromS2(papers, enrichment, () => spent() > S2_BUDGET_MS);
+  const openAlex = await enrichFromOpenAlex(
+    dois,
+    wanted,
+    enrichment,
+    () => spent() > ENRICH_BUDGET_MS,
   );
 
-  // OpenAlex catalogues preprints without parsing their bibliographies, so its
-  // reference counts are uniformly zero and the strongest lane stays dark.
-  // Semantic Scholar reads the PDFs; ask it for the counts OpenAlex cannot give.
-  const ids = papers.map((paper) => paper.id).filter((id) => arxivDoi(id));
-  let s2Matched = 0;
-  for (let i = 0; i < ids.length; i += S2_BATCH_SIZE) {
-    if (Date.now() - started > ENRICH_BUDGET_MS) {
-      console.warn("  budget spent before Semantic Scholar finished");
-      break;
-    }
-    const slice = ids.slice(i, i + S2_BATCH_SIZE);
-    const results = await fetchS2Batch(slice);
-    if (!results) {
-      break;
-    }
-    results.forEach((work, index) => {
-      if (!work) {
-        return;
-      }
-      s2Matched += 1;
-      const id = slice[index];
-      const current = enrichment.get(id) ?? {};
-      if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
-        current.references = work.referenceCount;
-      }
-      if (typeof work.citationCount === "number") {
-        current.citations = Math.max(current.citations ?? 0, work.citationCount);
-      }
-      enrichment.set(id, current);
-    });
-    await sleep(1200);
-  }
-  if (s2Matched > 0) {
-    console.log(
-      `  Semantic Scholar matched ${s2Matched.toLocaleString()} of ` +
-        `${ids.length.toLocaleString()} papers`,
-    );
-    console.log(
-      `    ${describe("references", [...enrichment.values()].map((e) => e.references))}` +
-        ` | ${describe("citations", [...enrichment.values()].map((e) => e.citations))}`,
-    );
-  } else {
-    console.warn("  Semantic Scholar returned nothing — reference lane unavailable");
-  }
+  const references = [...enrichment.values()].filter(
+    (entry) => entry.references !== undefined,
+  ).length;
+  const rate = openAlex.matched / dois.length;
 
   // A low match rate is expected and self-correcting; a broken request is
   // neither, and the two look identical from the outside. Say which it is,
   // every build, so a regression cannot hide behind "OpenAlex is just slow".
-  const diagnosis = rate >= 0.05 ? "ok" : await checkQueryShape();
+  const diagnosis = openAlex.unreachable
+    ? "unreachable"
+    : rate >= 0.05
+      ? "ok"
+      : await checkQueryShape();
   if (diagnosis === "ok") {
     if (rate < 0.05) {
       console.log(
@@ -349,14 +459,20 @@ async function enrich(papers) {
   } else if (diagnosis === "no-match") {
     console.warn(
       "  WARNING: a paper indexed since 2020 did not match either. The request " +
-        "is malformed, not merely early — the reference and reception lanes are " +
-        "silently disabled until this is fixed.",
+        "is malformed, not merely early — the reception lane loses its broad " +
+        "coverage until this is fixed.",
     );
   } else {
-    console.warn("  OpenAlex was unreachable; ranking on metadata alone.");
+    console.warn("  OpenAlex was unreachable; the reception lane keeps only S2's counts.");
   }
 
-  return { enrichment, diagnosis, matchRate: rate };
+  console.log(
+    `  usable: ${references.toLocaleString()} reference counts, ` +
+      `${enrichment.size.toLocaleString()} of ${dois.length.toLocaleString()} papers ` +
+      "with anything at all",
+  );
+
+  return { enrichment, diagnosis, matchRate: rate, references };
 }
 
 /* ------------------------------------------------------------------ scoring */
@@ -425,8 +541,8 @@ async function main() {
   );
 
   const memory = await loadMemory();
-  const { enrichment, diagnosis, matchRate } = skipEnrichment
-    ? { enrichment: new Map(), diagnosis: "skipped", matchRate: 0 }
+  const { enrichment, diagnosis, matchRate, references } = skipEnrichment
+    ? { enrichment: new Map(), diagnosis: "skipped", matchRate: 0, references: 0 }
     : await enrich(papers);
 
   // "Now" is the newest submission in the batch, not the wall clock: it keeps a
@@ -483,9 +599,13 @@ async function main() {
     rankedAt: new Date().toISOString(),
     papers: papers.length,
     enriched: enrichment.size,
+    // Papers with a real reference count. The reference lane is the strongest
+    // of the three, and this is the one number that says whether it had any
+    // fuel — `enriched` can look healthy on citation counts alone.
+    referenceCounts: references,
     // "ok" | "no-match" | "unreachable" | "no-candidates" | "skipped".
-    // Anything other than "ok" means the reference and reception lanes were
-    // unavailable, and says why.
+    // Anything other than "ok" is about OpenAlex, which supplies the reception
+    // lane's breadth; references come from Semantic Scholar and survive it.
     enrichment: diagnosis,
     matchRate: Number(matchRate.toFixed(4)),
     knownAuthors: Object.keys(next.authors).length,

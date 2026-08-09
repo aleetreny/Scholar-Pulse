@@ -45,7 +45,7 @@ Open <http://localhost:3000>. To generate fresh local feed data before starting 
 
 ```bash
 npm run snapshots -- --cats cs.LG,cs.CL --max 60
-npm run rank -- --no-enrich   # score them; --no-enrich skips the OpenAlex pass
+npm run rank -- --no-enrich   # score them; --no-enrich skips the external indexes
 ```
 
 The ranking maths has its own tests:

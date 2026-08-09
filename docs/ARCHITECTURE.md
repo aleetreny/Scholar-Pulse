@@ -50,10 +50,23 @@ no database and no server.
    the storage. Signals are computed against that memory as it stood *before* the
    batch being scored, so no paper is credited with a track record its authors
    gained this morning.
-2. **Enrichment.** OpenAlex is queried in batches of fifty, keyed by the DOI arXiv
-   mints for every submission, for reference and citation counts. Optional by
-   construction: failures, rate limits and preprints that are not indexed yet all
-   reduce to "this paper is ranked on fewer lanes".
+2. **Enrichment.** Two indexes, asked for different things. Semantic Scholar goes
+   first, four hundred arXiv ids per request, because it parses preprint PDFs and
+   is therefore the only source of reference counts — the strongest cold-start
+   signal in the study. OpenAlex follows, fifty DOIs per request, for citation
+   counts: it has a record for ~97% of submissions within days, but it catalogues
+   a preprint *without* parsing its bibliography, so its `referenced_works_count`
+   is zero for all of them and is deliberately discarded. Recording that zero
+   would tell the ranker "this paper cites nothing" when the truth is "we have
+   not looked", and the reference lane cannot tell those apart.
+
+   Optional by construction: failures, rate limits and preprints that are not
+   indexed yet all reduce to "this paper is ranked on fewer lanes". Semantic
+   Scholar's anonymous pool throttles hard, so a 429 is treated as routine — the
+   run backs off and continues rather than abandoning the remaining batches, and
+   batches are striped across the feed rather than cut contiguously, so a request
+   that does fail costs every field a slice of its coverage instead of costing a
+   few fields all of theirs.
 3. **Scoring.** `apps/web/src/lib/ranking/` turns signals into a percentile within
    the paper's own field, fuses the available lanes by reciprocal rank, ranks
    papers with no author history in a separate lane, and assigns a band.
