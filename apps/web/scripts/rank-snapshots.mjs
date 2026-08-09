@@ -39,11 +39,13 @@ const SITE_BASE_URL = (
   process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
 ).replace(/\/$/, "");
 const OPENALEX_BASE = process.env.OPENALEX_BASE ?? "https://api.openalex.org";
+const S2_BASE = process.env.S2_BASE ?? "https://api.semanticscholar.org/graph/v1";
 // OpenAlex asks for a contact address in exchange for the faster, more reliable
 // "polite pool". Nothing here depends on it, but it is the courteous default.
 const CONTACT = process.env.OPENALEX_MAILTO ?? "scholarpulse@users.noreply.github.com";
 
 const BATCH_SIZE = 50; // OpenAlex caps a single filter at 50 OR-ed values.
+const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
 const REQUEST_SPACING_MS = 130;
 const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 240_000);
 const RETRIES = 3;
@@ -157,6 +159,64 @@ async function fetchBatch(dois) {
 }
 
 /**
+ * Reference counts, from the one free index that parses preprints.
+ *
+ * OpenAlex holds a record for essentially every arXiv submission within days —
+ * a 96.6% match rate in production — but its `referenced_works_count` is zero
+ * for preprints: it catalogues the work without parsing its bibliography. The
+ * reference lane, which the study found to be the strongest cold-start signal
+ * of all, therefore had nothing to read and never once activated.
+ *
+ * Semantic Scholar does parse arXiv PDFs, and its batch endpoint takes arXiv
+ * ids directly, four hundred at a time. Eleven requests cover a whole build.
+ */
+async function fetchS2Batch(ids) {
+  for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(
+        `${S2_BASE}/paper/batch?fields=referenceCount,citationCount`,
+        {
+          method: "POST",
+          signal: AbortSignal.timeout(60_000),
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ ids: ids.map((id) => `ARXIV:${id}`) }),
+        },
+      );
+      if (response.status === 429 || response.status >= 500) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      if (!response.ok) {
+        return null;
+      }
+      const body = await response.json();
+      return Array.isArray(body) ? body : null;
+    } catch (error) {
+      if (attempt === RETRIES) {
+        console.warn(`  Semantic Scholar batch failed: ${error.message}`);
+        return null;
+      }
+      // S2's unauthenticated pool is shared and throttles hard; back off wide.
+      await sleep(2000 * attempt);
+    }
+  }
+  return null;
+}
+
+/** What a field actually looks like, so a dead lane explains itself. */
+function describe(label, values) {
+  const known = values.filter((value) => value !== undefined && value !== null);
+  const nonZero = known.filter((value) => value > 0);
+  if (known.length === 0) {
+    return `${label}: none`;
+  }
+  return (
+    `${label}: ${known.length.toLocaleString()} known, ` +
+    `${nonZero.length.toLocaleString()} non-zero` +
+    (nonZero.length ? `, max ${Math.max(...nonZero)}` : "")
+  );
+}
+
+/**
  * Ask OpenAlex about as many papers as the time budget allows.
  *
  * Deliberately partial-tolerant: the return value is whatever came back, and
@@ -221,10 +281,59 @@ async function enrich(papers) {
 
   const rate = enrichment.size / dois.length;
   console.log(
-    `enrichment: matched ${enrichment.size.toLocaleString()} of ` +
+    `  OpenAlex matched ${enrichment.size.toLocaleString()} of ` +
       `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
       (failed ? ` — ${failed} batches failed` : ""),
   );
+  console.log(
+    `    ${describe("references", [...enrichment.values()].map((e) => e.references))}` +
+      ` | ${describe("citations", [...enrichment.values()].map((e) => e.citations))}`,
+  );
+
+  // OpenAlex catalogues preprints without parsing their bibliographies, so its
+  // reference counts are uniformly zero and the strongest lane stays dark.
+  // Semantic Scholar reads the PDFs; ask it for the counts OpenAlex cannot give.
+  const ids = papers.map((paper) => paper.id).filter((id) => arxivDoi(id));
+  let s2Matched = 0;
+  for (let i = 0; i < ids.length; i += S2_BATCH_SIZE) {
+    if (Date.now() - started > ENRICH_BUDGET_MS) {
+      console.warn("  budget spent before Semantic Scholar finished");
+      break;
+    }
+    const slice = ids.slice(i, i + S2_BATCH_SIZE);
+    const results = await fetchS2Batch(slice);
+    if (!results) {
+      break;
+    }
+    results.forEach((work, index) => {
+      if (!work) {
+        return;
+      }
+      s2Matched += 1;
+      const id = slice[index];
+      const current = enrichment.get(id) ?? {};
+      if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
+        current.references = work.referenceCount;
+      }
+      if (typeof work.citationCount === "number") {
+        current.citations = Math.max(current.citations ?? 0, work.citationCount);
+      }
+      enrichment.set(id, current);
+    });
+    await sleep(1200);
+  }
+  if (s2Matched > 0) {
+    console.log(
+      `  Semantic Scholar matched ${s2Matched.toLocaleString()} of ` +
+        `${ids.length.toLocaleString()} papers`,
+    );
+    console.log(
+      `    ${describe("references", [...enrichment.values()].map((e) => e.references))}` +
+        ` | ${describe("citations", [...enrichment.values()].map((e) => e.citations))}`,
+    );
+  } else {
+    console.warn("  Semantic Scholar returned nothing — reference lane unavailable");
+  }
 
   // A low match rate is expected and self-correcting; a broken request is
   // neither, and the two look identical from the outside. Say which it is,
