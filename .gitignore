@@ -32,3 +32,7 @@ __pycache__/
 
 # Local Claude Code tooling (machine-specific paths)
 .claude/
+
+# Ranking research artifacts (regenerate with research/ranking/fetch_data.sh)
+/research/**/*.parquet
+/research/**/results/

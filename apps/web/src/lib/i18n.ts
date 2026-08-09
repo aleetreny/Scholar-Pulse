@@ -43,6 +43,44 @@ const EN = {
   "feed.missingSnapshot":
     "No snapshot yet for {fields} — these fields will appear after the next site update.",
 
+  "feed.sortAria": "Order the feed",
+  "feed.sortPulse": "Pulse",
+  "feed.sortRecent": "Newest",
+  "feed.rankedNote":
+    "Ranked by predicted impact from submission-day metadata: on held-out months the top ten were {lift}x richer in papers that became references (AUC {auc}). Shown as bands rather than positions, because the exact order is not that certain. Open any paper to see why it scored what it did.",
+
+  "pulse.tier.headline": "Front page",
+  "pulse.tier.notable": "Notable",
+  "pulse.tier.rest": "Rest",
+  "pulse.band.headline": "Front page — the strongest signal this week",
+  "pulse.band.notable": "Notable",
+  "pulse.band.rest": "The rest of the feed",
+  "pulse.badgeTitle": "Pulse {score} of 100 among comparable papers in this field",
+  "pulse.scoreTitle": "Pulse {score} of 100",
+  "pulse.standing": "Ahead of {score}% of the recent papers in its field",
+  "pulse.calibrated":
+    "Historically, {rate}% of papers scoring this well went on to become references in their field.",
+  "pulse.lanesLabel": "Evidence:",
+  "pulse.lane.signals": "submission metadata",
+  "pulse.lane.references": "reference list",
+  "pulse.lane.reception": "early citations",
+  "pulse.newcomer": "no author history yet",
+  "pulse.newcomerShort": "New group",
+  "pulse.newcomerWhy":
+    "None of these authors has appeared in the feed before, so this paper is ranked against other newcomers and holds one of the positions reserved for them. Without that reservation, papers from unknown groups land around the 49th percentile — a coin flip — while papers from established ones land around the 88th.",
+  "pulse.signal.team_size": "Team size",
+  "pulse.signal.author_new_frac": "Authors with a track record",
+  "pulse.signal.author_degree_max": "Best-connected author",
+  "pulse.signal.author_recency": "Recently active authors",
+  "pulse.signal.author_reach": "Collaborative reach",
+  "pulse.signal.n_categories": "Filed across fields",
+  "pulse.signal.title_words": "Concise title",
+  "pulse.signal.title_has_colon": "Titled as a named contribution",
+  "pulse.signal.abstract_words": "Compact abstract",
+  "pulse.signal.has_named_system": "Names its system",
+  "pulse.signal.term_burst_mean": "Rising topic",
+  "pulse.signal.term_rarity": "Mainstream vocabulary",
+
   "onboard.title": "What are you researching?",
   "onboard.body":
     "Pick the fields you care about and ScholarPulse turns them into a daily feed of the newest papers on arXiv — searchable, citable, and yours to collect.",
@@ -197,6 +235,44 @@ const ES: Record<StringKey, string> = {
     "No hay papers recientes para esta selección. Prueba otro tema o amplía tu feed.",
   "feed.missingSnapshot":
     "Aún no hay datos para {fields} — estos campos aparecerán tras la próxima actualización del sitio.",
+
+  "feed.sortAria": "Ordenar el feed",
+  "feed.sortPulse": "Pulso",
+  "feed.sortRecent": "Recientes",
+  "feed.rankedNote":
+    "Ordenado por impacto previsto a partir de los metadatos del día de publicación: en meses no vistos, el top diez concentró {lift}× más papers que acabaron siendo referencia (AUC {auc}). Se muestra por bandas y no por posiciones, porque el orden exacto no es tan seguro. Abre cualquier paper para ver por qué puntuó lo que puntuó.",
+
+  "pulse.tier.headline": "Portada",
+  "pulse.tier.notable": "Notable",
+  "pulse.tier.rest": "Resto",
+  "pulse.band.headline": "Portada — la señal más fuerte de esta tanda",
+  "pulse.band.notable": "Notables",
+  "pulse.band.rest": "El resto del feed",
+  "pulse.badgeTitle": "Pulso {score} sobre 100 entre papers comparables de este campo",
+  "pulse.scoreTitle": "Pulso {score} sobre 100",
+  "pulse.standing": "Por delante del {score}% de los papers recientes de su campo",
+  "pulse.calibrated":
+    "Históricamente, el {rate}% de los papers con esta puntuación acabaron siendo referencia en su campo.",
+  "pulse.lanesLabel": "Evidencia:",
+  "pulse.lane.signals": "metadatos de publicación",
+  "pulse.lane.references": "lista de referencias",
+  "pulse.lane.reception": "primeras citas",
+  "pulse.newcomer": "aún sin historial de autoría",
+  "pulse.newcomerShort": "Grupo nuevo",
+  "pulse.newcomerWhy":
+    "Ninguno de estos autores había aparecido antes en el feed, así que este paper se ordena frente a otros novatos y ocupa uno de los huecos reservados para ellos. Sin esa reserva, los papers de grupos desconocidos caen al percentil 49 —una moneda al aire— frente al 88 de los ya establecidos.",
+  "pulse.signal.team_size": "Tamaño del equipo",
+  "pulse.signal.author_new_frac": "Autores con trayectoria",
+  "pulse.signal.author_degree_max": "Autor mejor conectado",
+  "pulse.signal.author_recency": "Autores activos recientemente",
+  "pulse.signal.author_reach": "Alcance colaborativo",
+  "pulse.signal.n_categories": "Presente en varios campos",
+  "pulse.signal.title_words": "Título conciso",
+  "pulse.signal.title_has_colon": "Titulado como aportación con nombre",
+  "pulse.signal.abstract_words": "Resumen compacto",
+  "pulse.signal.has_named_system": "Da nombre a su sistema",
+  "pulse.signal.term_burst_mean": "Tema en auge",
+  "pulse.signal.term_rarity": "Vocabulario asentado",
 
   "onboard.title": "¿Qué estás investigando?",
   "onboard.body":

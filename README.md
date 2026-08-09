@@ -2,11 +2,14 @@
 
 ScholarPulse is a researcher-focused discovery platform for exploring recent arXiv literature, following fields, investigating citation networks, and maintaining a private reading library.
 
+Its feed is ranked rather than chronological: every paper is scored at build time for how likely it is to matter, from metadata available the day it appears. The model behind that score was fitted and validated offline against papers that demonstrably became references in their field — see [research/ranking](research/ranking/README.md) for the evidence, including what did not work.
+
 [Open the live application](https://aleetreny.github.io/Scholar-Pulse/)
 
 ## Highlights
 
-- Personalized feeds built from scheduled arXiv snapshots.
+- Personalized feeds built from scheduled arXiv snapshots, ranked by predicted impact.
+- A calibrated 0-100 score per paper, with the signals behind it shown on the paper page.
 - Full-corpus search and author lookup through OpenAlex.
 - Paper details with citations, references, related work, and Semantic Scholar enrichment.
 - Local reading lists, notes, status tracking, and BibTeX or JSON export.
@@ -21,6 +24,7 @@ ScholarPulse is a researcher-focused discovery platform for exploring recent arX
 | `apps/dashboard/` | Optional Plotly dashboard for locally generated analytics artifacts. |
 | `apps/dashboard_api/` | Optional FastAPI service for dashboard data. |
 | `pipelines/` | Ingestion, enrichment, embeddings, indexing, and orchestration workflows. |
+| `research/ranking/` | Offline study behind the ranking: corpora, experiments, and the model exporter. |
 | `tests/` | Python unit, integration, and end-to-end tests. |
 | `infra/` | Infrastructure-specific setup, including Colab workflows. |
 | `docs/` | Architecture and pipeline documentation. |
@@ -41,6 +45,13 @@ Open <http://localhost:3000>. To generate fresh local feed data before starting 
 
 ```bash
 npm run snapshots -- --cats cs.LG,cs.CL --max 60
+npm run rank -- --no-enrich   # score them; --no-enrich skips the OpenAlex pass
+```
+
+The ranking maths has its own tests:
+
+```bash
+npm test
 ```
 
 ## Run the Python toolchain
@@ -62,6 +73,7 @@ Copy `.env.example` to `.env` only when running services that need local configu
 cd apps/web
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 
@@ -70,4 +82,4 @@ ruff check .
 pytest
 ```
 
-The workflow in `.github/workflows/deploy-pages.yml` refreshes feed snapshots, builds the static application, and deploys it to GitHub Pages.
+The workflow in `.github/workflows/deploy-pages.yml` refreshes feed snapshots, ranks them, builds the static application, and deploys it to GitHub Pages.

@@ -20,6 +20,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { CitationGraph } from "@/components/citation-graph";
 import { showToast } from "@/components/toast";
 import { ErrorBox, PaperListSkeleton } from "@/components/states";
+import { PulseExplainer } from "@/components/pulse-badge";
 import { TexText } from "@/components/tex-text";
 import { categoryLabel } from "@/lib/categories";
 import { toApaCitation, toBibtex } from "@/lib/citations";
@@ -283,6 +284,8 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         ) : null}
         {extras?.venue ? <span className="chip chip--green">{extras.venue}</span> : null}
       </div>
+
+      {paper.pulse ? <PulseExplainer pulse={paper.pulse} /> : null}
 
       <div className="paper-page__actions">
         <button

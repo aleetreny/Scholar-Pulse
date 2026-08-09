@@ -178,6 +178,26 @@ export function useTopics() {
   };
 }
 
+/* ----------------------------- Feed order ---------------------------- */
+
+/**
+ * How the feed is ordered. "pulse" first because the study behind
+ * lib/ranking found chronological order statistically indistinguishable from
+ * shuffling the papers — but the choice is the reader's, and it sticks.
+ */
+export type FeedSort = "pulse" | "recent";
+
+const feedSortStore = createLocalStore<FeedSort>("scholarpulse.feed-sort.v1", "pulse");
+
+export function useFeedSort(): { sort: FeedSort; setSort: (sort: FeedSort) => void } {
+  const sort = useSyncExternalStore(
+    feedSortStore.subscribe,
+    feedSortStore.getSnapshot,
+    feedSortStore.getServerSnapshot,
+  );
+  return { sort, setSort: (next: FeedSort) => feedSortStore.set(next) };
+}
+
 /* ------------------------------ Library ----------------------------- */
 
 type LibraryState = Record<string, LibraryEntry>;

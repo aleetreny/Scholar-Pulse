@@ -21,7 +21,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # The arXiv pass is paced at one request every 3.2s by arXiv's own request,
+    # and the OpenAlex enrichment adds a few minutes on top of that.
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -41,9 +43,23 @@ jobs:
         run: npm ci
         working-directory: apps/web
 
+      - name: Check the ranking maths
+        run: npm test
+        working-directory: apps/web
+
       - name: Build feed snapshots from arXiv
         run: node scripts/build-feed-snapshots.mjs
         working-directory: apps/web
+
+      # Scores the snapshots and folds this batch into the site's memory of
+      # authors and vocabulary, which the next build fetches back from the
+      # deployed site. Enrichment failures degrade the ranking rather than
+      # failing the deploy, so this step is safe to keep in the critical path.
+      - name: Rank the snapshots
+        run: node scripts/rank-snapshots.mjs
+        working-directory: apps/web
+        env:
+          SITE_BASE_URL: https://aleetreny.github.io/Scholar-Pulse
 
       - name: Build static site
         run: npm run build
