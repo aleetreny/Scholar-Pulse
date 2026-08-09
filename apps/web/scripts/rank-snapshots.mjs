@@ -214,7 +214,9 @@ async function fetchS2Batch(ids) {
         console.warn(`  Semantic Scholar batch failed: ${error.message}`);
         return null;
       }
-      await sleep(S2_BACKOFF_MS[attempt - 1]);
+      // Clamped, so raising RETRIES past the table's length holds the last
+      // step rather than sleeping on `undefined`.
+      await sleep(S2_BACKOFF_MS[Math.min(attempt, S2_BACKOFF_MS.length) - 1]);
     }
   }
   return null;
