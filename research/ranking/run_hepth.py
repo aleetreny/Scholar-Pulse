@@ -224,10 +224,16 @@ def experiment_mixed_age(corpus, horizon: int = 24, width: int = 3) -> pd.DataFr
         # only on papers already complete at obs, so the correction a live system
         # would apply is exactly the one measured here.
         history = np.where(corpus.t <= obs - width - horizon)[0]
-        curve = {
-            a: max(accrued(history, corpus.t[history] + a).mean(), 1e-6)
-            for a in np.unique(age)
-        }
+        if history.size == 0:
+            # A window wide enough to swallow the warm-up leaves no completed
+            # papers to fit the curve on. Fall back to no correction rather
+            # than dividing by a mean of nothing.
+            curve = dict.fromkeys(np.unique(age), 1.0)
+        else:
+            curve = {
+                a: max(float(accrued(history, corpus.t[history] + a).mean()), 1e-6)
+                for a in np.unique(age)
+            }
         expected = np.array([curve[a] for a in age])
         truth = truth_all[candidates]
 

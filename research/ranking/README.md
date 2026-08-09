@@ -77,10 +77,16 @@ Runtime is about seven minutes end to end on four cores.
    converged on four reference-list features and nothing else.
 3. **Waiting is the strongest lever.** A one-month observation window lifts
    NDCG@10 from 0.658 to 0.732; three months to 0.823; six to 0.870. On a
-   rolling three-month board, early citations reach 8.8× lift.
+   rolling board the width trades freshness against discrimination — 4.4× lift
+   at one month, 8.8× at three, 14.0× at six, 21.9× at twelve — and three
+   months is where 91% of the top ten already falls in its cohort's top decile.
 4. **Atypical combinations did not replicate here.** The Uzzi et al. novelty and
    conventionality z-scores, computed against an analytic configuration-model
    null, ranked below random on their own and were dropped by feature selection.
+   Age-normalising a mixed-age board did not help either, at any width — it
+   costs a steady ~0.05 NDCG (0.861 → 0.821 at three months, 0.951 → 0.894 at
+   twenty-four). The label is already age-invariant, so there was no bias to
+   correct and the division only added variance.
 5. **On modern arXiv metadata, authorship carries the signal.** AUC 0.836
    [0.801, 0.869]; the top ten of a month are 9.6× enriched in papers that
    became landmarks. Author signals alone score 0.818; content signals alone
