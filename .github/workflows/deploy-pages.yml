@@ -21,13 +21,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Generous on purpose, because every slow part of this job is slow at
-    # somebody else's discretion. The arXiv pass is paced at one request every
-    # 3.2s by arXiv's own request and normally takes four minutes, but has been
-    # seen to take twenty when arXiv is busy; enrichment then spends up to four
-    # more waiting politely on two indexes that throttle anonymous callers.
-    # Neither is worth failing a deploy over, and the enrichment budget caps the
-    # part we control regardless.
+    # Headroom, not a measured need. The arXiv pass is paced at one request
+    # every 3.2s by arXiv's own request and takes about four minutes; ranking
+    # takes under six, bounded by its own enrichment budget rather than by this
+    # cap. Eleven or twelve minutes is the realistic run. The margin is here
+    # because both upstreams throttle anonymous callers at their own discretion,
+    # and a deploy killed mid-flight costs more than one that runs long.
     timeout-minutes: 45
     steps:
       - name: Checkout
