@@ -68,7 +68,6 @@ const SIGNAL_LABEL: Record<string, StringKey> = {
   has_named_system: "pulse.signal.has_named_system",
   term_burst_mean: "pulse.signal.term_burst_mean",
   term_rarity: "pulse.signal.term_rarity",
-  pair_novelty: "pulse.signal.pair_novelty",
 };
 
 const LANE_LABEL = {

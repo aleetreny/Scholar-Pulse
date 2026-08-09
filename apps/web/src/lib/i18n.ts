@@ -80,7 +80,6 @@ const EN = {
   "pulse.signal.has_named_system": "Names its system",
   "pulse.signal.term_burst_mean": "Rising topic",
   "pulse.signal.term_rarity": "Mainstream vocabulary",
-  "pulse.signal.pair_novelty": "Unusual pairing of ideas",
 
   "onboard.title": "What are you researching?",
   "onboard.body":
@@ -274,7 +273,6 @@ const ES: Record<StringKey, string> = {
   "pulse.signal.has_named_system": "Da nombre a su sistema",
   "pulse.signal.term_burst_mean": "Tema en auge",
   "pulse.signal.term_rarity": "Vocabulario asentado",
-  "pulse.signal.pair_novelty": "Combinación inusual de ideas",
 
   "onboard.title": "¿Qué estás investigando?",
   "onboard.body":

@@ -78,15 +78,24 @@ Runtime is about seven minutes end to end on four cores.
 The deployed model is not the best model in this study — it is the best model
 that can be computed from an Atom feed and defended a year from now.
 
-| Variant | AUC | Why not this one |
-| --- | --- | --- |
-| All 24 research features, unconstrained | 0.835 | Three features need the full co-authorship graph or a fitted vectoriser. |
-| 21 deployable features, unconstrained | 0.826 | Six coefficients pointed against their own univariate direction — cancellation artefacts that hold only while the corpus correlations do. |
-| **13 deployable features, non-negative** | **0.790** | **Shipped.** Each signal is pre-oriented and its weight pinned at or above zero, so nothing can cancel, the fit survives a change of cohort, and every score decomposes into readable contributions. lift@10 is 6.0× — *higher* than the unconstrained variant's 4.7×. |
+| Variant | AUC | lift@10 | Why not this one |
+| --- | --- | --- | --- |
+| All 24 research features, unconstrained | 0.835 | 8.2× | Four features cannot be computed, or cannot be afforded — see below. |
+| 20 deployable features, unconstrained | 0.806 | 4.7× | Six coefficients pointed against their own univariate direction — cancellation artefacts that hold only while the corpus correlations do. |
+| **12 deployable features, non-negative** | **0.789** | **6.2×** | **Shipped.** Each signal is pre-oriented and its weight pinned at or above zero, so nothing can cancel, the fit survives a change of cohort, and every score decomposes into readable contributions. lift@10 is *higher* than the unconstrained variant's. |
 
-Eight of the twenty-one were given zero weight by the fit and are not shipped:
-claim language, hedging, `has_numbers`, `cross_list`, `abstract_sentences`,
-`term_burst_max`, and both raw author-productivity counts.
+Four of the twenty-four are excluded before fitting. Co-authorship PageRank and
+the two TF-IDF distinctiveness measures need the whole graph or a fitted
+vectoriser, neither of which survives a static build. `pair_novelty` is
+excluded for a different reason worth recording: it is cheap to compute and
+expensive to *remember*. Tracking which word pairs have been seen together
+needs a set that grows to ~11 MB of state carried between builds, and the
+signal sits at AUC 0.503 — noise. Dropping it improved every metric (AUC 0.788
+→ 0.789, lift@10 6.00× → 6.15×) and cut the memory file from 5.4 MB to 1.1 MB.
+
+Eight of the remaining twenty were then given zero weight by the fit and are
+not shipped either: claim language, hedging, `has_numbers`, `cross_list`,
+`abstract_sentences`, `term_burst_max`, and both raw author-productivity counts.
 
 ## What came out
 

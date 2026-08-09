@@ -58,7 +58,10 @@ no database and no server.
    the paper's own field, fuses the available lanes by reciprocal rank, ranks
    papers with no author history in a separate lane, and assigns a band.
 4. **Fold forward.** The batch is folded into the memory and written back out for
-   the next build, so the corpus the ranker learns from grows on its own.
+   the next build, so the corpus the ranker learns from grows on its own. The
+   memory is pruned to a two-year window and holds only author records, term
+   frequencies and monthly volumes — roughly 1 MB — so it cannot grow without
+   bound as the site keeps running.
 
 Model coefficients live in `apps/web/src/lib/ranking/model.generated.ts` and are
 produced by `research/ranking/export_model.py`. They are generated, not authored:

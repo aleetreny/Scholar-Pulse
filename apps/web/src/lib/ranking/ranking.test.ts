@@ -137,6 +137,18 @@ describe("corpus memory", () => {
     assert.equal(first.authors.Ada.n, 1, "the input memory must not be mutated");
   });
 
+  it("stores nothing that grows without bound", () => {
+    // The pair-novelty set used to live here: ~11 MB of state carried between
+    // builds for a signal measured at AUC 0.503. Everything that remains is
+    // pruned to a two-year window, so the file the next build downloads has a
+    // ceiling set by the field's size rather than by how long the site has run.
+    const memory = foldIntoMemory(EMPTY_MEMORY, cohort(50));
+    assert.deepEqual(
+      Object.keys(memory).sort(),
+      ["authors", "month", "terms", "version", "volume"],
+    );
+  });
+
   it("forgets authors and months beyond the two-year horizon", () => {
     const old = foldIntoMemory(EMPTY_MEMORY, [
       paper({ id: "old", authors: ["Rip"], published: "2020-01-01T00:00:00Z" }),

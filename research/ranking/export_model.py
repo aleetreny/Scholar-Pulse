@@ -14,9 +14,14 @@ Three deliberate differences from the research fit:
   snapshot of 100 papers from this week — which a mean and a standard deviation
   fitted on the old corpus would not.
 
-* Three features are dropped because a static build cannot compute them
-  honestly: co-authorship PageRank (needs the whole graph in memory) and the
-  two TF-IDF distinctiveness measures (need a fitted vectoriser). The cost is
+* Four features are dropped. Three because a static build cannot compute them
+  honestly: co-authorship PageRank (needs the whole graph in memory) and the two
+  TF-IDF distinctiveness measures (need a fitted vectoriser). The fourth,
+  `pair_novelty`, is dropped because it is not worth what it costs: tracking
+  which word pairs have been seen together needs a set that reaches ~11 MB of
+  state the deployment has to carry between builds, and the signal itself sits
+  at AUC 0.503 — noise. Removing it *improves* every metric (AUC 0.788 -> 0.789,
+  lift@10 6.00x -> 6.15x, lift@25 4.11x -> 4.52x). The cost of the other three is
   reported rather than hidden.
 
 * Every feature is **pre-oriented to point upwards, and the weights are
@@ -66,9 +71,15 @@ DATA = Path(os.environ.get("RESEARCH_DATA", "/workspace/rankdata"))
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "apps/web/src/lib/ranking/model.generated.ts"
 
-# Needs the full co-authorship graph, or a fitted vectoriser, neither of which
-# survives a static build.
-NOT_DEPLOYABLE = {"author_pagerank_max", "distinctiveness", "centroid_similarity"}
+# The first three need the full co-authorship graph or a fitted vectoriser,
+# neither of which survives a static build. The fourth is affordable to compute
+# but not to *remember*: see the module docstring.
+NOT_DEPLOYABLE = {
+    "author_pagerank_max",
+    "distinctiveness",
+    "centroid_similarity",
+    "pair_novelty",
+}
 DEPLOYABLE = [f for f in FEATURES if f not in NOT_DEPLOYABLE]
 
 C_GRID = [0.05, 0.1, 0.25, 0.5, 1.0]
