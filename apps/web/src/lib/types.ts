@@ -1,3 +1,36 @@
+/** Which band of the ranking a paper landed in. */
+export type PulseTier = "headline" | "notable" | "rest";
+
+/** Evidence that was available when the paper was scored. */
+export type PulseLane = "signals" | "references" | "reception";
+
+export type PulseReason = {
+  /** Signal name, as used by the model — see lib/ranking/signals.ts. */
+  signal: string;
+  /** Signed: positive means this signal pushed the paper up. */
+  contribution: number;
+};
+
+/**
+ * The ranking attached to a paper at build time.
+ *
+ * Computed by lib/ranking against the snapshot the paper appeared in, so it is
+ * a standing among that field's recent submissions rather than an absolute
+ * quantity. See research/ranking for how the model was fitted and validated.
+ */
+export type Pulse = {
+  /** 0-100 percentile among comparable papers in the same field. */
+  score: number;
+  tier: PulseTier;
+  /** Calibrated share of papers in this band that became references. */
+  probability: number;
+  lanes: PulseLane[];
+  /** Nothing is known about any of its authors yet. */
+  newcomer: boolean;
+  /** The signals that moved it most, strongest first. */
+  reasons: PulseReason[];
+};
+
 export type Paper = {
   /** Bare arXiv id without version, e.g. "2401.12345" or "math/0211159". */
   id: string;
@@ -15,6 +48,8 @@ export type Paper = {
   comment: string | null;
   pdfUrl: string;
   absUrl: string;
+  /** Present in feed snapshots; absent for papers fetched live from search. */
+  pulse?: Pulse;
 };
 
 export type FeedResponse = {

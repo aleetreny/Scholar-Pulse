@@ -1,6 +1,8 @@
 "use client";
 
+import { interleave } from "@/lib/ranking/score";
 import { withBase } from "@/lib/data/base";
+import type { FeedSort } from "@/lib/store";
 import type { FeedResponse, Paper } from "@/lib/types";
 
 /**
@@ -69,12 +71,20 @@ export type FeedPage = FeedResponse & {
   missing: string[];
 };
 
-/** Merge the followed categories' snapshots, newest first. */
+/**
+ * Merge the followed categories' snapshots.
+ *
+ * "recent" is plain reverse-chronological. "pulse" orders by the ranking
+ * computed at build time, with the reserved lane for papers whose authors the
+ * site has never seen — see lib/ranking/score.ts for why that reservation
+ * exists and what it costs.
+ */
 export async function getFeed(
   categories: string[],
   start: number,
   max: number,
   focus?: string | null,
+  sort: FeedSort = "recent",
 ): Promise<FeedPage> {
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
@@ -90,7 +100,7 @@ export async function getFeed(
   }
 
   const seen = new Set<string>();
-  const merged: Paper[] = [];
+  let merged: Paper[] = [];
   for (const { value } of loaded) {
     for (const paper of value.papers) {
       if (!seen.has(paper.id)) {
@@ -102,7 +112,15 @@ export async function getFeed(
       }
     }
   }
-  merged.sort((a, b) => b.published.localeCompare(a.published));
+  if (sort === "pulse" && merged.some((paper) => paper.pulse)) {
+    merged = interleave(
+      merged,
+      (paper) => paper.pulse?.newcomer ?? false,
+      (paper) => paper.pulse?.score ?? -1,
+    );
+  } else {
+    merged.sort((a, b) => b.published.localeCompare(a.published));
+  }
 
   const fetchedAt = loaded
     .map(({ value }) => value.fetchedAt)

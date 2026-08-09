@@ -1,9 +1,16 @@
 # Ranking research
 
-Offline study behind the proposed pivot: turning ScholarPulse from a
-chronological feed into a ranked preview of the recent papers most likely to
-matter. Nothing here runs in production; it exists to decide what production
-should do, and to leave the evidence auditable.
+Offline study behind the pivot from a chronological feed to a ranked preview of
+the recent papers most likely to matter. Nothing in this directory runs in
+production; it exists to decide what production should do, and to leave the
+evidence auditable.
+
+**It shipped.** `export_model.py` refits the study on the subset of signals a
+static build can actually compute and writes the coefficients into
+`apps/web/src/lib/ranking/model.generated.ts`. The scoring itself lives in
+`apps/web/src/lib/ranking/`, runs at build time in
+`apps/web/scripts/rank-snapshots.mjs`, and is covered by `npm test` in
+`apps/web`. Regenerate the model rather than hand-editing it.
 
 ## The question
 
@@ -54,15 +61,32 @@ Every number is produced under a constraint a deployment actually faces.
 | `run_arxiv.py` | E8: same question on modern arXiv metadata. |
 | `run_audit.py` | E10–E12: where the signal lives, calibration, robustness. |
 | `run_final.py` | E13–E15: the fixes, and whether they work. |
+| `export_model.py` | Refit on the deployable signals; emit the shipped model. |
 
 ```bash
 RESEARCH_DATA=/workspace/rankdata ./research/ranking/fetch_data.sh
 cd research/ranking
 python prepare_data.py && python hepth_features.py && python arxiv_features.py
 python run_hepth.py && python run_arxiv.py && python run_audit.py && python run_final.py
+python export_model.py          # writes apps/web/src/lib/ranking/model.generated.ts
 ```
 
 Runtime is about seven minutes end to end on four cores.
+
+## What shipped, and what it cost
+
+The deployed model is not the best model in this study — it is the best model
+that can be computed from an Atom feed and defended a year from now.
+
+| Variant | AUC | Why not this one |
+| --- | --- | --- |
+| All 24 research features, unconstrained | 0.835 | Three features need the full co-authorship graph or a fitted vectoriser. |
+| 21 deployable features, unconstrained | 0.826 | Six coefficients pointed against their own univariate direction — cancellation artefacts that hold only while the corpus correlations do. |
+| **13 deployable features, non-negative** | **0.790** | **Shipped.** Each signal is pre-oriented and its weight pinned at or above zero, so nothing can cancel, the fit survives a change of cohort, and every score decomposes into readable contributions. lift@10 is 6.0× — *higher* than the unconstrained variant's 4.7×. |
+
+Eight of the twenty-one were given zero weight by the fit and are not shipped:
+claim language, hedging, `has_numbers`, `cross_list`, `abstract_sentences`,
+`term_burst_max`, and both raw author-productivity counts.
 
 ## What came out
 

@@ -89,12 +89,21 @@ class GBClassifier:
 
 
 class SingleFeature:
+    """One column, oriented on the training fold.
+
+    The orientation is decided by AUC, not by comparing group means. These
+    features are heavy-tailed and the two disagree: a mean-based sign flipped
+    `pair_novelty` and reported it at 0.420 — an apparently strong negative
+    signal — when oriented properly it sits at 0.503, which is noise.
+    """
+
     def __init__(self, column, name):
         self.column, self.name, self.sign = column, f"feat:{name}", 1.0
 
     def fit(self, X, y):
-        a, b = X[y == 1, self.column], X[y == 0, self.column]
-        self.sign = 1.0 if a.mean() >= b.mean() else -1.0
+        column = X[:, self.column]
+        if np.std(column) > 0 and 0 < y.sum() < y.size:
+            self.sign = 1.0 if roc_auc_score(y, column) >= 0.5 else -1.0
         return self
 
     def score(self, X):

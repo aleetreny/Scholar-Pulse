@@ -4,6 +4,7 @@ import { Bookmark, BookmarkCheck } from "lucide-react";
 import Link from "next/link";
 import { memo } from "react";
 
+import { NewcomerMark, PulseScore } from "@/components/pulse-badge";
 import { TexText } from "@/components/tex-text";
 import { showToast } from "@/components/toast";
 import { categoryLabel } from "@/lib/categories";
@@ -47,21 +48,29 @@ export function SaveButton({ paper }: { paper: Paper }) {
 export const PaperCard = memo(function PaperCard({
   paper,
   isNew = false,
+  showPulse = false,
 }: {
   paper: Paper;
   isNew?: boolean;
+  /** Replace the ledger number with the paper's score. */
+  showPulse?: boolean;
 }) {
   const { t, lang } = useT();
   const extraCategories = paper.categories
     .filter((category) => category !== paper.primaryCategory)
     .slice(0, 2);
+  const pulse = showPulse ? paper.pulse : undefined;
 
   return (
     <Link
       href={paperHref(paper.id)}
       className="paper-card"
+      data-scored={pulse ? true : undefined}
       onClick={() => stashPaper(paper)}
     >
+      {/* In pulse order the ledger numeral would assert a precision the
+          ranking does not have, so the column carries the score instead. */}
+      {pulse ? <PulseScore pulse={pulse} /> : null}
       <div className="paper-card__top">
         <h3 className="paper-card__title">
           <TexText text={paper.title} />
@@ -82,6 +91,7 @@ export const PaperCard = memo(function PaperCard({
       ) : null}
 
       <div className="paper-card__meta">
+        {pulse ? <NewcomerMark pulse={pulse} /> : null}
         {paper.primaryCategory ? (
           <span className="chip" title={paper.primaryCategory}>
             {categoryLabel(paper.primaryCategory)}
