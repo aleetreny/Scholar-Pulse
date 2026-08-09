@@ -99,6 +99,26 @@ function arxivDoi(id) {
   return /^\d{4}\.\d{4,5}$/.test(id) ? `10.48550/arxiv.${id}` : null;
 }
 
+/**
+ * A paper that has certainly been in OpenAlex for years — the GPT-3 preprint.
+ *
+ * It answers the one question the match count cannot. When enrichment comes
+ * back nearly empty there are two possible worlds: the index has not caught up
+ * with this week's preprints, which fixes itself, or the request we send is
+ * malformed, which never fixes itself and silently costs the ranking its two
+ * strongest lanes. Asking for a paper indexed since 2020 separates them: if the
+ * canary comes back, the request shape is right and the gap is lag.
+ */
+const CANARY_DOI = "10.48550/arxiv.2005.14165";
+
+async function checkQueryShape() {
+  const results = await fetchBatch([CANARY_DOI]);
+  if (results === null) {
+    return "unreachable";
+  }
+  return results.length > 0 ? "ok" : "no-match";
+}
+
 function idFromDoi(doi) {
   const match = /10\.48550\/arxiv\.(.+)$/i.exec(doi ?? "");
   return match ? match[1].toLowerCase() : null;
@@ -156,7 +176,7 @@ async function enrich(papers) {
   const dois = [...wanted.keys()];
   const enrichment = new Map();
   if (dois.length === 0) {
-    return enrichment;
+    return { enrichment, diagnosis: "no-candidates", matchRate: 0 };
   }
 
   const started = Date.now();
@@ -183,7 +203,7 @@ async function enrich(papers) {
       // were unlucky; stop asking rather than burn the whole budget on retries.
       if (failed >= 3 && failed === done) {
         console.warn("  OpenAlex is not responding — skipping enrichment entirely");
-        return new Map();
+        return { enrichment: new Map(), diagnosis: "unreachable", matchRate: 0 };
       }
     } else {
       for (const work of results) {
@@ -199,12 +219,35 @@ async function enrich(papers) {
     await sleep(REQUEST_SPACING_MS);
   }
 
+  const rate = enrichment.size / dois.length;
   console.log(
     `enrichment: matched ${enrichment.size.toLocaleString()} of ` +
-      `${dois.length.toLocaleString()} papers` +
-      (failed ? ` (${failed} batches failed)` : ""),
+      `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
+      (failed ? ` — ${failed} batches failed` : ""),
   );
-  return enrichment;
+
+  // A low match rate is expected and self-correcting; a broken request is
+  // neither, and the two look identical from the outside. Say which it is,
+  // every build, so a regression cannot hide behind "OpenAlex is just slow".
+  const diagnosis = rate >= 0.05 ? "ok" : await checkQueryShape();
+  if (diagnosis === "ok") {
+    if (rate < 0.05) {
+      console.log(
+        "  the request shape is confirmed good (canary paper found), so the low " +
+          "match rate is OpenAlex not having indexed these preprints yet",
+      );
+    }
+  } else if (diagnosis === "no-match") {
+    console.warn(
+      "  WARNING: a paper indexed since 2020 did not match either. The request " +
+        "is malformed, not merely early — the reference and reception lanes are " +
+        "silently disabled until this is fixed.",
+    );
+  } else {
+    console.warn("  OpenAlex was unreachable; ranking on metadata alone.");
+  }
+
+  return { enrichment, diagnosis, matchRate: rate };
 }
 
 /* ------------------------------------------------------------------ scoring */
@@ -273,7 +316,9 @@ async function main() {
   );
 
   const memory = await loadMemory();
-  const enrichment = skipEnrichment ? new Map() : await enrich(papers);
+  const { enrichment, diagnosis, matchRate } = skipEnrichment
+    ? { enrichment: new Map(), diagnosis: "skipped", matchRate: 0 }
+    : await enrich(papers);
 
   // "Now" is the newest submission in the batch, not the wall clock: it keeps a
   // re-run reproducible and stops a late build from ageing every author by a
@@ -285,6 +330,7 @@ async function main() {
 
   const pulses = new Map();
   const tally = { headline: 0, notable: 0, rest: 0, newcomer: 0 };
+  const laneUse = { signals: 0, references: 0, reception: 0 };
   for (const [category, group] of buildCohorts(papers)) {
     const scored = scoreCohort(group, memory, now, enrichment);
     group.forEach((paper, index) => {
@@ -295,6 +341,9 @@ async function main() {
       }
     });
     const lanes = scored[0]?.lanes ?? [];
+    for (const lane of lanes) {
+      laneUse[lane] += 1;
+    }
     console.log(
       `  ${category.padEnd(16)} ${String(group.length).padStart(5)} papers  ` +
         `lanes: ${lanes.join(", ")}`,
@@ -325,16 +374,26 @@ async function main() {
     rankedAt: new Date().toISOString(),
     papers: papers.length,
     enriched: enrichment.size,
+    // "ok" | "no-match" | "unreachable" | "no-candidates" | "skipped".
+    // Anything other than "ok" means the reference and reception lanes were
+    // unavailable, and says why.
+    enrichment: diagnosis,
+    matchRate: Number(matchRate.toFixed(4)),
     knownAuthors: Object.keys(next.authors).length,
-    monthsOfMemory:
-      Object.keys(next.volume).length > 0 ? Object.keys(next.volume).length : 0,
+    monthsOfMemory: Object.keys(next.volume).length,
   };
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
   const share = (n) => `${((n / papers.length) * 100).toFixed(1)}%`;
+  const cohorts = buildCohorts(papers).length;
   console.log(
     `done: ${tally.headline} headline, ${tally.notable} notable, ` +
       `${tally.rest} rest — ${share(tally.newcomer)} of the feed has no author history`,
+  );
+  console.log(
+    `lanes: signals ${laneUse.signals}/${cohorts} cohorts, ` +
+      `references ${laneUse.references}/${cohorts}, ` +
+      `reception ${laneUse.reception}/${cohorts} (enrichment: ${diagnosis})`,
   );
   console.log(
     `memory: ${Object.keys(next.authors).length.toLocaleString()} authors, ` +

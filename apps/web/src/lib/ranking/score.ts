@@ -44,8 +44,12 @@ const RRF_K = 20;
 export const NEWCOMER_QUOTA = 0.3;
 const TIER_HEADLINE = 0.95;
 const TIER_NOTABLE = 0.8;
-/** Below this many papers, percentiles are too coarse to mean anything. */
-const MIN_COHORT = 12;
+/**
+ * How many papers an external index must cover before its lane is consulted.
+ * An absolute floor, not a share of the cohort: coverage of new preprints is
+ * always a minority, and a share-based rule silently switched the lane off.
+ */
+export const MIN_ENRICHED = 8;
 
 /**
  * Percentile of each value within the array, ties averaged, mapped to (0, 1).
@@ -133,12 +137,51 @@ function descendingRanks(values: number[]): number[] {
   return percentiles.map((percentile) => percentile * (values.length + 1));
 }
 
-function hasVariation(values: (number | undefined)[]): values is number[] {
-  const present = values.filter((value): value is number => value !== undefined);
-  if (present.length < Math.max(values.length / 2, MIN_COHORT)) {
-    return false;
+/**
+ * A lane built from data that only exists for part of the cohort.
+ *
+ * External indexes lag: a preprint posted this morning has no entry anywhere,
+ * so on any given build only a minority of the feed carries a reference count
+ * or a citation count. Two things follow, and both were wrong before.
+ *
+ * First, a lane must not be discarded just because coverage is partial. Fifteen
+ * papers with known citation counts among a hundred still say something true
+ * about those fifteen, and refusing to look loses the strongest evidence the
+ * system has.
+ *
+ * Second — and this was the damaging one — a paper the index has not reached
+ * yet must not be scored as if it were a paper with zero references. "Unknown"
+ * and "zero" are different claims, and conflating them punishes papers for
+ * being new, which is precisely the population this product exists to rank.
+ *
+ * So the lane ranks only the papers it knows about and seats the rest at its
+ * neutral midpoint. That has a property worth stating: the spread of ranks a
+ * lane produces grows with its coverage, so a lane that knows about fifteen
+ * papers moves the consensus about a seventh as much as one that knows about
+ * all hundred. Its influence scales with its evidence, with no weight to tune.
+ */
+function partialLane(
+  values: (number | undefined)[],
+  minimum: number,
+): number[] | null {
+  const known: number[] = [];
+  const positions: number[] = [];
+  values.forEach((value, index) => {
+    if (value !== undefined) {
+      known.push(value);
+      positions.push(index);
+    }
+  });
+  if (known.length < minimum || known.every((value) => value === known[0])) {
+    return null;
   }
-  return present.some((value) => value !== present[0]);
+  const ranked = percentileRank(known.map((value) => -value));
+  const neutral = (known.length + 1) / 2;
+  const ranks = new Array<number>(values.length).fill(neutral);
+  positions.forEach((position, i) => {
+    ranks[position] = ranked[i] * (known.length + 1);
+  });
+  return ranks;
 }
 
 /**
@@ -161,14 +204,20 @@ export function scoreCohort(
   const lanes: number[][] = [descendingRanks(total)];
   const laneNames: PulseLane[] = ["signals"];
 
-  const references = papers.map((paper) => enrichment.get(paper.id)?.references);
-  if (hasVariation(references)) {
-    lanes.push(descendingRanks(references.map((value) => value ?? 0)));
+  const references = partialLane(
+    papers.map((paper) => enrichment.get(paper.id)?.references),
+    MIN_ENRICHED,
+  );
+  if (references) {
+    lanes.push(references);
     laneNames.push("references");
   }
-  const citations = papers.map((paper) => enrichment.get(paper.id)?.citations);
-  if (hasVariation(citations)) {
-    lanes.push(descendingRanks(citations.map((value) => value ?? 0)));
+  const reception = partialLane(
+    papers.map((paper) => enrichment.get(paper.id)?.citations),
+    MIN_ENRICHED,
+  );
+  if (reception) {
+    lanes.push(reception);
     laneNames.push("reception");
   }
 

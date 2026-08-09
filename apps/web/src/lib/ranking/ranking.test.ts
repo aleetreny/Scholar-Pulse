@@ -304,6 +304,74 @@ describe("scoreCohort", () => {
     assert.deepEqual(pulses[0].lanes, ["signals", "references", "reception"]);
   });
 
+  it("uses a lane that covers only a minority of the cohort", () => {
+    // The bug this replaces: the lane was only consulted when at least half
+    // the cohort was enriched. External indexes never cover half a batch of
+    // same-week preprints, so in production the two strongest lanes were
+    // switched off on every build and nothing said so.
+    const papers = cohort(60, (i) => ({ title: `Paper ${i}` }));
+    const enrichment = new Map<string, Enrichment>(
+      papers.slice(0, 10).map((item, i) => [item.id, { citations: i }]),
+    );
+    const pulses = scoreCohort(papers, EMPTY_MEMORY, now, enrichment);
+    assert.ok(pulses[0].lanes.includes("reception"), pulses[0].lanes.join());
+  });
+
+  it("does not treat an unindexed paper as one with zero references", () => {
+    // "Unknown" and "zero" are different claims. Scoring the first as the
+    // second penalises papers for being new, which is the whole population
+    // this ranking exists to serve.
+    const papers = cohort(60, (i) => ({ title: `Paper ${i}` }));
+    // Ten papers are known and all have modest reference counts; the rest are
+    // simply absent from the index.
+    const enrichment = new Map<string, Enrichment>(
+      papers.slice(0, 10).map((item, i) => [item.id, { references: 20 + i }]),
+    );
+    const withLane = scoreCohort(papers, EMPTY_MEMORY, now, enrichment);
+    const unknown = withLane[30];
+    const worstKnown = withLane[0];
+    assert.ok(
+      unknown.score > worstKnown.score,
+      `an unindexed paper (${unknown.score}) should not rank below the ` +
+        `least-referenced known one (${worstKnown.score})`,
+    );
+  });
+
+  it("gives a thinly-covered lane less influence than a well-covered one", () => {
+    // The spread of ranks a partial lane produces scales with its coverage, so
+    // its pull on the consensus scales with its evidence — no weight to tune.
+    // Measured as how far the whole board moves, because a single paper at the
+    // top saturates and stops registering the difference.
+    const papers = cohort(60, (i) => ({ title: `Paper ${i}` }));
+    const cited = (i: number) => i % 13;
+    const thin = new Map<string, Enrichment>(
+      papers.slice(0, 12).map((item, i) => [item.id, { citations: cited(i) }]),
+    );
+    const full = new Map<string, Enrichment>(
+      papers.map((item, i) => [item.id, { citations: cited(i) }]),
+    );
+    const base = scoreCohort(papers, EMPTY_MEMORY, now);
+    const shift = (other: typeof base) =>
+      base.reduce((sum, pulse, i) => sum + Math.abs(pulse.score - other[i].score), 0);
+
+    const thinShift = shift(scoreCohort(papers, EMPTY_MEMORY, now, thin));
+    const fullShift = shift(scoreCohort(papers, EMPTY_MEMORY, now, full));
+    assert.ok(thinShift > 0, "a thin lane should still move the board");
+    assert.ok(
+      fullShift > thinShift,
+      `full coverage (${fullShift}) should move the board more than thin (${thinShift})`,
+    );
+  });
+
+  it("ignores a lane below the coverage floor", () => {
+    const papers = cohort(60, (i) => ({ title: `Paper ${i}` }));
+    const enrichment = new Map<string, Enrichment>(
+      papers.slice(0, 4).map((item, i) => [item.id, { citations: i }]),
+    );
+    const pulses = scoreCohort(papers, EMPTY_MEMORY, now, enrichment);
+    assert.deepEqual(pulses[0].lanes, ["signals"]);
+  });
+
   it("ignores a lane where every paper reads the same", () => {
     const papers = cohort(30, (i) => ({ title: `Paper ${i}` }));
     const enrichment = new Map<string, Enrichment>(
