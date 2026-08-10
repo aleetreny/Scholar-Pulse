@@ -30,8 +30,11 @@ __pycache__/
 /README.html
 /README_files/
 
-# Local Claude Code tooling (machine-specific paths)
+# Local editor and agent tooling (machine-specific paths)
 .claude/
+.cursor/
+.idea/
+.vscode/
 
 # Ranking research artifacts (regenerate with research/ranking/fetch_data.sh)
 /research/**/*.parquet
