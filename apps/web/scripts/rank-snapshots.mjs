@@ -46,11 +46,29 @@ const CONTACT = process.env.OPENALEX_MAILTO ?? "scholarpulse@users.noreply.githu
 
 const BATCH_SIZE = 50; // OpenAlex caps a single filter at 50 OR-ed values.
 const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
-// S2's unauthenticated pool is shared across every anonymous caller on the
-// internet and throttles at roughly a request a second. Production hit HTTP 429
-// after two batches at 1.2s spacing, so this is deliberately unhurried: even at
-// three seconds apart, fourteen batches cover a whole build inside the budget.
-const S2_SPACING_MS = 3000;
+/**
+ * Free, and worth more than every other constant in this file put together.
+ * Without it the build shares one anonymous queue with every unauthenticated
+ * caller on the internet — three consecutive production runs got 86%, 64% and
+ * 31% of the feed. With it, Semantic Scholar grants the build its own rate
+ * limit. Absent, everything still runs, just at the pool's mercy.
+ */
+const S2_KEY = process.env.S2_API_KEY ?? "";
+/**
+ * Gap between Semantic Scholar requests, which is a different question with a
+ * key than without one.
+ *
+ * A key comes with one request per second, and that second belongs to this
+ * build alone — so 1.1s is compliant with room to spare, and the whole pass
+ * finishes in about fifteen seconds. Anonymously the same nominal limit is
+ * shared with the entire internet, and a 429 depends far more on who else is
+ * asking than on our own pace; three seconds there is not politeness so much as
+ * an admission that we cannot control the outcome anyway.
+ *
+ * Note the sleep runs *after* each response, so the real interval is this plus
+ * the round trip — the effective rate is always below the ceiling, never at it.
+ */
+const S2_SPACING_MS = S2_KEY ? 1100 : 3000;
 const S2_BACKOFF_MS = [5000, 15000, 30000];
 const REQUEST_SPACING_MS = 130;
 const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
@@ -61,23 +79,16 @@ const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
  * cold-start signal the study found, so it must not be left with whatever the
  * other index happens not to use.
  *
- * Sized from what production actually does rather than from the happy path.
- * Fourteen batches at three-second spacing need about ninety seconds if nothing
- * goes wrong — but something usually does. Two consecutive runs saw two and then
- * four HTTP 429s, and each throttled batch costs twenty seconds of backoff
- * before it is even given up on. At 150s the second run ran out of clock at 64%
- * coverage; this leaves room for a third of the batches to fail twice over and
- * still finish. Unused budget costs nothing — the pass ends when the work does.
+ * Sized for the anonymous case, which is the one that needs it. Keyed, fourteen
+ * batches take about fifteen seconds and this is never approached. Anonymously
+ * they need ninety if nothing goes wrong — but something usually does: two
+ * consecutive runs saw two and then four HTTP 429s, and each throttled batch
+ * costs twenty seconds of backoff before it is even given up on. At 150s one run
+ * ran out of clock at 64% coverage. This leaves room for a third of the batches
+ * to fail twice over and still finish, and unused budget costs nothing, because
+ * the pass ends when the work does rather than when the clock does.
  */
 const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 300_000);
-/**
- * Optional, free, and worth far more than any tuning in this file. Without it
- * the build shares one anonymous queue with every other unauthenticated caller
- * on the internet; with it, Semantic Scholar gives the build its own budget.
- * Absent, everything still runs — just with the coverage the pool happens to
- * allow that minute. See docs/ARCHITECTURE.md.
- */
-const S2_KEY = process.env.S2_API_KEY ?? "";
 const RETRIES = 3;
 /** Percentiles need a cohort; below this, papers are pooled with the rest. */
 const MIN_COHORT = 12;
@@ -484,6 +495,14 @@ async function enrich(papers) {
       `${Math.ceil(dois.length / BATCH_SIZE)} OpenAlex batches ` +
       `(budget ${Math.round(S2_BUDGET_MS / 1000)}s + ` +
       `${Math.round((ENRICH_BUDGET_MS - S2_BUDGET_MS) / 1000)}s)`,
+  );
+  // Said out loud every build. A mistyped secret degrades to the anonymous pool
+  // silently, and the only visible symptom would be coverage quietly halving —
+  // indistinguishable from the pool just having a bad day.
+  console.log(
+    S2_KEY
+      ? `  Semantic Scholar: authenticated, ${S2_SPACING_MS}ms apart`
+      : "  Semantic Scholar: NO API KEY — using the shared anonymous pool",
   );
 
   await enrichFromS2(papers, enrichment, () => spent() > S2_BUDGET_MS);

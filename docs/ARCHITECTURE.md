@@ -72,13 +72,22 @@ no database and no server.
    pass, since a 429 means the pool was busy just then, not that those papers are
    unknowable.
 
-   All three help, and none of them is a cure. Three consecutive production runs
+   All three help, and none of them was a cure. Three consecutive production runs
    of the same code got 86%, 64% and 31% of the feed: the anonymous pool is
-   shared with the whole internet and no local backoff can fix that. **Setting
-   the `S2_API_KEY` secret is the single highest-value change available to this
-   build** — Semantic Scholar gives keys away free, and a key moves the run off
-   the shared pool. The code uses one if present and works without it, so this is
-   a coverage improvement, never a dependency. Even the 31% run produced a
+   shared with the whole internet, and no local backoff fixes a queue somebody
+   else is filling.
+
+   The actual fix is the `S2_API_KEY` secret, which is set. A key carries its own
+   rate limit of one request per second, so the build no longer competes for the
+   shared pool, and requests are spaced 1.1s apart instead of 3s — the whole pass
+   takes about fifteen seconds. The code still runs without a key, at the pool's
+   mercy, so this is a coverage improvement rather than a dependency; every build
+   logs which of the two modes it is in, because a mistyped secret would
+   otherwise degrade to anonymous silently and look like a bad day upstream.
+
+   The graceful degradation stays regardless of the key, and it is the part worth
+   keeping: nothing is ever recorded as a zero that was not measured, and
+   whatever fails, fails evenly across fields. Even the 31% run produced a
    reference lane in 61 of 78 cohorts, built entirely from real counts.
 3. **Scoring.** `apps/web/src/lib/ranking/` turns signals into a percentile within
    the paper's own field, fuses the available lanes by reciprocal rank, ranks
