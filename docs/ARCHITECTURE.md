@@ -62,11 +62,16 @@ no database and no server.
 
    Optional by construction: failures, rate limits and preprints that are not
    indexed yet all reduce to "this paper is ranked on fewer lanes". Semantic
-   Scholar's anonymous pool throttles hard, so a 429 is treated as routine — the
-   run backs off and continues rather than abandoning the remaining batches, and
-   batches are striped across the feed rather than cut contiguously, so a request
-   that does fail costs every field a slice of its coverage instead of costing a
-   few fields all of theirs.
+   Scholar's anonymous pool is shared with every other unauthenticated caller and
+   throttles hard, so a 429 is treated as routine rather than exceptional. Three
+   things follow, and consecutive production runs needed all of them: the run
+   backs off and continues instead of abandoning the remaining batches; batches
+   are striped across the feed rather than cut contiguously, so a request that
+   does fail costs every field a slice of its coverage instead of costing a few
+   fields all of theirs; and throttled batches are retried once at the end of the
+   pass, since a 429 means the pool was busy just then, not that those papers are
+   unknowable. Observed coverage across runs: 64–86% of the feed, against 15%
+   before any of this.
 3. **Scoring.** `apps/web/src/lib/ranking/` turns signals into a percentile within
    the paper's own field, fuses the available lanes by reciprocal rank, ranks
    papers with no author history in a separate lane, and assigns a band.

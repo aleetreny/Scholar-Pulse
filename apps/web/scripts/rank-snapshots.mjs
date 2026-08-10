@@ -53,17 +53,23 @@ const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
 const S2_SPACING_MS = 3000;
 const S2_BACKOFF_MS = [5000, 15000, 30000];
 const REQUEST_SPACING_MS = 130;
-const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 240_000);
+const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
 /**
  * How much of that budget Semantic Scholar may spend before OpenAlex starts.
  *
  * S2 is the only source of reference counts, and references are the strongest
  * cold-start signal the study found, so it must not be left with whatever the
- * other index happens not to use. Fourteen batches at three-second spacing need
- * about ninety seconds; the rest is slack for the retries a throttled build
- * will certainly need.
+ * other index happens not to use.
+ *
+ * Sized from what production actually does rather than from the happy path.
+ * Fourteen batches at three-second spacing need about ninety seconds if nothing
+ * goes wrong — but something usually does. Two consecutive runs saw two and then
+ * four HTTP 429s, and each throttled batch costs twenty seconds of backoff
+ * before it is even given up on. At 150s the second run ran out of clock at 64%
+ * coverage; this leaves room for a third of the batches to fail twice over and
+ * still finish. Unused budget costs nothing — the pass ends when the work does.
  */
-const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 150_000);
+const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 300_000);
 const RETRIES = 3;
 /** Percentiles need a cohort; below this, papers are pooled with the rest. */
 const MIN_COHORT = 12;
@@ -285,42 +291,64 @@ async function enrichFromS2(papers, enrichment, exhausted) {
   const ids = papers.map((paper) => paper.id).filter((id) => arxivDoi(id));
   let matched = 0;
   let failures = 0;
-  for (const slice of stripe(ids, S2_BATCH_SIZE)) {
-    if (exhausted()) {
-      console.warn("  Semantic Scholar ran out of budget");
-      break;
-    }
-    const results = await fetchS2Batch(slice);
-    if (!results) {
-      // One throttled batch is no reason to abandon the other thirteen — doing
-      // exactly that cost production 85% of its reference counts. Keep going,
-      // and give up only once several batches in a row have come back empty.
-      failures += 1;
-      if (failures >= 3) {
-        console.warn("  Semantic Scholar keeps refusing — giving up after 3 failures in a row");
-        break;
-      }
-      await sleep(S2_SPACING_MS * 2);
-      continue;
-    }
-    failures = 0;
-    results.forEach((work, index) => {
-      if (!work) {
+  const throttled = [];
+
+  const pass = async (batches, requeue) => {
+    for (const slice of batches) {
+      if (exhausted()) {
+        console.warn("  Semantic Scholar ran out of budget");
         return;
       }
-      matched += 1;
-      const id = slice[index];
-      const current = enrichment.get(id) ?? {};
-      if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
-        current.references = work.referenceCount;
+      const results = await fetchS2Batch(slice);
+      if (!results) {
+        // One throttled batch is no reason to abandon the other thirteen —
+        // doing exactly that cost production 85% of its reference counts. Keep
+        // going, and give up only once several in a row have come back empty.
+        failures += 1;
+        if (requeue) {
+          throttled.push(slice);
+        }
+        if (failures >= 3) {
+          console.warn("  Semantic Scholar keeps refusing — giving up after 3 failures in a row");
+          return;
+        }
+        await sleep(S2_SPACING_MS * 2);
+        continue;
       }
-      if (typeof work.citationCount === "number") {
-        current.citations = Math.max(current.citations ?? 0, work.citationCount);
-      }
-      enrichment.set(id, current);
-    });
-    await sleep(S2_SPACING_MS);
+      failures = 0;
+      results.forEach((work, index) => {
+        if (!work) {
+          return;
+        }
+        matched += 1;
+        const id = slice[index];
+        const current = enrichment.get(id) ?? {};
+        if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
+          current.references = work.referenceCount;
+        }
+        if (typeof work.citationCount === "number") {
+          current.citations = Math.max(current.citations ?? 0, work.citationCount);
+        }
+        enrichment.set(id, current);
+      });
+      await sleep(S2_SPACING_MS);
+    }
+  };
+
+  await pass(stripe(ids, S2_BATCH_SIZE), true);
+
+  // A 429 says the shared pool was busy just then, not that these papers are
+  // unknowable. Coming back to them once at the end is the cheapest coverage
+  // there is: by now several more seconds of other people's quota have expired,
+  // and the alternative is losing those papers' reference counts for the week.
+  if (throttled.length > 0) {
+    console.log(
+      `  retrying ${throttled.length} throttled batch${throttled.length > 1 ? "es" : ""}`,
+    );
+    failures = 0;
+    await pass(throttled, false);
   }
+
   if (matched > 0) {
     console.log(
       `  Semantic Scholar matched ${matched.toLocaleString()} of ` +
