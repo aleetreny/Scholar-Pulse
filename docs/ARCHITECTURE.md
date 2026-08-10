@@ -70,8 +70,16 @@ no database and no server.
    does fail costs every field a slice of its coverage instead of costing a few
    fields all of theirs; and throttled batches are retried once at the end of the
    pass, since a 429 means the pool was busy just then, not that those papers are
-   unknowable. Observed coverage across runs: 64–86% of the feed, against 15%
-   before any of this.
+   unknowable.
+
+   All three help, and none of them is a cure. Three consecutive production runs
+   of the same code got 86%, 64% and 31% of the feed: the anonymous pool is
+   shared with the whole internet and no local backoff can fix that. **Setting
+   the `S2_API_KEY` secret is the single highest-value change available to this
+   build** — Semantic Scholar gives keys away free, and a key moves the run off
+   the shared pool. The code uses one if present and works without it, so this is
+   a coverage improvement, never a dependency. Even the 31% run produced a
+   reference lane in 61 of 78 cohorts, built entirely from real counts.
 3. **Scoring.** `apps/web/src/lib/ranking/` turns signals into a percentile within
    the paper's own field, fuses the available lanes by reciprocal rank, ranks
    papers with no author history in a separate lane, and assigns a band.

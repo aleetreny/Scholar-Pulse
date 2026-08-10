@@ -64,6 +64,12 @@ jobs:
         working-directory: apps/web
         env:
           SITE_BASE_URL: https://aleetreny.github.io/Scholar-Pulse
+          # Optional and free. Unset, this is an empty string and the run falls
+          # back to Semantic Scholar's anonymous pool, which is shared with every
+          # other unauthenticated caller and gave three consecutive runs 86%, 64%
+          # and 31% coverage of the reference lane. A key moves the build off
+          # that pool. Add it at Settings > Secrets and variables > Actions.
+          S2_API_KEY: ${{ secrets.S2_API_KEY }}
 
       - name: Build static site
         run: npm run build

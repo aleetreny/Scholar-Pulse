@@ -70,6 +70,14 @@ const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
  * still finish. Unused budget costs nothing — the pass ends when the work does.
  */
 const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 300_000);
+/**
+ * Optional, free, and worth far more than any tuning in this file. Without it
+ * the build shares one anonymous queue with every other unauthenticated caller
+ * on the internet; with it, Semantic Scholar gives the build its own budget.
+ * Absent, everything still runs — just with the coverage the pool happens to
+ * allow that minute. See docs/ARCHITECTURE.md.
+ */
+const S2_KEY = process.env.S2_API_KEY ?? "";
 const RETRIES = 3;
 /** Percentiles need a cohort; below this, papers are pooled with the rest. */
 const MIN_COHORT = 12;
@@ -194,6 +202,14 @@ async function fetchBatch(dois) {
  * build. It throttles hard in exchange: its anonymous pool is shared with every
  * other unauthenticated caller on the internet, so HTTP 429 is a normal part of
  * a run rather than an error, and the backoff below is deliberately patient.
+ *
+ * How patient is not enough, though. Three consecutive production runs got 86%,
+ * 64% and 31% of the feed from the same code — the anonymous pool simply is not
+ * a dependable resource, and no amount of local backoff fixes a queue shared
+ * with the whole internet. Semantic Scholar gives away API keys for free, and a
+ * key moves a caller off that pool entirely. If `S2_API_KEY` is set the request
+ * uses it; if it is not, everything still works, just at the mercy of the pool.
+ * Setting it is the single highest-value change available to this build.
  */
 async function fetchS2Batch(ids) {
   for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
@@ -203,7 +219,10 @@ async function fetchS2Batch(ids) {
         {
           method: "POST",
           signal: AbortSignal.timeout(60_000),
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            ...(S2_KEY ? { "x-api-key": S2_KEY } : {}),
+          },
           body: JSON.stringify({ ids: ids.map((id) => `ARXIV:${id}`) }),
         },
       );
@@ -211,6 +230,9 @@ async function fetchS2Batch(ids) {
         throw new Error(`HTTP ${response.status}`);
       }
       if (!response.ok) {
+        // Never silently: an unlogged `return null` here is what made three
+        // failed retries in production look like no retries at all.
+        console.warn(`  Semantic Scholar refused the batch: HTTP ${response.status}`);
         return null;
       }
       const body = await response.json();
@@ -308,8 +330,14 @@ async function enrichFromS2(papers, enrichment, exhausted) {
         if (requeue) {
           throttled.push(slice);
         }
-        if (failures >= 3) {
-          console.warn("  Semantic Scholar keeps refusing — giving up after 3 failures in a row");
+        // Only bail when nothing has worked at all — that is the "S2 is down"
+        // case this guard was written for, and stopping saves a budget that
+        // would buy nothing. Once any batch has come back, S2 is up and merely
+        // busy, and the budget is the right thing to stop us, not a failure
+        // count: production hit three failures during the *retry* pass and
+        // abandoned it, which threw away the last chance at those papers.
+        if (failures >= 3 && matched === 0) {
+          console.warn("  Semantic Scholar is not responding — reference lane unavailable");
           return;
         }
         await sleep(S2_SPACING_MS * 2);
