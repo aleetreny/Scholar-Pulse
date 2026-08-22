@@ -57,8 +57,19 @@ and the score was learning reputation as much as merit.
 
 Validation is leave-one-month-out on papers that demonstrably became references
 in their field: **AUC 0.79** (95% CI 0.76–0.83) and **5.5x lift in the top 10%**
-against a 1.4% base rate. The full study, including the hypotheses that failed,
-is in [research/ranking](research/ranking/README.md).
+against a 1.4% base rate. That is the offline study, on 2017-18 cs.LG and cs.CL
+papers against a curated list of landmarks; it is not a measurement of the live
+feed, and it should not be read as one.
+
+Replayed against 2026 arXiv, the deployed system scores **NDCG@10 0.414**
+[0.374, 0.458] and **1.7x lift in the top 10**, against 0.258 and 1.0x for the
+chronological feed it replaced: a real improvement, in 85% of cohorts, and a
+much smaller one than the study suggests. Almost all of it comes from the
+reference lane rather than from the model, whose twelve signals currently rank
+below a random shuffle on their own, because the site's memory has never seen
+the authors of 44% of any cohort. The measurement, the arms and the fix are in
+[research/ranking](research/ranking/README.md), along with the full study and
+the hypotheses that failed.
 
 **Checking it against reality.** Those numbers come from a 2017-18 corpus, and
 a model that validated offline can still be wrong in production. Every build

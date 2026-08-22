@@ -52,6 +52,7 @@ Every number is produced under a constraint a deployment actually faces.
 | File | Role |
 | --- | --- |
 | `fetch_data.sh` | Download the three corpora. |
+| `backtest_deployed.mjs` | Replay the site's weekly job over a period old enough to have outcomes, and grade it. |
 | `prepare_data.py` | Normalise them into parquet; validates the month decoding. |
 | `hepth_features.py` | Causal features on the citation graph, at any observation window. |
 | `arxiv_features.py` | Day-zero features from arXiv metadata alone. |
@@ -62,6 +63,11 @@ Every number is produced under a constraint a deployment actually faces.
 | `run_audit.py` | E10–E12: where the signal lives, calibration, robustness. |
 | `run_final.py` | E13–E15: the fixes, and whether they work. |
 | `export_model.py` | Refit on the deployable signals; emit the shipped model. |
+
+`backtest_deployed.mjs` is the only file here that imports the deployed code
+rather than describing it, and the only one whose corpus is 2026 rather than
+2018. It exists because everything above answers "does this work in
+principle" and none of it answers "does the thing on the site work".
 
 ```bash
 RESEARCH_DATA=/workspace/rankdata ./research/ranking/fetch_data.sh
@@ -138,3 +144,63 @@ not shipped either: claim language, hedging, `has_numbers`, `cross_list`,
 10. **Chronological ordering is indistinguishable from shuffling.** Within a
     month's feed, newest-first scores AUC 0.483 against 0.502 for a random
     shuffle, and put zero landmark papers in the top ten across eleven months.
+
+## What it does in production
+
+Everything above is 2017-18 data and a curated label. `backtest_deployed.mjs`
+asks the narrower question: the weekly job is replayed over February and March
+2026 in cs.LG, cs.CL and hep-th, scoring each cohort with the deployed ranker
+on what a build standing in that week could have known, and grading it against
+the citations those papers had by August 2026. Twenty-seven cohorts, 2,576
+papers, five to six months of accrual.
+
+The label is not the study's label and the numbers are not comparable to it.
+"Became a demonstrable reference in its field" was a 1.4% event in a curated
+list; here 52% of papers have at least one citation, the cohort's top decile
+starts at four, and 0.7% reach twenty. What can be compared is rankers against
+each other on the same cohorts.
+
+| Ranker | NDCG@10 | lift@10 | P@10 | AUC (top decile) |
+| --- | --- | --- | --- | --- |
+| **as deployed** (signals + reference lane) | **0.414** [0.374, 0.458] | **1.68x** [1.35, 2.06] | 0.237 | 0.598 [0.573, 0.621] |
+| reference count alone | 0.417 [0.370, 0.474] | 1.63x [1.35, 1.99] | 0.222 | 0.594 [0.559, 0.629] |
+| the twelve signals alone | 0.317 [0.284, 0.353] | 1.44x [1.11, 1.86] | 0.181 | 0.578 [0.554, 0.602] |
+| random shuffle | 0.339 [0.293, 0.383] | 1.22x [0.98, 1.49] | 0.178 | 0.530 [0.501, 0.561] |
+| newest first | 0.258 [0.225, 0.290] | 1.03x [0.79, 1.32] | 0.115 | 0.493 [0.454, 0.534] |
+
+Three things fall out of that table, in descending order of how much they hurt.
+
+1. **The feed does beat the feed it replaced, and the margin is real.**
+   ΔNDCG@10 = +0.156 [+0.106, +0.205] over newest-first, better in 85% of
+   cohorts. E10's finding survives contact with 2026: chronological ordering is
+   worse than a shuffle.
+2. **Nearly all of it is the reference count.** Sorting the cohort by nothing
+   but the length of its bibliography scores 0.417 against the full system's
+   0.414. The twelve signals, the cohort percentiles, the non-negative fit, the
+   newcomer lane and the reciprocal-rank fusion together add nothing that
+   survives a confidence interval. The lane the study called strongest is
+   carrying the product, and the model the README explains at length is along
+   for the ride.
+3. **On their own, the twelve signals rank below a shuffle.** 0.317 against
+   0.339 on NDCG@10, and 0.181 against 0.178 on precision@10. They order the
+   whole list slightly better than chance (AUC 0.578 against 0.530), but the
+   head of the list, which is the only part the product shows, is not better
+   than random.
+
+The reason is coverage, and it is fixable. The site ingests a hundred papers
+per category per week, roughly 14% of these three fields, so 44% of every
+cohort consists of papers whose authors it has never seen. Inside that pool all
+four author signals are constant and drop out, which leaves title length,
+whether the title has a colon, and abstract length holding 78% of what still
+moves the ranking. Fold the whole corpus into the memory instead, changing
+nothing else, and the same twelve signals go from below a shuffle to clearly
+above it:
+
+| Ranker | NDCG@10 | lift@10 | AUC (top decile) | AUC (>=20 citations) |
+| --- | --- | --- | --- | --- |
+| the twelve signals, site's ingestion (44% newcomers) | 0.317 | 1.44x | 0.578 | 0.698 |
+| the twelve signals, whole corpus (0% newcomers) | 0.393 | 1.60x | 0.637 | 0.800 |
+| as deployed, whole corpus | 0.476 | 2.03x | 0.648 | 0.822 |
+
+So the model is not broken. It is starved. What it needs is not a better fit,
+it is a memory that has seen the field.
