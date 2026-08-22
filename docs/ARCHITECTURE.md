@@ -100,8 +100,8 @@ no database and no server.
 
    Each paper is folded exactly once. The workflow runs on every push as well
    as weekly, and every run refetches the same newest-100-per-category, so the
-   memory carries a ledger of ids it has already counted. Without it, the ten
-   builds in the thirty-one hours after the ranking launched recorded 39,312
+   memory carries a ledger of ids it has already counted. Without it, the
+   eleven builds in the thirty-one hours after the ranking launched recorded 39,312
    papers for August against a feed of 5,248, and gave twenty thousand authors
    a publication count of twelve for a fortnight of arXiv.
 5. **Record the claim.** The build appends what it ranked to

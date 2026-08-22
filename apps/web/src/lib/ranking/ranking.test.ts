@@ -151,8 +151,8 @@ describe("corpus memory", () => {
 
   it("counts a paper once however many builds see it", () => {
     // The deploy runs on every push as well as on the weekly schedule, and
-    // each run refetches the same "newest 100 per category". Ten runs in the
-    // thirty-one hours after launch folded the same batch ten times: the
+    // each run refetches the same "newest 100 per category". Eleven runs in the
+    // thirty-one hours after launch folded the same batch eleven times: the
     // memory ended up claiming 39,312 papers for a month whose feed held
     // 5,248, and authors of a single paper carried a count of twelve.
     const batch = [

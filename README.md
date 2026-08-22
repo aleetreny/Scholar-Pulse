@@ -176,7 +176,7 @@ thing free to run.
 The fold is counted once per paper, ever. The workflow also runs on every push,
 and each run refetches the same newest-100-per-category, so without a ledger of
 what has already been folded a busy afternoon of commits inflates the corpus by
-a factor of ten.
+an order of magnitude: eleven builds ran in the thirty-one hours after launch.
 
 One optional secret:
 
