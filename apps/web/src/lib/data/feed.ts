@@ -7,7 +7,7 @@ import type { FeedResponse, Paper } from "@/lib/types";
 
 /**
  * The "For you" feed reads prebuilt per-category JSON snapshots that ship
- * with the site (see scripts/build-feed-snapshots.mjs) — the arXiv API has
+ * with the site (see scripts/build-feed-snapshots.mjs), because the arXiv API has
  * no CORS headers, so a static deployment cannot query it live. Snapshots
  * refresh on the CI schedule, which tracks arXiv's once-per-weekday
  * announcement rhythm closely enough.
@@ -76,7 +76,7 @@ export type FeedPage = FeedResponse & {
  *
  * "recent" is plain reverse-chronological. "pulse" orders by the ranking
  * computed at build time, with the reserved lane for papers whose authors the
- * site has never seen — see lib/ranking/score.ts for why that reservation
+ * site has never seen. See lib/ranking/score.ts for why that reservation
  * exists and what it costs.
  */
 export async function getFeed(
@@ -133,7 +133,7 @@ export async function getFeed(
 
 /**
  * Last-resort search over the shipped snapshots (title/author/abstract
- * substring match) — instant and offline-friendly, but only covers each
+ * substring match): instant and offline-friendly, but only covers each
  * category's latest ~100 submissions. Used when the live search upstream
  * is unreachable. Followed categories are scanned first so their
  * already-cached snapshots cover the common case without extra fetches.

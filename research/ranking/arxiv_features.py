@@ -1,10 +1,10 @@
-"""Day-zero features from arXiv metadata alone — no citations, no external API.
+"""Day-zero features from arXiv metadata alone: no citations, no external API.
 
 Experiment 1 established that a paper's reference list predicts its future
 impact. But a preprint's reference list is not in the arXiv feed: it appears
 days or weeks later, once an indexer has parsed the PDF. Everything in this
-module is computable from the Atom entry the moment it is published — title,
-abstract, author list, categories, timestamp — which is exactly the payload
+module is computable from the Atom entry the moment it is published: title,
+abstract, author list, categories and timestamp, which is exactly the payload
 ScholarPulse already snapshots.
 
 Causality is enforced the same way as in the citation lab: every corpus

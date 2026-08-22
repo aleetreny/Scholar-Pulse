@@ -3,7 +3,7 @@
 The audit left three concrete defects in the winning model:
 
   1. 60% of the board went to the best-connected 10% of authors, and papers by
-     unknown authors landed at the 16th percentile — the model buries outsider
+     unknown authors landed at the 16th percentile, so the model buries outsider
      hits like FEVER and "One pixel attack".
   2. A 5% jitter on the inputs replaced three of the top ten. A board that
      reshuffles under noise that small is not reporting a finding, it is
@@ -232,7 +232,7 @@ def main() -> None:
 
     print("\n=== E14b tiers instead of positions ===")
     print("    Bagging averages away *model* variance, but every replica reads the")
-    print("    same perturbed inputs, so it cannot damp *input* noise — E14 shows")
+    print("    same perturbed inputs, so it cannot damp *input* noise. E14 shows")
     print("    exactly that. If the ordering inside the head of the list is not")
     print("    stable, the honest fix is to stop publishing an ordering there.")
     tier_edges = [0, 0.90, 0.99, 1.0]

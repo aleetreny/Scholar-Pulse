@@ -9,8 +9,8 @@
 //
 // Three things happen here.
 //
-// 1. The site's memory of what it has seen — which authors, which words, how
-//    often — is loaded from the *previous* deployment. There is no database:
+// 1. The site's memory of what it has seen, which authors and which words and
+//    how often, is loaded from the *previous* deployment. There is no database:
 //    the last build's output is the storage, fetched over HTTPS from the live
 //    site. Signals are computed against that memory as it stood before this
 //    batch, never against a memory that already contains the papers being
@@ -26,7 +26,7 @@
 // 3. Papers are scored inside their own field, the ranking is written into each
 //    snapshot, and the memory is folded forward for the next build.
 //
-// Requires Node >= 23.6 (type stripping) — imports the app's TS modules.
+// Requires Node >= 23.6 (type stripping), since it imports the app's TS modules.
 
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -49,7 +49,7 @@ const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
 /**
  * Free, and worth more than every other constant in this file put together.
  * Without it the build shares one anonymous queue with every unauthenticated
- * caller on the internet — three consecutive production runs got 86%, 64% and
+ * caller on the internet: three consecutive production runs got 86%, 64% and
  * 31% of the feed. With it, Semantic Scholar grants the build its own rate
  * limit. Absent, everything still runs, just at the pool's mercy.
  */
@@ -59,14 +59,14 @@ const S2_KEY = process.env.S2_API_KEY ?? "";
  * key than without one.
  *
  * A key comes with one request per second, and that second belongs to this
- * build alone — so 1.1s is compliant with room to spare, and the whole pass
+ * build alone, so 1.1s is compliant with room to spare, and the whole pass
  * finishes in about fifteen seconds. Anonymously the same nominal limit is
  * shared with the entire internet, and a 429 depends far more on who else is
  * asking than on our own pace; three seconds there is not politeness so much as
  * an admission that we cannot control the outcome anyway.
  *
  * Note the sleep runs *after* each response, so the real interval is this plus
- * the round trip — the effective rate is always below the ceiling, never at it.
+ * the round trip; the effective rate is always below the ceiling, never at it.
  */
 const S2_SPACING_MS = S2_KEY ? 1100 : 3000;
 const S2_BACKOFF_MS = [5000, 15000, 30000];
@@ -81,7 +81,7 @@ const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
  *
  * Sized for the anonymous case, which is the one that needs it. Keyed, fourteen
  * batches take about fifteen seconds and this is never approached. Anonymously
- * they need ninety if nothing goes wrong — but something usually does: two
+ * they need ninety if nothing goes wrong, but something usually does: two
  * consecutive runs saw two and then four HTTP 429s, and each throttled batch
  * costs twenty seconds of backoff before it is even given up on. At 150s one run
  * ran out of clock at 64% coverage. This leaves room for a third of the batches
@@ -110,7 +110,7 @@ async function loadMemory() {
       return local;
     }
   } catch {
-    // No local copy — expected on CI, where the checkout is clean.
+    // No local copy, which is expected on CI, where the checkout is clean.
   }
   try {
     const response = await fetch(`${SITE_BASE_URL}/data/memory.json`, {
@@ -122,7 +122,7 @@ async function loadMemory() {
         const authors = Object.keys(remote.authors ?? {}).length;
         const terms = Object.keys(remote.terms ?? {}).length;
         console.log(
-          `memory: carried over from the live site — ${authors.toLocaleString()} authors, ` +
+          `memory: carried over from the live site: ${authors.toLocaleString()} authors, ` +
             `${terms.toLocaleString()} terms`,
         );
         return remote;
@@ -131,7 +131,7 @@ async function loadMemory() {
   } catch (error) {
     console.warn(`memory: could not read the previous build (${error.message})`);
   }
-  console.log("memory: starting empty — author signals stay dormant until it fills");
+  console.log("memory: starting empty; author signals stay dormant until it fills");
   return EMPTY_MEMORY;
 }
 
@@ -143,7 +143,7 @@ function arxivDoi(id) {
 }
 
 /**
- * A paper that has certainly been in OpenAlex for years — the GPT-3 preprint.
+ * A paper that has certainly been in OpenAlex for years: the GPT-3 preprint.
  *
  * It answers the one question the match count cannot. When enrichment comes
  * back nearly empty there are two possible worlds: the index has not caught up
@@ -202,20 +202,20 @@ async function fetchBatch(dois) {
 /**
  * Reference counts, from the one free index that parses preprints.
  *
- * OpenAlex holds a record for essentially every arXiv submission within days —
- * a 96.6% match rate in production — but its `referenced_works_count` is zero
+ * OpenAlex holds a record for essentially every arXiv submission within days,
+ * a 96.6% match rate in production, but its `referenced_works_count` is zero
  * for preprints: it catalogues the work without parsing its bibliography. The
  * reference lane, which the study found to be the strongest cold-start signal
  * of all, therefore had nothing to read and never once activated.
  *
  * Semantic Scholar does parse arXiv PDFs, and its batch endpoint takes arXiv
- * ids directly, four hundred at a time — a dozen or so requests cover a whole
+ * ids directly, four hundred at a time, so a dozen or so requests cover a whole
  * build. It throttles hard in exchange: its anonymous pool is shared with every
  * other unauthenticated caller on the internet, so HTTP 429 is a normal part of
  * a run rather than an error, and the backoff below is deliberately patient.
  *
  * How patient is not enough, though. Three consecutive production runs got 86%,
- * 64% and 31% of the feed from the same code — the anonymous pool simply is not
+ * 64% and 31% of the feed from the same code. The anonymous pool simply is not
  * a dependable resource, and no amount of local backoff fixes a queue shared
  * with the whole internet. Semantic Scholar gives away API keys for free, and a
  * key moves a caller off that pool entirely. If `S2_API_KEY` is set the request
@@ -280,7 +280,7 @@ function describe(label, values) {
  *
  * Not `slice(i, i + size)`, and the difference is the whole point. The paper
  * list arrives grouped by field, so contiguous batches map almost exactly onto
- * cohorts — and a throttled request then costs four fields *all* of their
+ * cohorts, and a throttled request then costs four fields *all* of their
  * reference counts rather than costing every field a slice of theirs. A cohort
  * at 60% coverage still ranks well, because a partial lane seats what it does
  * not know at its neutral midpoint and scales its own influence to its
@@ -317,7 +317,7 @@ function report(label, enrichment) {
  * *unknown*, not as zero. S2 returns zero both for a paper whose bibliography it
  * has not parsed yet and for one that genuinely cites nothing, and among
  * week-old preprints the first case is overwhelmingly the likelier. Citation
- * counts are different — they are counted from the citing side, so a zero there
+ * counts are different: they are counted from the citing side, so a zero there
  * is a real measurement and is kept as one.
  */
 async function enrichFromS2(papers, enrichment, exhausted) {
@@ -334,21 +334,21 @@ async function enrichFromS2(papers, enrichment, exhausted) {
       }
       const results = await fetchS2Batch(slice);
       if (!results) {
-        // One throttled batch is no reason to abandon the other thirteen —
+        // One throttled batch is no reason to abandon the other thirteen;
         // doing exactly that cost production 85% of its reference counts. Keep
         // going, and give up only once several in a row have come back empty.
         failures += 1;
         if (requeue) {
           throttled.push(slice);
         }
-        // Only bail when nothing has worked at all — that is the "S2 is down"
+        // Only bail when nothing has worked at all. That is the "S2 is down"
         // case this guard was written for, and stopping saves a budget that
         // would buy nothing. Once any batch has come back, S2 is up and merely
         // busy, and the budget is the right thing to stop us, not a failure
         // count: production hit three failures during the *retry* pass and
         // abandoned it, which threw away the last chance at those papers.
         if (failures >= 3 && matched === 0) {
-          console.warn("  Semantic Scholar is not responding — reference lane unavailable");
+          console.warn("  Semantic Scholar is not responding; reference lane unavailable");
           return;
         }
         await sleep(S2_SPACING_MS * 2);
@@ -395,7 +395,7 @@ async function enrichFromS2(papers, enrichment, exhausted) {
     );
     report("S2", enrichment);
   } else {
-    console.warn("  Semantic Scholar returned nothing — reference lane unavailable");
+    console.warn("  Semantic Scholar returned nothing; reference lane unavailable");
   }
   return matched;
 }
@@ -404,15 +404,15 @@ async function enrichFromS2(papers, enrichment, exhausted) {
  * Fold OpenAlex's citation counts into the enrichment map.
  *
  * Citations only, and that restriction is the point. OpenAlex holds a record for
- * essentially every arXiv submission within days — 96.6% of the feed in
- * production — but it catalogues a preprint without parsing its bibliography, so
+ * essentially every arXiv submission within days, 96.6% of the feed in
+ * production, but it catalogues a preprint without parsing its bibliography, so
  * `referenced_works_count` comes back zero for every single one. Storing that
  * zero was worse than storing nothing: it turned "we have not looked this up"
  * into a confident claim of "this paper cites nothing", and the reference lane
  * cannot tell the two apart. Four thousand papers were being ranked down for
  * the sin of not having been fetched, while the lane believed it had full
- * coverage and weighted itself accordingly. `cited_by_count` is honest — it is
- * counted from the citing side — so that is all we take.
+ * coverage and weighted itself accordingly. `cited_by_count` is honest, since it
+ * is counted from the citing side, so that is all we take.
  */
 async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
   const matched = new Set();
@@ -421,7 +421,7 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
   for (let i = 0; i < dois.length; i += BATCH_SIZE) {
     if (exhausted()) {
       console.warn(
-        `  budget spent after ${done} OpenAlex batches — the rest keep the counts S2 gave`,
+        `  budget spent after ${done} OpenAlex batches; the rest keep the counts S2 gave`,
       );
       break;
     }
@@ -432,7 +432,7 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
       // Several consecutive failures mean the upstream is unhappy, not that we
       // were unlucky; stop asking rather than burn the whole budget on retries.
       if (failed >= 3 && failed === done) {
-        console.warn("  OpenAlex is not responding — keeping what Semantic Scholar found");
+        console.warn("  OpenAlex is not responding; keeping what Semantic Scholar found");
         return { matched: matched.size, unreachable: true };
       }
     } else {
@@ -454,7 +454,7 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
   console.log(
     `  OpenAlex matched ${matched.size.toLocaleString()} of ` +
       `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
-      (failed ? ` — ${failed} batches failed` : ""),
+      (failed ? `, ${failed} batches failed` : ""),
   );
   report("+ OpenAlex", enrichment);
   return { matched: matched.size, unreachable: false };
@@ -497,12 +497,12 @@ async function enrich(papers) {
       `${Math.round((ENRICH_BUDGET_MS - S2_BUDGET_MS) / 1000)}s)`,
   );
   // Said out loud every build. A mistyped secret degrades to the anonymous pool
-  // silently, and the only visible symptom would be coverage quietly halving —
+  // silently, and the only visible symptom would be coverage quietly halving,
   // indistinguishable from the pool just having a bad day.
   console.log(
     S2_KEY
       ? `  Semantic Scholar: authenticated, ${S2_SPACING_MS}ms apart`
-      : "  Semantic Scholar: NO API KEY — using the shared anonymous pool",
+      : "  Semantic Scholar: NO API KEY, using the shared anonymous pool",
   );
 
   await enrichFromS2(papers, enrichment, () => spent() > S2_BUDGET_MS);
@@ -536,7 +536,7 @@ async function enrich(papers) {
   } else if (diagnosis === "no-match") {
     console.warn(
       "  WARNING: a paper indexed since 2020 did not match either. The request " +
-        "is malformed, not merely early — the reception lane loses its broad " +
+        "is malformed, not merely early, and the reception lane loses its broad " +
         "coverage until this is fixed.",
     );
   } else {
@@ -678,7 +678,7 @@ async function main() {
     enriched: enrichment.size,
     // Papers with a real reference count. The reference lane is the strongest
     // of the three, and this is the one number that says whether it had any
-    // fuel — `enriched` can look healthy on citation counts alone.
+    // fuel, since `enriched` can look healthy on citation counts alone.
     referenceCounts: references,
     // "ok" | "no-match" | "unreachable" | "no-candidates" | "skipped".
     // Anything other than "ok" is about OpenAlex, which supplies the reception
@@ -694,7 +694,7 @@ async function main() {
   const cohorts = buildCohorts(papers).length;
   console.log(
     `done: ${tally.headline} headline, ${tally.notable} notable, ` +
-      `${tally.rest} rest — ${share(tally.newcomer)} of the feed has no author history`,
+      `${tally.rest} rest, ${share(tally.newcomer)} of the feed has no author history`,
   );
   console.log(
     `lanes: signals ${laneUse.signals}/${cohorts} cohorts, ` +

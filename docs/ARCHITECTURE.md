@@ -46,13 +46,13 @@ Scoring happens entirely at build time; the browser only reads the result. There
 no database and no server.
 
 1. **Memory.** The ranker fetches `data/memory.json` from the previously deployed
-   site — which authors and which words it has seen, and when. The deployment is
+   site: which authors and which words it has seen, and when. The deployment is
    the storage. Signals are computed against that memory as it stood *before* the
    batch being scored, so no paper is credited with a track record its authors
    gained this morning.
 2. **Enrichment.** Two indexes, asked for different things. Semantic Scholar goes
    first, four hundred arXiv ids per request, because it parses preprint PDFs and
-   is therefore the only source of reference counts — the strongest cold-start
+   is therefore the only source of reference counts, the strongest cold-start
    signal in the study. OpenAlex follows, fifty DOIs per request, for citation
    counts: it has a record for ~97% of submissions within days, but it catalogues
    a preprint *without* parsing its bibliography, so its `referenced_works_count`
@@ -79,7 +79,7 @@ no database and no server.
 
    The actual fix is the `S2_API_KEY` secret, which is set. A key carries its own
    rate limit of one request per second, so the build no longer competes for the
-   shared pool, and requests are spaced 1.1s apart instead of 3s — the whole pass
+   shared pool, and requests are spaced 1.1s apart instead of 3s, so the whole pass
    takes about fifteen seconds. The code still runs without a key, at the pool's
    mercy, so this is a coverage improvement rather than a dependency; every build
    logs which of the two modes it is in, because a mistyped secret would
@@ -95,7 +95,7 @@ no database and no server.
 4. **Fold forward.** The batch is folded into the memory and written back out for
    the next build, so the corpus the ranker learns from grows on its own. The
    memory is pruned to a two-year window and holds only author records, term
-   frequencies and monthly volumes — roughly 1 MB — so it cannot grow without
+   frequencies and monthly volumes, roughly 1 MB, so it cannot grow without
    bound as the site keeps running.
 
 Model coefficients live in `apps/web/src/lib/ranking/model.generated.ts` and are

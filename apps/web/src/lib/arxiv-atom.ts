@@ -4,7 +4,7 @@ import type { FeedResponse, Paper } from "@/lib/types";
 
 /**
  * arXiv Atom parsing, shared by the snapshot builder script (Node).
- * The browser bundle must not import this — the arXiv API has no CORS
+ * The browser bundle must not import this, because the arXiv API has no CORS
  * headers, so clients only ever see prebuilt JSON snapshots.
  */
 

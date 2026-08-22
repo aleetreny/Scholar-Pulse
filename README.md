@@ -2,7 +2,7 @@
 
 ScholarPulse is a researcher-focused discovery platform for exploring recent arXiv literature, following fields, investigating citation networks, and maintaining a private reading library.
 
-Its feed is ranked rather than chronological: every paper is scored at build time for how likely it is to matter, from metadata available the day it appears. The model behind that score was fitted and validated offline against papers that demonstrably became references in their field — see [research/ranking](research/ranking/README.md) for the evidence, including what did not work.
+Its feed is ranked rather than chronological: every paper is scored at build time for how likely it is to matter, from metadata available the day it appears. The model behind that score was fitted and validated offline against papers that demonstrably became references in their field. See [research/ranking](research/ranking/README.md) for the evidence, including what did not work.
 
 [Open the live application](https://aleetreny.github.io/Scholar-Pulse/)
 
@@ -21,7 +21,7 @@ Its feed is ranked rather than chronological: every paper is scored at build tim
 The hard part is that the papers worth surfacing are the ones nobody has cited
 yet. A day-old preprint has no citations, no downloads and no discussion, so the
 usual impact measures are all exactly zero. The score has to be built from what
-exists on day one — who wrote it, what it is about, and how it is written.
+exists on day one: who wrote it, what it is about, and how it is written.
 
 **Signals.** Twelve features, all computable from metadata plus a memory of the
 corpus so far: team size, how new the authors are, how far their collaboration
@@ -39,7 +39,7 @@ to a percentile within its cohort, so raw units never leave the model.
 
 **Lanes.** Up to three independent rankings are fused by reciprocal rank: the
 model's own score, reference-list length, and citations already recorded.
-External indexes lag, so the second and third lanes are usually partial — they
+External indexes lag, so the second and third lanes are usually partial: they
 rank the papers they know about and seat the rest at their neutral midpoint,
 which makes a lane's influence scale with its own coverage automatically. A
 paper an index has not reached is never scored as if it had zero references;
@@ -52,8 +52,8 @@ was not good enough to assert an exact order, so it is not asserted.
 
 **Newcomers.** Papers whose authors are all unknown to the site are ranked in
 their own pool and reserved 30% of the board. Without it, hits from unknown
-authors landed at the 49th percentile against the 88th for established ones —
-the score was learning reputation as much as merit.
+authors landed at the 49th percentile against the 88th for established ones,
+and the score was learning reputation as much as merit.
 
 Validation is leave-one-month-out on papers that demonstrably became references
 in their field: **AUC 0.79** (95% CI 0.76–0.83) and **5.5x lift in the top 10%**
@@ -133,8 +133,8 @@ ranks them, builds the static application, and deploys it to GitHub Pages. It
 runs weekly and on every push to `main`.
 
 There is no database. The ranker fetches the previous deployment's
-`data/memory.json` — which authors and which words the site has seen, and when —
-scores the new batch against that memory as it stood *before* the batch, then
+`data/memory.json`, which records the authors and words the site has seen and
+when, scores the new batch against that memory as it stood *before* the batch, then
 folds the batch in and republishes it. The deployment is the storage, which is
 what keeps the whole thing free to run.
 

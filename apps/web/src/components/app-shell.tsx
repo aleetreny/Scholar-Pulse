@@ -25,7 +25,7 @@ function isActive(pathname: string, href: string): boolean {
 
 /**
  * The wordmark IS the logo: "ScholarPulse" in the serif with a hand-set
- * pulse line running under "Pulse" — no icon in a rounded box.
+ * pulse line running under "Pulse", not an icon in a rounded box.
  */
 function Wordmark() {
   return (

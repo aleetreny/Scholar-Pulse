@@ -18,7 +18,7 @@ clone() { # clone <owner/repo> <dir>
   fi
 }
 
-# 1. hep-th citation graph — 27,770 arXiv papers, 352,807 citations, 1992-2003.
+# 1. hep-th citation graph: 27,770 arXiv papers, 352,807 citations, 1992-2003.
 #    Released for the 2003 KDD Cup, redistributed by SNAP; this mirror carries
 #    the edge list. Node ids are arXiv ids, which encode the submission month.
 if [ ! -f "$DATA/cit-HepTh.txt.gz" ]; then

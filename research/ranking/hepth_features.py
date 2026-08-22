@@ -117,7 +117,7 @@ def citations_at(corpus: Corpus, month: int) -> np.ndarray:
 def labels(corpus: Corpus, horizon: int, window: int = 0) -> np.ndarray:
     """Citations received between the observation point and submission+horizon.
 
-    With window=0 this is the full first-`horizon` months of a paper's life —
+    With window=0 this is the full first-`horizon` months of a paper's life,
     the product question, "will this matter within two years?". With window>0 it
     is only the part still in the future at scoring time, which isolates genuine
     prediction from mere observation.
@@ -175,7 +175,7 @@ def _novelty_scores(
 
     A reference list is a set of pairings of prior ideas. Most pairings are
     conventional; the published finding is that unusually high-impact papers are
-    overwhelmingly conventional *with a tail of genuinely novel pairings* — one
+    overwhelmingly conventional *with a tail of genuinely novel pairings*: one
     foot in the mainstream, one somewhere nobody has looked.
 
     Uzzi measured "unusual" against Monte-Carlo rewired networks, far too slow to

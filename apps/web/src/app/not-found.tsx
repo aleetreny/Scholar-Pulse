@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/states";
 import { useT } from "@/lib/i18n";
 
 // Static export ships this as 404.html, which GitHub Pages serves for any
-// unknown path — so it must look like the rest of the site.
+// unknown path, so it must look like the rest of the site.
 export default function NotFound() {
   const { t } = useT();
   return (

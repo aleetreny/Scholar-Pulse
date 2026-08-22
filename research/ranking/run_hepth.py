@@ -3,7 +3,7 @@
 Protocol throughout: rolling-origin temporal validation. For a test month T the
 model may only be trained on cohorts whose labels were already complete at T,
 i.e. months m with m + horizon <= T. That is the constraint a real deployment
-lives under — you cannot train on outcomes you have not observed — and it is far
+lives under, since you cannot train on outcomes you have not observed, and it is far
 stricter than a random split, which would happily let 2001 teach the model how
 to rank 1998.
 
@@ -136,7 +136,7 @@ def experiment_cold_start(corpus, horizon: int = 24) -> tuple[pd.DataFrame, dict
         print(f"      {name:<26} dNDCG@10 {stat['delta']:+.3f} "
               f"[{stat['lo']:+.3f},{stat['hi']:+.3f}]  P(better)={stat['p_better']:.3f}")
 
-    # E4 — how much of that comes from each tier of data source.
+    # E4: how much of that comes from each tier of data source.
     tiers = {
         "T1 reference list only": TIER1_REFS,
         "T2 + citation graph": TIER1_REFS + TIER2_GRAPH,
@@ -149,7 +149,7 @@ def experiment_cold_start(corpus, horizon: int = 24) -> tuple[pd.DataFrame, dict
         tier_rows.append(summarise(f"{label_} ({len(columns)}f)", table))
     show("E4 tier ablation (gradient boosting, same folds)", pd.DataFrame(tier_rows))
 
-    # E6 — is the headline an average of consistent folds or one lucky block?
+    # E6: is the headline an average of consistent folds or one lucky block?
     best = summary["ranker"].iloc[0]
     per_fold = tables[best].assign(
         fold=pd.cut(tables[best]["t"], bins=[f[1].min() - 1 for f in folds] + [10**6],
@@ -197,7 +197,7 @@ def experiment_mixed_age(corpus, horizon: int = 24, width: int = 3) -> pd.DataFr
     A "top recent papers" board covers a rolling window, so the papers on it are
     not the same age. Ranking that board by raw citations is a systematic bias in
     favour of whatever happens to be oldest. The fix is to divide by how many
-    citations a paper of that age should have by now — the accumulation curve —
+    citations a paper of that age should have by now, the accumulation curve,
     and rank by the residual. This measures how large the bias is and how much
     of it the correction recovers.
     """
@@ -286,8 +286,8 @@ def experiment_horizons(corpus) -> pd.DataFrame:
 def experiment_selection(corpus, horizon: int = 24) -> pd.DataFrame:
     """Greedy forward selection, then confirmation on a period selection never saw.
 
-    Adding features monotonically improved nothing in E4 — the full set scored
-    *worse* than the reference-list subset — so the question is which handful of
+    Adding features monotonically improved nothing in E4: the full set scored
+    *worse* than the reference-list subset, so the question is which handful of
     signals actually carries the result. Selection runs on the early folds only;
     the last two folds are locked away and used once, at the end, so the reported
     number is not the maximum of a search.

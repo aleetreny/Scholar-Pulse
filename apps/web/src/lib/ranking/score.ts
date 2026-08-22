@@ -21,7 +21,7 @@ import type { Paper, Pulse, PulseLane, PulseReason, PulseTier } from "@/lib/type
  *     degrades the ranking instead of breaking it.
  *  4. Rank papers with no author history separately and reserve room for them,
  *     because otherwise the board becomes a list of famous laboratories.
- *  5. Publish bands, not positions — the order inside the head of the list is
+ *  5. Publish bands, not positions, because the order inside the head of the list is
  *     not stable enough to assert.
  */
 
@@ -56,7 +56,7 @@ export const MIN_ENRICHED = 8;
  *
  * Ties matter more than they look: in a fresh snapshot almost every paper has
  * zero citations, so the reception lane is nearly all ties. Averaging them
- * makes that lane a near-constant, which is exactly right — it then carries no
+ * makes that lane a near-constant, which is exactly right: it then carries no
  * opinion instead of imposing an arbitrary order.
  */
 export function percentileRank(values: number[]): number[] {
@@ -123,7 +123,7 @@ function laneScores(
     for (let i = 0; i < signals.length; i += 1) {
       total[i] += weight * column[i];
       // Centred on the cohort median, so a contribution is positive exactly
-      // when the paper is on the helpful side of its peers — which is what
+      // when the paper is on the helpful side of its peers, which is what
       // makes it readable as a reason rather than an arbitrary quantity.
       contributions[i].push({ signal: name, contribution: weight * (column[i] - 0.5) });
     }
@@ -149,7 +149,7 @@ function descendingRanks(values: number[]): number[] {
  * about those fifteen, and refusing to look loses the strongest evidence the
  * system has.
  *
- * Second — and this was the damaging one — a paper the index has not reached
+ * Second, and this was the damaging one, a paper the index has not reached
  * yet must not be scored as if it were a paper with zero references. "Unknown"
  * and "zero" are different claims, and conflating them punishes papers for
  * being new, which is precisely the population this product exists to rank.
@@ -185,7 +185,7 @@ function partialLane(
 }
 
 /**
- * Score one cohort — papers that belong together, in practice one field's
+ * Score one cohort: papers that belong together, in practice one field's
  * snapshot. Returns pulses in the same order as the input.
  */
 export function scoreCohort(
@@ -231,7 +231,7 @@ export function scoreCohort(
   // Papers whose authors are all unknown to the site are scored against each
   // other, not against papers with a track record: on author signals they are
   // all identical, so a shared pool would rank them by nothing at all and bury
-  // them wholesale. The study measured that burial — hits from unknown authors
+  // them wholesale. The study measured that burial: hits from unknown authors
   // landed at the 49th percentile against the 88th for established ones.
   const newcomer = signals.map((signal) => signal.author_new_frac >= 1);
   const established = fused.map((value, i) => (newcomer[i] ? null : value));
@@ -274,7 +274,7 @@ export function scoreCohort(
  *
  * Nothing is scored more generously inside either lane; the reservation only
  * stops one lane from taking every slot. Measured cost: 0.03 AUC and 6% of
- * lift@10, against outsider hits moving from the 49th percentile to the 73rd —
+ * lift@10, against outsider hits moving from the 49th percentile to the 73rd,
  * and recall@25 went slightly *up*, because the reserved slots displaced
  * mediocre papers from well-known groups.
  */
@@ -308,7 +308,7 @@ const BAND_ORDER: PulseTier[] = ["headline", "notable", "rest"];
  * The two mechanisms have to compose in this order. Interleaving across the
  * whole list instead lets a newcomer that is top-of-its-own-lane land between
  * two established papers from a lower band, and the reader sees the section
- * headings oscillate — "Front page", "Notable", "Front page" again — which
+ * headings oscillate ("Front page", "Notable", "Front page" again), which
  * looks like a bug and is indistinguishable from one. Banding first keeps each
  * heading appearing exactly once while the reservation still holds inside it.
  */

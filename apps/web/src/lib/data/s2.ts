@@ -5,8 +5,8 @@ import type { Paper, PaperExtras, RelatedPaper } from "@/lib/types";
 
 /**
  * Semantic Scholar client. S2's anonymous pool throttles hard, so it is
- * only used for what OpenAlex cannot provide — TLDRs, similar-paper
- * recommendations, and version-merged citation metrics — always with a
+ * only used for what OpenAlex cannot provide: TLDRs, similar-paper
+ * recommendations, and version-merged citation metrics, always with a
  * graceful degradation path. Search, author lookups, paper fallback and
  * the citation graph live in lib/data/openalex.ts.
  */
@@ -20,7 +20,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 120;
 
 const RATE_LIMIT_MESSAGE =
-  "Semantic Scholar didn't answer — usually its rate limit, which clears in a few seconds. Try again.";
+  "Semantic Scholar didn't answer. Usually that is its rate limit, which clears in a few seconds. Try again.";
 
 type CacheEntry = { expires: number; data: unknown };
 const cache = new Map<string, CacheEntry>();
@@ -47,7 +47,7 @@ function cacheSet(key: string, data: unknown): void {
 /**
  * One attempt. S2's 429 responses carry no CORS headers, so in a browser a
  * rate limit surfaces as a thrown TypeError ("Failed to fetch"), not as a
- * readable 429 — both paths funnel into RATE_LIMIT_MESSAGE.
+ * readable 429. Both paths funnel into RATE_LIMIT_MESSAGE.
  */
 async function requestOnce(url: string): Promise<Response> {
   let response: Response;
@@ -80,7 +80,7 @@ async function fetchS2Json<T>(path: string, signal?: AbortSignal): Promise<T> {
   }
 
   // The shared request (with its one polite retry) runs signal-free; each
-  // caller races it against its own signal — see lib/data/with-signal.ts.
+  // caller races it against its own signal. See lib/data/with-signal.ts.
   const promise = (async () => {
     let response: Response;
     try {
@@ -212,8 +212,8 @@ function toRelatedPaper(paper: S2RecommendedPaper): RelatedPaper {
 /**
  * The recommendations API draws from a corpus pool: `recent` (default) only
  * covers recently indexed papers and returns an empty list for anything
- * older, so fall back to the `all-cs` pool — which in practice returns
- * relevant results for non-CS papers too — when `recent` comes up empty.
+ * older, so fall back to the `all-cs` pool, which in practice returns
+ * relevant results for non-CS papers too, when `recent` comes up empty.
  */
 async function fetchRecommendations(
   arxivId: string,

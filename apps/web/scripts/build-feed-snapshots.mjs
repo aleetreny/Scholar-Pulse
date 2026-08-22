@@ -8,7 +8,7 @@
 //   node scripts/build-feed-snapshots.mjs            # all categories
 //   node scripts/build-feed-snapshots.mjs --cats cs.LG,cs.CL --max 40
 //
-// Requires Node >= 23.6 (type stripping) — imports the app's TS modules.
+// Requires Node >= 23.6 (type stripping), since it imports the app's TS modules.
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -21,7 +21,7 @@ const ARXIV_API_BASE = (
   process.env.ARXIV_API_BASE ?? "https://export.arxiv.org/api"
 ).replace(/\/$/, "");
 
-// Where the deployed site lives — RSS items link back into the app.
+// Where the deployed site lives. RSS items link back into the app.
 const SITE_BASE_URL = (
   process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
 ).replace(/\/$/, "");
@@ -46,7 +46,7 @@ function xmlEscape(value) {
 }
 
 /**
- * RSS 2.0 per category — the static replacement for e-mail alerts: follow
+ * RSS 2.0 per category: the static replacement for e-mail alerts. Follow
  * a field from any feed reader, no server required.
  */
 function toRss(category, label, papers, generatedAt) {
@@ -59,7 +59,7 @@ function toRss(category, label, papers, generatedAt) {
       `      <guid isPermaLink="false">arxiv:${xmlEscape(paper.id)}</guid>`,
       `      <pubDate>${new Date(paper.published).toUTCString()}</pubDate>`,
       `      <description>${xmlEscape(
-        `${paper.authors.join(", ")} — ${paper.abstract}`,
+        `${paper.authors.join(", ")}: ${paper.abstract}`,
       )}</description>`,
       "    </item>",
     ].join("\n");
@@ -69,7 +69,7 @@ function toRss(category, label, papers, generatedAt) {
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss version="2.0">',
     "  <channel>",
-    `    <title>ScholarPulse — ${xmlEscape(label)} (${xmlEscape(category)})</title>`,
+    `    <title>ScholarPulse: ${xmlEscape(label)} (${xmlEscape(category)})</title>`,
     `    <link>${xmlEscape(SITE_BASE_URL)}/</link>`,
     `    <description>${xmlEscape(
       `The newest arXiv submissions in ${label}, via ScholarPulse.`,
@@ -122,7 +122,7 @@ async function fetchCategory(category, max) {
       return feed.papers;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      console.warn(`  ${category}: attempt ${attempt}/${RETRIES} failed — ${message}`);
+      console.warn(`  ${category}: attempt ${attempt}/${RETRIES} failed: ${message}`);
       if (attempt < RETRIES) {
         await sleep(POLITE_DELAY_MS * attempt * 2);
       }
@@ -197,7 +197,7 @@ async function main() {
     `Done: ${succeeded.length} ok, ${failed.length} failed${failed.length > 0 ? ` (${failed.join(", ")})` : ""}`,
   );
   // Tolerate a few upstream failures, but fail the build when most of the
-  // run came back empty — deploying a gutted feed would be worse than
+  // run came back empty, since deploying a gutted feed would be worse than
   // keeping yesterday's site.
   if (failed.length > targets.length / 2) {
     process.exit(1);

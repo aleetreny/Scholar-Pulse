@@ -179,7 +179,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
     }
   }, [paper]);
 
-  // Locate the paper's OpenAlex work — powers the citation graph and the
+  // Locate the paper's OpenAlex work. It powers the citation graph and the
   // fallback citation count. Needs the title, so it waits for the paper.
   useEffect(() => {
     if (!paper) {
@@ -193,7 +193,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         }
       })
       .catch(() => {
-        // No graph, no fallback count — the page still works.
+        // No graph, no fallback count, but the page still works.
       });
     return () => controller.abort();
   }, [paper]);

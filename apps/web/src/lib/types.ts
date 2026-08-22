@@ -5,7 +5,7 @@ export type PulseTier = "headline" | "notable" | "rest";
 export type PulseLane = "signals" | "references" | "reception";
 
 export type PulseReason = {
-  /** Signal name, as used by the model — see lib/ranking/signals.ts. */
+  /** Signal name, as used by the model. See lib/ranking/signals.ts. */
   signal: string;
   /** Signed: positive means this signal pushed the paper up. */
   contribution: number;

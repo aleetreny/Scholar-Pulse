@@ -4,19 +4,19 @@ import { withSignal } from "@/lib/data/with-signal";
 import type { FeedResponse, GraphPaper, Paper, SearchSort } from "@/lib/types";
 
 /**
- * OpenAlex client — the primary upstream for search, author lookups, and
+ * OpenAlex client: the primary upstream for search, author lookups, and
  * the citation graph. Chosen over Semantic Scholar for these hot paths
  * because S2's anonymous pool is chronically rate-limited, while OpenAlex
  * serves unauthenticated CORS requests reliably in well under a second.
  * (S2 remains the source for TLDRs, similar papers, and merged citation
- * metrics — data OpenAlex doesn't have.)
+ * metrics, data OpenAlex doesn't have.)
  */
 
 const OPENALEX_API_BASE = (
   process.env.NEXT_PUBLIC_OPENALEX_API_BASE ?? "https://api.openalex.org"
 ).replace(/\/$/, "");
 
-/** OpenAlex source id for arXiv — every query is scoped to it. */
+/** OpenAlex source id for arXiv. Every query is scoped to it. */
 const ARXIV_SOURCE = "S4306400194";
 
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -24,7 +24,7 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 120;
 
 const UNAVAILABLE_MESSAGE =
-  "OpenAlex didn't answer. It usually clears in a few seconds — try again.";
+  "OpenAlex didn't answer. It usually clears in a few seconds, so try again.";
 
 type CacheEntry = { expires: number; data: unknown };
 const cache = new Map<string, CacheEntry>();
@@ -60,7 +60,7 @@ async function fetchOA<T>(path: string, signal?: AbortSignal): Promise<T> {
     return withSignal(pending as Promise<T>, signal);
   }
 
-  // The shared request runs to completion regardless of who abandons it —
+  // The shared request runs to completion regardless of who abandons it:
   // it is small, and its result lands in the cache for the next caller.
   const promise = (async () => {
     let response: Response;
@@ -389,7 +389,7 @@ export function resolveWork(
   return withSignal(promise, signal);
 }
 
-/** Paper metadata straight from OpenAlex — fallback for cold deep links. */
+/** Paper metadata straight from OpenAlex, the fallback for cold deep links. */
 export async function getPaperFromOpenAlex(
   arxivId: string,
   signal?: AbortSignal,

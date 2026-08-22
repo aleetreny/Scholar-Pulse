@@ -183,7 +183,7 @@ export function useTopics() {
 /**
  * How the feed is ordered. "pulse" first because the study behind
  * lib/ranking found chronological order statistically indistinguishable from
- * shuffling the papers — but the choice is the reader's, and it sticks.
+ * shuffling the papers, but the choice is the reader's, and it sticks.
  */
 export type FeedSort = "pulse" | "recent";
 

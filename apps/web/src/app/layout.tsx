@@ -25,7 +25,7 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ScholarPulse — your research feed",
+    default: "ScholarPulse: your research feed",
     template: "%s · ScholarPulse",
   },
   description:

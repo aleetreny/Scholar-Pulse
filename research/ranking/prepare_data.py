@@ -2,7 +2,7 @@
 
 Three real corpora, no synthetic data:
 
-  A. hep-th citation graph (KDD Cup 2003 / SNAP, mirrored on GitHub) —
+  A. hep-th citation graph (KDD Cup 2003 / SNAP, mirrored on GitHub):
      27,770 arXiv papers and 352,807 citations, 1992-04 to 2003-04. arXiv
      identifiers of that era encode the submission month (YYMMNNN), so every
      node and every edge carries a timestamp. That is what makes a causal

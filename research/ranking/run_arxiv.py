@@ -1,4 +1,4 @@
-"""Experiment suite on modern arXiv metadata — the data ScholarPulse already has.
+"""Experiment suite on modern arXiv metadata: the data ScholarPulse already has.
 
 The citation lab answered "is future impact predictable at all". This one asks
 the harder product question: predictable *from the Atom feed alone*, on the day
@@ -7,7 +7,7 @@ the paper appears, before any indexer has touched it.
 Ground truth is a curated set of 93 papers that turned out to matter in cs.LG
 and cs.CL between 2017-05 and 2018-03 (PPO, Progressive GANs, AlphaZero,
 CheXNet, ...), located inside a 41,000-paper corpus. The unlabelled remainder
-certainly contains further hits, so every absolute number here is pessimistic —
+certainly contains further hits, so every absolute number here is pessimistic,
 but it is pessimistic identically for every ranker, so the comparisons hold.
 
 Validation is leave-one-month-out: a model scoring May 2017 is trained only on
@@ -93,8 +93,8 @@ class SingleFeature:
 
     The orientation is decided by AUC, not by comparing group means. These
     features are heavy-tailed and the two disagree: a mean-based sign flipped
-    `pair_novelty` and reported it at 0.420 — an apparently strong negative
-    signal — when oriented properly it sits at 0.503, which is noise.
+    `pair_novelty` and reported it at 0.420, an apparently strong negative
+    signal; oriented properly it sits at 0.503, which is noise.
     """
 
     def __init__(self, column, name):

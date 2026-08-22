@@ -4,7 +4,7 @@ import type { Paper } from "@/lib/types";
 
 /**
  * Hand-off cache: when the user navigates from a card to a paper page, the
- * full arXiv record (categories, comment, versioned id — fields Semantic
+ * full arXiv record (categories, comment, versioned id: fields Semantic
  * Scholar cannot reconstruct) rides along in sessionStorage, so the paper
  * page renders instantly and completely. Cold deep links fall back to S2.
  */
@@ -14,7 +14,7 @@ const MAX_ENTRIES = 40;
 
 type CacheShape = Record<string, Paper>;
 
-// Memoized parse so repeated reads return the same object — recallPaper is
+// Memoized parse so repeated reads return the same object, because recallPaper is
 // used as a useSyncExternalStore snapshot, which must be referentially
 // stable between writes.
 let lastRaw: string | null = null;

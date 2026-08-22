@@ -13,7 +13,7 @@ function isAbort(error: unknown, signal?: AbortSignal): boolean {
 
 /**
  * Search entry point: OpenAlex (fast, reliable, full corpus), falling back
- * to a local scan of the shipped feed snapshots when it is unreachable —
+ * to a local scan of the shipped feed snapshots when it is unreachable:
  * degraded coverage beats a dead search box.
  */
 export async function searchPapers(

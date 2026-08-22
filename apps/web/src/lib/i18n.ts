@@ -8,7 +8,7 @@ import { useLang, type Lang } from "@/lib/store";
  * Two-language UI dictionary. Deliberately tiny: flat keys, `{var}`
  * interpolation, explicit one/many keys instead of a plural engine.
  * arXiv taxonomy names (category and group labels) stay in English in
- * both languages — that is how researchers name them.
+ * both languages, because that is how researchers name them.
  */
 
 const EN = {
@@ -22,7 +22,7 @@ const EN = {
   "theme.light": "Light theme",
   "theme.dark": "Dark theme",
   "lang.switch": "Cambiar a español",
-  "colophon.tagline": "ScholarPulse — a reading companion for",
+  "colophon.tagline": "ScholarPulse, a reading companion for",
   "colophon.enriched": "Data from",
   "colophon.press": "Press",
   "colophon.toSearch": "to search",
@@ -33,7 +33,7 @@ const EN = {
   "feed.editTopics": "Edit topics",
   "feed.allFields": "All fields",
   "feed.filterAria": "Filter by topic",
-  "feed.caughtUp": "You're caught up — earlier papers below",
+  "feed.caughtUp": "You're caught up. Earlier papers below",
   "feed.new": "new",
   "feed.loadMore": "Load more papers",
   "feed.loading": "Loading",
@@ -41,7 +41,7 @@ const EN = {
   "feed.emptyBody":
     "No recent papers for this selection. Try another topic or widen your feed.",
   "feed.missingSnapshot":
-    "No snapshot yet for {fields} — these fields will appear after the next site update.",
+    "No snapshot yet for {fields}. These fields will appear after the next site update.",
 
   "feed.sortAria": "Order the feed",
   "feed.sortPulse": "Pulse",
@@ -52,7 +52,7 @@ const EN = {
   "pulse.tier.headline": "Front page",
   "pulse.tier.notable": "Notable",
   "pulse.tier.rest": "Rest",
-  "pulse.band.headline": "Front page — the strongest signal this week",
+  "pulse.band.headline": "Front page: the strongest signal this week",
   "pulse.band.notable": "Notable",
   "pulse.band.rest": "The rest of the feed",
   "pulse.badgeTitle": "Pulse {score} of 100 among comparable papers in this field",
@@ -67,7 +67,7 @@ const EN = {
   "pulse.newcomer": "no author history yet",
   "pulse.newcomerShort": "New group",
   "pulse.newcomerWhy":
-    "None of these authors has appeared in the feed before, so this paper is ranked against other newcomers and holds one of the positions reserved for them. Without that reservation, papers from unknown groups land around the 49th percentile — a coin flip — while papers from established ones land around the 88th.",
+    "None of these authors has appeared in the feed before, so this paper is ranked against other newcomers and holds one of the positions reserved for them. Without that reservation, papers from unknown groups land around the 49th percentile, a coin flip, while papers from established ones land around the 88th.",
   "pulse.signal.team_size": "Team size",
   "pulse.signal.author_new_frac": "Authors with a track record",
   "pulse.signal.author_degree_max": "Best-connected author",
@@ -83,14 +83,14 @@ const EN = {
 
   "onboard.title": "What are you researching?",
   "onboard.body":
-    "Pick the fields you care about and ScholarPulse turns them into a daily feed of the newest papers on arXiv — searchable, citable, and yours to collect.",
+    "Pick the fields you care about and ScholarPulse turns them into a daily feed of the newest papers on arXiv: searchable, citable, and yours to collect.",
   "onboard.pickOne": "Pick at least one field",
   "onboard.buildOne": "Build my feed (1 field)",
   "onboard.buildMany": "Build my feed ({n} fields)",
 
   "search.title": "Search arXiv",
   "search.sub":
-    "Every arXiv paper, by title, abstract, or author — powered by OpenAlex.",
+    "Every arXiv paper, by title, abstract, or author, powered by OpenAlex.",
   "search.authorMode": "Author search: {author}",
   "search.placeholder": "Search titles, abstracts, authors…",
   "search.inputAria": "Search arXiv",
@@ -104,7 +104,7 @@ const EN = {
   "search.clearRecent": "Clear",
   "search.emptyTitle": "Find your next reference",
   "search.emptyBody":
-    "Search across every arXiv paper by keyword, phrase, or author — then filter by field and sort by freshness.",
+    "Search across every arXiv paper by keyword, phrase, or author, then filter by field and sort by freshness.",
   "search.noResultsTitle": "No results",
   "search.noResultsBody":
     "Nothing on arXiv matches “{query}”{inField}. Try fewer or broader terms.",
@@ -140,7 +140,7 @@ const EN = {
   "paper.copy": "Copy",
   "paper.bibtexCopied": "BibTeX copied",
   "paper.citationCopied": "Citation copied",
-  "paper.copyFailed": "Copy failed — clipboard unavailable",
+  "paper.copyFailed": "Copy failed: clipboard unavailable",
   "paper.searchByAuthor": "Search papers by {author}",
   "paper.invalidTitle": "No paper here",
   "paper.invalidBody": "This link is missing a valid arXiv identifier.",
@@ -149,7 +149,7 @@ const EN = {
 
   "lib.title": "Library",
   "lib.sub":
-    "Papers you saved, with reading status and notes — stored in this browser.",
+    "Papers you saved, with reading status and notes, stored in this browser.",
   "lib.exportBib": "Export .bib",
   "lib.exportJson": "Export JSON",
   "lib.import": "Import",
@@ -178,7 +178,7 @@ const EN = {
   "lib.statusEmptyBody": "Change a paper's status with the buttons on each card.",
   "lib.exportedOne": "Exported 1 reference",
   "lib.exportedMany": "Exported {n} references",
-  "lib.imported": "Import — added: {added} · already saved: {skipped}",
+  "lib.imported": "Import complete. Added: {added} · already saved: {skipped}",
   "lib.importInvalid": "That file doesn't look like a ScholarPulse library export",
 
   "topics.titleFollow": "Topics you follow",
@@ -186,8 +186,8 @@ const EN = {
   "topics.subCountOne": "1 field feeding your home page.",
   "topics.subCountMany": "{n} fields feeding your home page.",
   "topics.goToFeed": "Go to feed",
-  "topics.rss": "RSS for your feed reader — click a field to copy its URL:",
-  "topics.rssCopied": "Feed URL copied — paste it into your reader",
+  "topics.rss": "RSS for your feed reader. Click a field to copy its URL:",
+  "topics.rssCopied": "Feed URL copied. Paste it into your reader",
   "topics.rssCopyAria": "Copy the {cat} RSS feed URL",
 
   "notFound.title": "This page doesn't exist",
@@ -215,7 +215,7 @@ const ES: Record<StringKey, string> = {
   "theme.light": "Tema claro",
   "theme.dark": "Tema oscuro",
   "lang.switch": "Switch to English",
-  "colophon.tagline": "ScholarPulse — un compañero de lectura para",
+  "colophon.tagline": "ScholarPulse, un compañero de lectura para",
   "colophon.enriched": "Con datos de",
   "colophon.press": "Pulsa",
   "colophon.toSearch": "para buscar",
@@ -226,7 +226,7 @@ const ES: Record<StringKey, string> = {
   "feed.editTopics": "Editar temas",
   "feed.allFields": "Todos los campos",
   "feed.filterAria": "Filtrar por tema",
-  "feed.caughtUp": "Estás al día — debajo, papers anteriores",
+  "feed.caughtUp": "Estás al día. Debajo, papers anteriores",
   "feed.new": "nuevo",
   "feed.loadMore": "Cargar más papers",
   "feed.loading": "Cargando",
@@ -234,7 +234,7 @@ const ES: Record<StringKey, string> = {
   "feed.emptyBody":
     "No hay papers recientes para esta selección. Prueba otro tema o amplía tu feed.",
   "feed.missingSnapshot":
-    "Aún no hay datos para {fields} — estos campos aparecerán tras la próxima actualización del sitio.",
+    "Aún no hay datos para {fields}. Estos campos aparecerán tras la próxima actualización del sitio.",
 
   "feed.sortAria": "Ordenar el feed",
   "feed.sortPulse": "Pulso",
@@ -245,7 +245,7 @@ const ES: Record<StringKey, string> = {
   "pulse.tier.headline": "Portada",
   "pulse.tier.notable": "Notable",
   "pulse.tier.rest": "Resto",
-  "pulse.band.headline": "Portada — la señal más fuerte de esta tanda",
+  "pulse.band.headline": "Portada: la señal más fuerte de esta tanda",
   "pulse.band.notable": "Notables",
   "pulse.band.rest": "El resto del feed",
   "pulse.badgeTitle": "Pulso {score} sobre 100 entre papers comparables de este campo",
@@ -260,7 +260,7 @@ const ES: Record<StringKey, string> = {
   "pulse.newcomer": "aún sin historial de autoría",
   "pulse.newcomerShort": "Grupo nuevo",
   "pulse.newcomerWhy":
-    "Ninguno de estos autores había aparecido antes en el feed, así que este paper se ordena frente a otros novatos y ocupa uno de los huecos reservados para ellos. Sin esa reserva, los papers de grupos desconocidos caen al percentil 49 —una moneda al aire— frente al 88 de los ya establecidos.",
+    "Ninguno de estos autores había aparecido antes en el feed, así que este paper se ordena frente a otros novatos y ocupa uno de los huecos reservados para ellos. Sin esa reserva, los papers de grupos desconocidos caen al percentil 49, una moneda al aire, frente al 88 de los ya establecidos.",
   "pulse.signal.team_size": "Tamaño del equipo",
   "pulse.signal.author_new_frac": "Autores con trayectoria",
   "pulse.signal.author_degree_max": "Autor mejor conectado",
@@ -283,7 +283,7 @@ const ES: Record<StringKey, string> = {
 
   "search.title": "Buscar en arXiv",
   "search.sub":
-    "Todos los papers de arXiv por título, abstract o autor — con datos de OpenAlex.",
+    "Todos los papers de arXiv por título, abstract o autor, con datos de OpenAlex.",
   "search.authorMode": "Búsqueda por autor: {author}",
   "search.placeholder": "Busca títulos, abstracts, autores…",
   "search.inputAria": "Buscar en arXiv",
@@ -297,7 +297,7 @@ const ES: Record<StringKey, string> = {
   "search.clearRecent": "Borrar",
   "search.emptyTitle": "Encuentra tu próxima referencia",
   "search.emptyBody":
-    "Busca en todos los papers de arXiv por palabra clave, frase o autor — filtra por campo y ordena por novedad.",
+    "Busca en todos los papers de arXiv por palabra clave, frase o autor, y filtra por campo y ordena por novedad.",
   "search.noResultsTitle": "Sin resultados",
   "search.noResultsBody":
     "Nada en arXiv coincide con «{query}»{inField}. Prueba con menos términos o más generales.",
@@ -333,7 +333,7 @@ const ES: Record<StringKey, string> = {
   "paper.copy": "Copiar",
   "paper.bibtexCopied": "BibTeX copiado",
   "paper.citationCopied": "Cita copiada",
-  "paper.copyFailed": "No se pudo copiar — portapapeles no disponible",
+  "paper.copyFailed": "No se pudo copiar: portapapeles no disponible",
   "paper.searchByAuthor": "Buscar papers de {author}",
   "paper.invalidTitle": "Aquí no hay ningún paper",
   "paper.invalidBody": "A este enlace le falta un identificador válido de arXiv.",
@@ -342,7 +342,7 @@ const ES: Record<StringKey, string> = {
 
   "lib.title": "Biblioteca",
   "lib.sub":
-    "Tus papers guardados, con estado de lectura y notas — almacenados en este navegador.",
+    "Tus papers guardados, con estado de lectura y notas, almacenados en este navegador.",
   "lib.exportBib": "Exportar .bib",
   "lib.exportJson": "Exportar JSON",
   "lib.import": "Importar",
@@ -371,7 +371,7 @@ const ES: Record<StringKey, string> = {
   "lib.statusEmptyBody": "Cambia el estado de un paper con los botones de cada tarjeta.",
   "lib.exportedOne": "1 referencia exportada",
   "lib.exportedMany": "{n} referencias exportadas",
-  "lib.imported": "Importación — añadidos: {added} · ya guardados: {skipped}",
+  "lib.imported": "Importación completada. Añadidos: {added} · ya guardados: {skipped}",
   "lib.importInvalid": "Ese archivo no parece un export de la biblioteca de ScholarPulse",
 
   "topics.titleFollow": "Temas que sigues",
@@ -379,8 +379,8 @@ const ES: Record<StringKey, string> = {
   "topics.subCountOne": "1 campo alimenta tu página principal.",
   "topics.subCountMany": "{n} campos alimentan tu página principal.",
   "topics.goToFeed": "Ir al feed",
-  "topics.rss": "RSS para tu lector de feeds — pulsa un campo para copiar su URL:",
-  "topics.rssCopied": "URL del feed copiada — pégala en tu lector",
+  "topics.rss": "RSS para tu lector de feeds. Pulsa un campo para copiar su URL:",
+  "topics.rssCopied": "URL del feed copiada. Pégala en tu lector",
   "topics.rssCopyAria": "Copiar la URL del feed RSS de {cat}",
 
   "notFound.title": "Esta página no existe",

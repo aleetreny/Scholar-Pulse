@@ -339,7 +339,7 @@ describe("scoreCohort", () => {
 
   it("gives a thinly-covered lane less influence than a well-covered one", () => {
     // The spread of ranks a partial lane produces scales with its coverage, so
-    // its pull on the consensus scales with its evidence — no weight to tune.
+    // its pull on the consensus scales with its evidence, with no weight to tune.
     // Measured as how far the whole board moves, because a single paper at the
     // top saturates and stops registering the difference.
     const papers = cohort(60, (i) => ({ title: `Paper ${i}` }));

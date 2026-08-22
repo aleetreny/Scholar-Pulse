@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-// Required for output:'export' — the manifest is a route handler underneath.
+// Required for output:'export', since the manifest is a route handler underneath.
 export const dynamic = "force-static";
 
 // basePath is not applied to manifest fields automatically; prefix by hand

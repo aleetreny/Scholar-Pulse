@@ -8,7 +8,7 @@ import type { Pulse, PulseTier } from "@/lib/types";
  *
  * Deliberately a band and a number, in that order. The study behind
  * lib/ranking found that the strict order inside the head of the list is not
- * stable — a 5% wobble in the inputs replaced three of the top ten — while the
+ * stable (a 5% wobble in the inputs replaced three of the top ten) while the
  * band assignment held 95% of the time. So the band is the claim; the number
  * is context.
  */
@@ -26,7 +26,7 @@ const TIER_LABEL: Record<PulseTier, StringKey> = {
  * their own lane and hold a reserved share of the positions, so without the
  * mark a reader sees a 97 sitting above a 99 and reasonably concludes the
  * ranking is broken. It is also the more interesting of the two possible
- * labels — a group nobody is watching yet.
+ * labels: a group nobody is watching yet.
  */
 export function NewcomerMark({ pulse }: { pulse: Pulse }) {
   const { t } = useT();

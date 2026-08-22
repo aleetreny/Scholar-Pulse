@@ -3,11 +3,11 @@
 A ranker that scores well on a benchmark and cannot be shipped is worth nothing,
 so this file attacks the winning model from three directions.
 
-  E10  reputation vs content — is this predicting good papers, or famous
+  E10  reputation vs content: is this predicting good papers, or famous
        authors? And if it is the latter, what does it systematically miss?
-  E11  calibration — can the score be shown to a reader as a number that means
+  E11  calibration: can the score be shown to a reader as a number that means
        something, rather than an arbitrary quantity that only sorts?
-  E12  robustness — how much does the published top-10 move when a feature goes
+  E12  robustness: how much does the published top-10 move when a feature goes
        missing, when inputs are noisy, or when the model is retrained on a
        different slice of history?
 
@@ -99,7 +99,7 @@ def experiment_reputation(frame: pd.DataFrame) -> pd.DataFrame:
           f"the feed, {concentration['share_newcomer_in_top25']:.1%} of the board")
 
     # The failure that matters: hits by people with no track record. The
-    # percentile is taken against the whole month's feed — ranking hits only
+    # percentile is taken against the whole month's feed, since ranking hits only
     # against other hits would answer a different and far easier question.
     scored = frame.dropna(subset=["score"]).copy()
     scored["pct"] = scored.groupby("t")["score"].rank(pct=True)
