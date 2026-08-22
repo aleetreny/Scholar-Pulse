@@ -5,7 +5,7 @@
 // with a plain chronological feed rather than not deploying at all.
 //
 //   node scripts/rank-snapshots.mjs
-//   node scripts/rank-snapshots.mjs --no-enrich     # skip the OpenAlex pass
+//   node scripts/rank-snapshots.mjs --no-enrich     # skip the external index
 //
 // Three things happen here.
 //
@@ -17,11 +17,12 @@
 //    scored, because that would hand every author in today's feed a track
 //    record they did not have this morning.
 //
-// 2. OpenAlex is asked, in batches of fifty, how many references each paper has
-//    and how many citations it has already collected. Both were among the
-//    strongest signals in the study, and both are free. Everything about this
-//    step is optional: a failure, a rate limit or a preprint OpenAlex has not
-//    indexed yet simply means the paper is ranked on fewer lanes.
+// 2. Semantic Scholar is asked, four hundred arXiv ids at a time, how many
+//    references each paper has and how many citations it has already
+//    collected. Both were among the strongest signals in the study, and both
+//    are free. Everything about this step is optional: a failure, a rate limit
+//    or a preprint the index has not reached yet simply means the paper is
+//    ranked on fewer lanes.
 //
 // 3. Papers are scored inside their own field, the ranking is written into each
 //    snapshot, and the memory is folded forward for the next build.
@@ -46,13 +47,8 @@ import {
 const SITE_BASE_URL = (
   process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
 ).replace(/\/$/, "");
-const OPENALEX_BASE = process.env.OPENALEX_BASE ?? "https://api.openalex.org";
 const S2_BASE = process.env.S2_BASE ?? "https://api.semanticscholar.org/graph/v1";
-// OpenAlex asks for a contact address in exchange for the faster, more reliable
-// "polite pool". Nothing here depends on it, but it is the courteous default.
-const CONTACT = process.env.OPENALEX_MAILTO ?? "scholarpulse@users.noreply.github.com";
 
-const BATCH_SIZE = 50; // OpenAlex caps a single filter at 50 OR-ed values.
 const S2_BATCH_SIZE = 400; // Semantic Scholar's batch endpoint accepts 500.
 /**
  * Free, and worth more than every other constant in this file put together.
@@ -78,25 +74,25 @@ const S2_KEY = process.env.S2_API_KEY ?? "";
  */
 const S2_SPACING_MS = S2_KEY ? 1100 : 3000;
 const S2_BACKOFF_MS = [5000, 15000, 30000];
-const REQUEST_SPACING_MS = 130;
-const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
 /**
- * How much of that budget Semantic Scholar may spend before OpenAlex starts.
+ * The whole enrichment budget, and it is Semantic Scholar's alone.
  *
- * S2 is the only source of reference counts, and references are the strongest
- * cold-start signal the study found, so it must not be left with whatever the
- * other index happens not to use.
+ * OpenAlex used to spend the second half of it on citation counts. It was
+ * dropped: measured against the same build, its entire pass added 33 papers
+ * whose count it knew and S2 did not, every one of them a zero, and not one
+ * new non-zero citation. It has also started charging, so the pass was a
+ * metered dependency in the critical path buying nothing.
  *
- * Sized for the anonymous case, which is the one that needs it. Keyed, fourteen
- * batches take about fifteen seconds and this is never approached. Anonymously
- * they need ninety if nothing goes wrong, but something usually does: two
- * consecutive runs saw two and then four HTTP 429s, and each throttled batch
- * costs twenty seconds of backoff before it is even given up on. At 150s one run
- * ran out of clock at 64% coverage. This leaves room for a third of the batches
- * to fail twice over and still finish, and unused budget costs nothing, because
- * the pass ends when the work does rather than when the clock does.
+ * Sized for the anonymous case, which is the one that needs it. Keyed,
+ * fourteen batches take about fifteen seconds and this is never approached.
+ * Anonymously they need ninety if nothing goes wrong, but something usually
+ * does: consecutive runs have seen two and then four HTTP 429s, and each
+ * throttled batch costs twenty seconds of backoff before it is even given up
+ * on. This leaves room for a third of the batches to fail twice over and still
+ * finish, and unused budget costs nothing, because the pass ends when the work
+ * does rather than when the clock does.
  */
-const S2_BUDGET_MS = Number(process.env.S2_BUDGET_MS ?? 300_000);
+const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
 const RETRIES = 3;
 /** Percentiles need a cohort; below this, papers are pooled with the rest. */
 const MIN_COHORT = 12;
@@ -254,113 +250,25 @@ function recordPredictions(previous, cohortList, pulses, rankedAt) {
 
 /* -------------------------------------------------------------- enrichment */
 
-/** arXiv mints a DOI for every submission from 2022 on. Older ids have none. */
-function arxivDoi(id) {
-  return /^\d{4}\.\d{4,5}$/.test(id) ? `10.48550/arxiv.${id}` : null;
+/** Modern arXiv identifier, the form Semantic Scholar's batch endpoint takes. */
+function isArxivId(id) {
+  return /^\d{4}\.\d{4,5}$/.test(id);
 }
 
 /**
- * A paper that has certainly been in OpenAlex for years: the GPT-3 preprint.
+ * Reference and citation counts, from the one free index that parses preprints.
  *
- * It answers the one question the match count cannot. When enrichment comes
- * back nearly empty there are two possible worlds: the index has not caught up
- * with this week's preprints, which fixes itself, or the request we send is
- * malformed, which never fixes itself and silently costs the ranking its two
- * strongest lanes. Asking for a paper indexed since 2020 separates them: if the
- * canary comes back, the request shape is right and the gap is lag.
- */
-const CANARY_DOI = "10.48550/arxiv.2005.14165";
-
-async function checkQueryShape() {
-  const results = await fetchBatch([CANARY_DOI]);
-  if (results === null) {
-    return "unreachable";
-  }
-  return results.length > 0 ? "ok" : "no-match";
-}
-
-function idFromDoi(doi) {
-  const match = /10\.48550\/arxiv\.(.+)$/i.exec(doi ?? "");
-  return match ? match[1].toLowerCase() : null;
-}
-
-/**
- * Set once OpenAlex says the day's allowance is gone.
+ * Semantic Scholar parses arXiv PDFs, so it knows how long a bibliography is.
+ * No other free index does: OpenAlex holds a record for essentially every
+ * submission within days but catalogues a preprint without reading its
+ * references, which is why the reference lane, the strongest cold-start signal
+ * in the study, could never have come from there. Its batch endpoint takes
+ * arXiv ids directly, four hundred at a time, so a dozen or so requests cover
+ * a whole build.
  *
- * OpenAlex used to be an unmetered public API. It now bills: a caller gets a
- * fixed number of free credits a day and then receives HTTP 429 with
- * `retryAfter` measured in hours rather than seconds. Retrying that is not
- * patience, it is nine hours of the same answer, and the backoff below was
- * written for a throttle that clears. When this trips the pass stops asking
- * and the build says so, because "the citation lane is thin because we are out
- * of credit" is a different fact from "OpenAlex was slow today", and only one
- * of the two is fixed by waiting.
- */
-let openAlexBudgetSpent = false;
-
-/** Both conditions arrive as 429; only the body and headers tell them apart. */
-async function budgetExhausted(response) {
-  if (response.headers.get("x-ratelimit-remaining") === "0") {
-    return true;
-  }
-  try {
-    const body = await response.clone().json();
-    return /budget/i.test(body?.message ?? "");
-  } catch {
-    return false;
-  }
-}
-
-async function fetchBatch(dois) {
-  const params = new URLSearchParams({
-    filter: `doi:${dois.join("|")}`,
-    select: "doi,cited_by_count,referenced_works_count",
-    "per-page": String(dois.length),
-    mailto: CONTACT,
-  });
-  const url = `${OPENALEX_BASE}/works?${params}`;
-  for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
-    try {
-      const response = await fetch(url, {
-        signal: AbortSignal.timeout(30_000),
-        headers: { "User-Agent": `ScholarPulse/1.0 (mailto:${CONTACT})` },
-      });
-      if (response.status === 429 && (await budgetExhausted(response))) {
-        openAlexBudgetSpent = true;
-        return null;
-      }
-      if (response.status === 429 || response.status >= 500) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      if (!response.ok) {
-        return null;
-      }
-      return (await response.json()).results ?? [];
-    } catch (error) {
-      if (attempt === RETRIES) {
-        console.warn(`  enrichment batch failed: ${error.message}`);
-        return null;
-      }
-      await sleep(REQUEST_SPACING_MS * 4 * attempt);
-    }
-  }
-  return null;
-}
-
-/**
- * Reference counts, from the one free index that parses preprints.
- *
- * OpenAlex holds a record for essentially every arXiv submission within days,
- * a 96.6% match rate in production, but its `referenced_works_count` is zero
- * for preprints: it catalogues the work without parsing its bibliography. The
- * reference lane, which the study found to be the strongest cold-start signal
- * of all, therefore had nothing to read and never once activated.
- *
- * Semantic Scholar does parse arXiv PDFs, and its batch endpoint takes arXiv
- * ids directly, four hundred at a time, so a dozen or so requests cover a whole
- * build. It throttles hard in exchange: its anonymous pool is shared with every
- * other unauthenticated caller on the internet, so HTTP 429 is a normal part of
- * a run rather than an error, and the backoff below is deliberately patient.
+ * It throttles hard in exchange: the anonymous pool is shared with every other
+ * unauthenticated caller on the internet, so HTTP 429 is a normal part of a
+ * run rather than an error, and the backoff below is deliberately patient.
  *
  * How patient is not enough, though. Three consecutive production runs got 86%,
  * 64% and 31% of the feed from the same code. The anonymous pool simply is not
@@ -469,7 +377,7 @@ function report(label, enrichment) {
  * is a real measurement and is kept as one.
  */
 async function enrichFromS2(papers, enrichment, exhausted) {
-  const ids = papers.map((paper) => paper.id).filter((id) => arxivDoi(id));
+  const ids = papers.map((paper) => paper.id).filter(isArxivId);
   let matched = 0;
   let failures = 0;
   const throttled = [];
@@ -549,73 +457,6 @@ async function enrichFromS2(papers, enrichment, exhausted) {
 }
 
 /**
- * Fold OpenAlex's citation counts into the enrichment map.
- *
- * Citations only, and that restriction is the point. OpenAlex holds a record for
- * essentially every arXiv submission within days, 96.6% of the feed in
- * production, but it catalogues a preprint without parsing its bibliography, so
- * `referenced_works_count` comes back zero for every single one. Storing that
- * zero was worse than storing nothing: it turned "we have not looked this up"
- * into a confident claim of "this paper cites nothing", and the reference lane
- * cannot tell the two apart. Four thousand papers were being ranked down for
- * the sin of not having been fetched, while the lane believed it had full
- * coverage and weighted itself accordingly. `cited_by_count` is honest, since it
- * is counted from the citing side, so that is all we take.
- */
-async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
-  const matched = new Set();
-  let done = 0;
-  let failed = 0;
-  for (let i = 0; i < dois.length; i += BATCH_SIZE) {
-    if (exhausted()) {
-      console.warn(
-        `  budget spent after ${done} OpenAlex batches; the rest keep the counts S2 gave`,
-      );
-      break;
-    }
-    const results = await fetchBatch(dois.slice(i, i + BATCH_SIZE));
-    done += 1;
-    if (openAlexBudgetSpent) {
-      console.warn(
-        `  OpenAlex free credits are spent for the day after ${done} batches; ` +
-          "the rest keep the counts Semantic Scholar gave",
-      );
-      return { matched: matched.size, unreachable: false, budgetSpent: true };
-    }
-    if (results === null) {
-      failed += 1;
-      // Several consecutive failures mean the upstream is unhappy, not that we
-      // were unlucky; stop asking rather than burn the whole budget on retries.
-      if (failed >= 3 && failed === done) {
-        console.warn("  OpenAlex is not responding; keeping what Semantic Scholar found");
-        return { matched: matched.size, unreachable: true, budgetSpent: false };
-      }
-    } else {
-      for (const work of results) {
-        const id = idFromDoi(work.doi);
-        const key = id && wanted.get(`10.48550/arxiv.${id}`);
-        if (!key) {
-          continue;
-        }
-        matched.add(key);
-        const current = enrichment.get(key) ?? {};
-        current.citations = Math.max(current.citations ?? 0, work.cited_by_count ?? 0);
-        enrichment.set(key, current);
-      }
-    }
-    await sleep(REQUEST_SPACING_MS);
-  }
-  const rate = matched.size / dois.length;
-  console.log(
-    `  OpenAlex matched ${matched.size.toLocaleString()} of ` +
-      `${dois.length.toLocaleString()} papers (${(rate * 100).toFixed(1)}%)` +
-      (failed ? `, ${failed} batches failed` : ""),
-  );
-  report("+ OpenAlex", enrichment);
-  return { matched: matched.size, unreachable: false, budgetSpent: false };
-}
-
-/**
  * Ask both indexes about as many papers as the time budget allows.
  *
  * Deliberately partial-tolerant: the return value is whatever came back, and
@@ -624,32 +465,26 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
  * still a ranking; a build that fails because an upstream index was slow is
  * not.
  *
- * Semantic Scholar goes first because it is the only source of the reference
- * lane. Whoever runs second inherits what is left of the clock, and the lane
- * that matters most must not be the one living on leftovers.
+ * One index, not two. OpenAlex was here for citation counts until a build was
+ * measured on both: of 5,248 papers, S2 knew a count for 4,442 and OpenAlex
+ * raised that to 4,475, adding 33 zeros and not one non-zero citation, having
+ * spent a hundred and five requests to do it. It has since started metering
+ * its free tier, so the pass was also a billed dependency in the critical
+ * path. The browser still uses OpenAlex for search, author lookup and the
+ * citation graph, where it is genuinely the better source.
  */
 async function enrich(papers) {
-  const wanted = new Map();
-  for (const paper of papers) {
-    const doi = arxivDoi(paper.id);
-    if (doi) {
-      wanted.set(doi, paper.id);
-    }
-  }
-  const dois = [...wanted.keys()];
+  const candidates = papers.filter((paper) => isArxivId(paper.id));
   const enrichment = new Map();
-  if (dois.length === 0) {
+  if (candidates.length === 0) {
     return { enrichment, diagnosis: "no-candidates", matchRate: 0, references: 0 };
   }
 
   const started = Date.now();
-  const spent = () => Date.now() - started;
   console.log(
-    `enrichment: ${dois.length.toLocaleString()} papers in ` +
-      `${Math.ceil(dois.length / S2_BATCH_SIZE)} S2 + ` +
-      `${Math.ceil(dois.length / BATCH_SIZE)} OpenAlex batches ` +
-      `(budget ${Math.round(S2_BUDGET_MS / 1000)}s + ` +
-      `${Math.round((ENRICH_BUDGET_MS - S2_BUDGET_MS) / 1000)}s)`,
+    `enrichment: ${candidates.length.toLocaleString()} papers in ` +
+      `${Math.ceil(candidates.length / S2_BATCH_SIZE)} Semantic Scholar batches ` +
+      `(budget ${Math.round(ENRICH_BUDGET_MS / 1000)}s)`,
   );
   // Said out loud every build. A mistyped secret degrades to the anonymous pool
   // silently, and the only visible symptom would be coverage quietly halving,
@@ -660,56 +495,39 @@ async function enrich(papers) {
       : "  Semantic Scholar: NO API KEY, using the shared anonymous pool",
   );
 
-  await enrichFromS2(papers, enrichment, () => spent() > S2_BUDGET_MS);
-  const openAlex = await enrichFromOpenAlex(
-    dois,
-    wanted,
+  const matched = await enrichFromS2(
+    candidates,
     enrichment,
-    () => spent() > ENRICH_BUDGET_MS,
+    () => Date.now() - started > ENRICH_BUDGET_MS,
   );
 
   const references = [...enrichment.values()].filter(
     (entry) => entry.references !== undefined,
   ).length;
-  const rate = openAlex.matched / dois.length;
+  const rate = matched / candidates.length;
 
-  // A low match rate is expected and self-correcting; a broken request is
-  // neither, and the two look identical from the outside. Say which it is,
-  // every build, so a regression cannot hide behind "OpenAlex is just slow".
-  const diagnosis = openAlex.budgetSpent
-    ? "budget-exhausted"
-    : openAlex.unreachable
-      ? "unreachable"
-      : rate >= 0.05
-        ? "ok"
-        : await checkQueryShape();
-  if (diagnosis === "ok") {
-    if (rate < 0.05) {
-      console.log(
-        "  the request shape is confirmed good (canary paper found), so the low " +
-          "match rate is OpenAlex not having indexed these preprints yet",
-      );
-    }
-  } else if (diagnosis === "budget-exhausted") {
+  // Coverage below a third is not a bad day, it is the anonymous pool, and the
+  // fix is a free API key rather than patience. Said plainly so a build that
+  // quietly halved its coverage cannot be mistaken for a normal one.
+  const diagnosis = matched === 0 ? "unreachable" : rate >= 0.33 ? "ok" : "throttled";
+  if (diagnosis === "unreachable") {
     console.warn(
-      "  OpenAlex is metered now and this build has spent the day's free " +
-        "credits. Reference counts are unaffected, since they come from " +
-        "Semantic Scholar; the reception lane keeps whatever S2 reported.",
+      "  Semantic Scholar returned nothing at all. Both enrichment lanes are " +
+        "dark this build and the ranking runs on the metadata signals alone.",
     );
-  } else if (diagnosis === "no-match") {
+  } else if (diagnosis === "throttled") {
     console.warn(
-      "  WARNING: a paper indexed since 2020 did not match either. The request " +
-        "is malformed, not merely early, and the reception lane loses its broad " +
-        "coverage until this is fixed.",
+      `  only ${(rate * 100).toFixed(1)}% of the feed came back` +
+        (S2_KEY
+          ? ". That is low for a keyed run and worth watching."
+          : ". Set S2_API_KEY, which is free, to leave the shared pool."),
     );
-  } else {
-    console.warn("  OpenAlex was unreachable; the reception lane keeps only S2's counts.");
   }
 
   console.log(
     `  usable: ${references.toLocaleString()} reference counts, ` +
-      `${enrichment.size.toLocaleString()} of ${dois.length.toLocaleString()} papers ` +
-      "with anything at all",
+      `${enrichment.size.toLocaleString()} of ${candidates.length.toLocaleString()} ` +
+      "papers with anything at all",
   );
 
   return { enrichment, diagnosis, matchRate: rate, references };
@@ -906,9 +724,9 @@ async function main() {
     // of the three, and this is the one number that says whether it had any
     // fuel, since `enriched` can look healthy on citation counts alone.
     referenceCounts: references,
-    // "ok" | "no-match" | "unreachable" | "no-candidates" | "skipped".
-    // Anything other than "ok" is about OpenAlex, which supplies the reception
-    // lane's breadth; references come from Semantic Scholar and survive it.
+    // "ok" | "throttled" | "unreachable" | "no-candidates" | "skipped".
+    // Both enrichment lanes now come from Semantic Scholar, so this is a
+    // statement about one upstream rather than a mix of two.
     enrichment: diagnosis,
     matchRate: Number(matchRate.toFixed(4)),
     knownAuthors: Object.keys(next.authors).length,
