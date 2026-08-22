@@ -145,7 +145,7 @@ describe("corpus memory", () => {
     const memory = foldIntoMemory(EMPTY_MEMORY, cohort(50));
     assert.deepEqual(
       Object.keys(memory).sort(),
-      ["authors", "folded", "month", "terms", "version", "volume"],
+      ["authors", "backfilled", "folded", "month", "terms", "version", "volume"],
     );
   });
 
@@ -170,6 +170,15 @@ describe("corpus memory", () => {
       paper({ id: "c", authors: ["Ada"], published: "2026-03-03T00:00:00Z" }),
     ]);
     assert.equal(later.authors.Ada.n, 2);
+  });
+
+  it("carries the backfill ledger through a fold", () => {
+    // The rolling id ledger is sized for the overlap between weekly builds and
+    // would evict a year of history long before the backfill finished, so the
+    // slices it has covered are tracked separately and must survive folding.
+    const seeded = { ...EMPTY_MEMORY, backfilled: ["cs.LG/2025-09"] };
+    const after = foldIntoMemory(seeded, [paper({ id: "a", authors: ["Ada"] })]);
+    assert.deepEqual(after.backfilled, ["cs.LG/2025-09"]);
   });
 
   it("forgets authors and months beyond the two-year horizon", () => {

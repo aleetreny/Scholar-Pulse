@@ -11,7 +11,8 @@
     "snapshots": "node scripts/build-feed-snapshots.mjs",
     "test": "node --test src/lib/ranking/ranking.test.ts",
     "rank": "node scripts/rank-snapshots.mjs",
-    "verify": "node scripts/verify-ranking.mjs"
+    "verify": "node scripts/verify-ranking.mjs",
+    "backfill": "node scripts/backfill-memory.mjs"
   },
   "dependencies": {
     "katex": "^0.17.0",

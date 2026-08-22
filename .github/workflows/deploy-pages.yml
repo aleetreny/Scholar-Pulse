@@ -8,6 +8,16 @@ on:
     # Refresh feed snapshots once a week, after arXiv's Monday announcement.
     - cron: "20 2 * * 1"
   workflow_dispatch:
+    inputs:
+      backfill_months:
+        description: >-
+          Months of arXiv history to fold into the corpus memory before
+          ranking. 0 skips it. Safe to re-run: months already folded are
+          recorded in the memory and skipped, and each run stops on a month
+          boundary after half an hour, so several dispatches finish a long
+          backfill and every one of them publishes its progress.
+        default: "0"
+        required: false
 
 permissions:
   contents: read
@@ -28,8 +38,10 @@ jobs:
     # bounded by its own enrichment budget rather than by this cap. Thirteen or
     # fourteen minutes is the realistic run. The margin is here because the
     # upstreams throttle anonymous callers at their own discretion, and a
-    # deploy killed mid-flight costs more than one that runs long.
-    timeout-minutes: 45
+    # deploy killed mid-flight costs more than one that runs long. The cap is
+    # 90 rather than 45 because a manual dispatch may also spend half an hour
+    # backfilling the corpus memory before any of that starts.
+    timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -57,6 +69,19 @@ jobs:
       # under public/data/feed, and everything submitted in the last ten days
       # under apps/web/.corpus, which the ranker folds into its memory and
       # nothing serves.
+      # Optional and manual. The author signals carry 45% of the model's
+      # weight and are dead weight until the memory has seen the field, which
+      # the weekly harvest reaches at about 8,000 papers a week; this buys the
+      # same history in months rather than years. Costs about 160 bytes of
+      # memory.json per paper folded.
+      - name: Backfill the corpus memory
+        if: >-
+          github.event_name == 'workflow_dispatch'
+          && github.event.inputs.backfill_months != ''
+          && github.event.inputs.backfill_months != '0'
+        run: node scripts/backfill-memory.mjs --months ${{ github.event.inputs.backfill_months }}
+        working-directory: apps/web
+
       - name: Build feed snapshots from arXiv
         run: node scripts/build-feed-snapshots.mjs
         working-directory: apps/web

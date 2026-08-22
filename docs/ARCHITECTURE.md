@@ -56,7 +56,20 @@ no database and no server.
    for around 30 extra arXiv requests.
 1. **Memory.** The ranker fetches `data/memory.json` from the previously deployed
    site: which authors and which words it has seen, and when. The deployment is
-   the storage. Signals are computed against that memory as it stood *before* the
+   the storage.
+
+   `scripts/backfill-memory.mjs` fills it with history the site was not running
+   for, over arXiv's OAI-PMH endpoint rather than the query API: 1,300 records
+   a request across every category at once, against roughly 2,500 requests to
+   cover the same ground category by category. OAI answers HTTP 503 while it
+   assembles a response, which the protocol intends and the script retries. It
+   folds a month at a time, records each finished month in the memory, and
+   stops on a month boundary when its budget runs out, so it is safe to
+   interrupt and safe to re-run. Author names are rebuilt as forenames then
+   keyname to match what the Atom feed produces; on 119 papers present in both
+   sources the two agreed exactly, which is the property that makes the
+   backfill merge into existing author records rather than duplicate every
+   researcher. Budget about 160 bytes of memory.json per paper folded. Signals are computed against that memory as it stood *before* the
    batch being scored, so no paper is credited with a track record its authors
    gained this morning.
 2. **Enrichment.** Two indexes, asked for different things. Semantic Scholar goes

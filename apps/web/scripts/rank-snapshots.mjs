@@ -142,7 +142,9 @@ async function loadMemory() {
   }
   try {
     const response = await fetch(`${SITE_BASE_URL}/data/memory.json`, {
-      signal: AbortSignal.timeout(30_000),
+      // Generous because this file grows with the corpus: a backfilled memory
+      // is tens of megabytes, and thirty seconds was sized for a two.
+      signal: AbortSignal.timeout(180_000),
     });
     if (response.ok) {
       const remote = await response.json();

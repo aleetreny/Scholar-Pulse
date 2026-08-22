@@ -55,6 +55,14 @@ their own pool and reserved 30% of the board. Without it, hits from unknown
 authors landed at the 49th percentile against the 88th for established ones,
 and the score was learning reputation as much as merit.
 
+That pool is far larger than it should be, and the reason is coverage rather
+than arXiv. The memory only knows the papers the site has ingested, so a
+young deployment treats most of the field as strangers: 44% of every cohort
+arrives with no author history at all, and inside that pool all four author
+signals are constant and drop out. The harvest now reaches ten days back
+rather than a hundred papers, and `npm run backfill` folds in the history the
+site was never running for.
+
 Validation is leave-one-month-out on papers that demonstrably became references
 in their field: **AUC 0.79** (95% CI 0.76–0.83) and **5.5x lift in the top 10%**
 against a 1.4% base rate. That is the offline study, on 2017-18 cs.LG and cs.CL
@@ -130,6 +138,17 @@ To audit the deployed ranking against realized citations:
 npm run verify                       # the live site's prediction log
 npm run verify -- --local            # a log built locally
 ```
+
+To give the corpus memory a history it has not lived through yet:
+
+```bash
+npm run backfill -- --months 12
+```
+
+Safe to interrupt and safe to re-run: it records the months it has folded in
+the memory itself and stops on a month boundary after half an hour. In CI it
+is the `backfill_months` input on the deploy workflow, which publishes the
+result so the next build carries it forward.
 
 ## Run the Python toolchain
 
