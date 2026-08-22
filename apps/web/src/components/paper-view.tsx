@@ -226,6 +226,10 @@ export function PaperView({ arxivId }: { arxivId: string }) {
 
   const saved = isSaved(paper.id);
   const bibtex = toBibtex(paper);
+  // Semantic Scholar merges a preprint's versions, so its count is the better
+  // one; OpenAlex is the fallback when S2 is rate-limited. Null means neither
+  // index answered, which is not the same claim as zero.
+  const citations = extras?.citationCount ?? oa?.citedByCount ?? null;
 
   return (
     <article className="main__column paper-page">
@@ -265,8 +269,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             {categoryLabel(paper.primaryCategory)}
           </span>
         ) : null}
-        {(extras?.citationCount ?? oa?.citedByCount) !== null &&
-        (extras?.citationCount ?? oa?.citedByCount) !== undefined ? (
+        {citations !== null ? (
           <span
             className="stat-chip"
             title={
@@ -276,10 +279,16 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             }
           >
             <TrendingUp />
-            <strong>
-              {formatCount((extras?.citationCount ?? oa?.citedByCount) as number)}
-            </strong>{" "}
-            {t("paper.citations")}
+            {/* A week-old preprint cannot have been cited, so "0 citations"
+                reads as a broken feed rather than as a measurement. The count
+                is only printed once there is a count worth printing. */}
+            {citations > 0 ? (
+              <>
+                <strong>{formatCount(citations)}</strong> {t("paper.citations")}
+              </>
+            ) : (
+              t("paper.notCitedYet")
+            )}
           </span>
         ) : null}
         {extras?.venue ? <span className="chip chip--green">{extras.venue}</span> : null}
@@ -426,7 +435,8 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         <CitationGraph
           workId={oa.workId}
           referencedWorks={oa.referencedWorks}
-          citationCount={extras?.citationCount ?? oa.citedByCount}
+          referenceCount={extras?.referenceCount ?? null}
+          citationCount={citations}
         />
       ) : null}
 

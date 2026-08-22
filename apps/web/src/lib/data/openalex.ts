@@ -26,6 +26,30 @@ const CACHE_MAX_ENTRIES = 120;
 const UNAVAILABLE_MESSAGE =
   "OpenAlex didn't answer. It usually clears in a few seconds, so try again.";
 
+/**
+ * OpenAlex now meters its free tier: a caller gets a daily allowance of
+ * credits and then receives HTTP 429 until it resets at midnight UTC. That
+ * is a different condition from the per-second throttle the message above
+ * describes, and telling a reader to "try again in a few seconds" when the
+ * answer is nine hours away is worse than saying nothing. Both arrive as
+ * 429, so they are told apart by the body, which is CORS-readable.
+ */
+const BUDGET_MESSAGE =
+  "OpenAlex has cut this network off for the rest of the day: its free daily " +
+  "allowance is spent and resets at midnight UTC.";
+
+async function isBudgetExhausted(response: Response): Promise<boolean> {
+  if (response.headers.get("x-ratelimit-remaining") === "0") {
+    return true;
+  }
+  try {
+    const body = (await response.clone().json()) as { message?: string };
+    return /budget/i.test(body.message ?? "");
+  } catch {
+    return false;
+  }
+}
+
 type CacheEntry = { expires: number; data: unknown };
 const cache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<unknown>>();
@@ -72,7 +96,9 @@ async function fetchOA<T>(path: string, signal?: AbortSignal): Promise<T> {
       throw new Error(UNAVAILABLE_MESSAGE);
     }
     if (response.status === 429) {
-      throw new Error(UNAVAILABLE_MESSAGE);
+      throw new Error(
+        (await isBudgetExhausted(response)) ? BUDGET_MESSAGE : UNAVAILABLE_MESSAGE,
+      );
     }
     if (response.status === 404) {
       throw new Error("Not found on OpenAlex");

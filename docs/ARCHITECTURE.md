@@ -98,6 +98,24 @@ no database and no server.
    frequencies and monthly volumes, roughly 1 MB, so it cannot grow without
    bound as the site keeps running.
 
+   Each paper is folded exactly once. The workflow runs on every push as well
+   as weekly, and every run refetches the same newest-100-per-category, so the
+   memory carries a ledger of ids it has already counted. Without it, the ten
+   builds in the thirty-one hours after the ranking launched recorded 39,312
+   papers for August against a feed of 5,248, and gave twenty thousand authors
+   a publication count of twelve for a fortnight of arXiv.
+5. **Record the claim.** The build appends what it ranked to
+   `data/predictions.json`: the full front page and notable band, plus a
+   deterministic one-in-sixteen sample of the rest as a control group. That
+   file rides the same round trip through the deployment as the memory does,
+   pruned to twelve months and sixty builds. It exists because none of the
+   other outputs survive: the feed snapshots are overwritten each week and the
+   Pages artifact expires after a day, so before this the site kept no record
+   of anything it had ever claimed. `scripts/verify-ranking.mjs` reads the log
+   back, asks Semantic Scholar what those papers collected, and scores the
+   bands against the outcome, declining to judge cohorts under ninety days
+   old.
+
 Model coefficients live in `apps/web/src/lib/ranking/model.generated.ts` and are
 produced by `research/ranking/export_model.py`. They are generated, not authored:
 regenerate rather than edit.

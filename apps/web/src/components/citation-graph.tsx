@@ -67,12 +67,15 @@ function GraphSection({
   hint,
   count,
   load,
+  unavailable,
   t,
 }: {
   label: string;
   hint: string;
   count: number | null;
   load: () => Promise<GraphPaper[]>;
+  /** Set when the count is known but the list itself cannot be fetched. */
+  unavailable?: string;
   t: Translate;
 }) {
   const [open, setOpen] = useState(false);
@@ -93,7 +96,7 @@ function GraphSection({
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && state.phase === "idle") {
+    if (next && !unavailable && state.phase === "idle") {
       fetchPapers();
     }
   }
@@ -115,7 +118,9 @@ function GraphSection({
       </button>
 
       {open ? (
-        state.phase === "loading" ? (
+        unavailable ? (
+          <div className="graph-section__status">{unavailable}</div>
+        ) : state.phase === "loading" ? (
           <div className="graph-section__status">
             <Loader2 className="spin" /> {t("paper.graphLoading")}
           </div>
@@ -151,21 +156,36 @@ function GraphSection({
 export function CitationGraph({
   workId,
   referencedWorks,
+  referenceCount,
   citationCount,
 }: {
   workId: string;
   referencedWorks: string[];
+  /**
+   * Length of the bibliography according to Semantic Scholar, which parses
+   * preprint PDFs. OpenAlex catalogues a preprint without parsing its
+   * bibliography, so `referencedWorks` is empty for essentially every paper
+   * in the feed while this number is real. Showing the count with a note
+   * beats showing "nothing indexed here yet" over a paper with 39 references.
+   */
+  referenceCount: number | null;
   citationCount: number | null;
 }) {
   const { t } = useT();
+  const listed = referencedWorks.length > 0;
   return (
     <section className="paper-section">
       <h2>{t("paper.literature")}</h2>
       <GraphSection
         label={t("paper.buildsOn")}
         hint={t("paper.buildsOnHint")}
-        count={referencedWorks.length}
+        count={listed ? referencedWorks.length : referenceCount}
         load={() => getReferences(referencedWorks, PAGE)}
+        unavailable={
+          !listed && referenceCount !== null && referenceCount > 0
+            ? t("paper.referencesNotListed")
+            : undefined
+        }
         t={t}
       />
       <GraphSection

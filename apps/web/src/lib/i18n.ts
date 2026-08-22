@@ -117,6 +117,7 @@ const EN = {
   "paper.inLibrary": "In library",
   "paper.cite": "Cite",
   "paper.citations": "citations",
+  "paper.notCitedYet": "Not cited yet",
   "paper.influential": "{n} influential citations",
   "paper.abstract": "Abstract",
   "paper.details": "Details",
@@ -134,6 +135,8 @@ const EN = {
   "paper.citedByHint": "influential follow-up work",
   "paper.graphLoading": "Loading…",
   "paper.graphEmpty": "Nothing indexed here yet.",
+  "paper.referencesNotListed":
+    "The bibliography has been counted but not yet linked up: OpenAlex catalogues a preprint without parsing its references.",
   "paper.retry": "Retry",
   "paper.partialNotice":
     "Citation metrics and similar papers are temporarily unavailable (Semantic Scholar rate limit). They will appear on the next visit.",
@@ -310,6 +313,7 @@ const ES: Record<StringKey, string> = {
   "paper.inLibrary": "En la biblioteca",
   "paper.cite": "Citar",
   "paper.citations": "citas",
+  "paper.notCitedYet": "Aún sin citas",
   "paper.influential": "{n} citas influyentes",
   "paper.abstract": "Resumen",
   "paper.details": "Detalles",
@@ -327,6 +331,8 @@ const ES: Record<StringKey, string> = {
   "paper.citedByHint": "trabajo posterior influyente",
   "paper.graphLoading": "Cargando…",
   "paper.graphEmpty": "Aún no hay nada indexado aquí.",
+  "paper.referencesNotListed":
+    "La bibliografía está contada pero todavía no enlazada: OpenAlex cataloga un preprint sin analizar sus referencias.",
   "paper.retry": "Reintentar",
   "paper.partialNotice":
     "Las métricas de citas y los papers similares no están disponibles ahora mismo (límite de peticiones de Semantic Scholar). Aparecerán en la próxima visita.",

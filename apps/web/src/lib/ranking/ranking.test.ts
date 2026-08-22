@@ -145,8 +145,31 @@ describe("corpus memory", () => {
     const memory = foldIntoMemory(EMPTY_MEMORY, cohort(50));
     assert.deepEqual(
       Object.keys(memory).sort(),
-      ["authors", "month", "terms", "version", "volume"],
+      ["authors", "folded", "month", "terms", "version", "volume"],
     );
+  });
+
+  it("counts a paper once however many builds see it", () => {
+    // The deploy runs on every push as well as on the weekly schedule, and
+    // each run refetches the same "newest 100 per category". Ten runs in the
+    // thirty-one hours after launch folded the same batch ten times: the
+    // memory ended up claiming 39,312 papers for a month whose feed held
+    // 5,248, and authors of a single paper carried a count of twelve.
+    const batch = [
+      paper({ id: "a", authors: ["Ada"], published: "2026-03-01T00:00:00Z" }),
+      paper({ id: "b", authors: ["Grace"], published: "2026-03-02T00:00:00Z" }),
+    ];
+    const once = foldIntoMemory(EMPTY_MEMORY, batch);
+    const twice = foldIntoMemory(once, batch);
+    assert.deepEqual(twice.volume, once.volume, "a rebuild must not inflate volume");
+    assert.equal(twice.authors.Ada.n, 1, "one paper is one paper");
+    assert.deepEqual(twice.terms, once.terms);
+
+    // A genuinely new paper still folds in normally afterwards.
+    const later = foldIntoMemory(twice, [
+      paper({ id: "c", authors: ["Ada"], published: "2026-03-03T00:00:00Z" }),
+    ]);
+    assert.equal(later.authors.Ada.n, 2);
   });
 
   it("forgets authors and months beyond the two-year horizon", () => {

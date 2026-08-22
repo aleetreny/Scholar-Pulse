@@ -60,6 +60,21 @@ in their field: **AUC 0.79** (95% CI 0.76–0.83) and **5.5x lift in the top 10%
 against a 1.4% base rate. The full study, including the hypotheses that failed,
 is in [research/ranking](research/ranking/README.md).
 
+**Checking it against reality.** Those numbers come from a 2017-18 corpus, and
+a model that validated offline can still be wrong in production. Every build
+therefore writes down what it claimed, in `data/predictions.json`: the whole
+front page and notable band, one paper in sixteen from the rest as a control
+group, carried forward from the previous deployment the same way the corpus
+memory is. `npm run verify` reads that log, asks Semantic Scholar what those
+papers collected since, and reports the base rate, the AUC and the lift of each
+band against what actually happened.
+
+It will decline to answer for a while, and that is the honest answer rather
+than a limitation. A preprint has no citations because it is a preprint, and
+the study measured that a cohort needs about three months before its top ten
+has settled into its field's top decile, so cohorts younger than ninety days
+are reported as too young to measure instead of being scored.
+
 ## Repository layout
 
 | Path | Purpose |
@@ -98,6 +113,13 @@ The ranking maths has its own tests:
 npm test
 ```
 
+To audit the deployed ranking against realized citations:
+
+```bash
+npm run verify                       # the live site's prediction log
+npm run verify -- --local            # a log built locally
+```
+
 ## Run the Python toolchain
 
 Python 3.11 or later is required.
@@ -134,9 +156,16 @@ runs weekly and on every push to `main`.
 
 There is no database. The ranker fetches the previous deployment's
 `data/memory.json`, which records the authors and words the site has seen and
-when, scores the new batch against that memory as it stood *before* the batch, then
-folds the batch in and republishes it. The deployment is the storage, which is
-what keeps the whole thing free to run.
+when, scores the new batch against that memory as it stood *before* the batch,
+then folds the batch in and republishes it. `data/predictions.json` makes the
+same round trip, so the record of what each build claimed survives the build
+that replaces it. The deployment is the storage, which is what keeps the whole
+thing free to run.
+
+The fold is counted once per paper, ever. The workflow also runs on every push,
+and each run refetches the same newest-100-per-category, so without a ledger of
+what has already been folded a busy afternoon of commits inflates the corpus by
+a factor of ten.
 
 One optional secret:
 

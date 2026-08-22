@@ -32,8 +32,16 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { RANKING_MODEL } from "../src/lib/ranking/model.generated.ts";
 import { scoreCohort } from "../src/lib/ranking/score.ts";
-import { EMPTY_MEMORY, foldIntoMemory, monthIndex } from "../src/lib/ranking/signals.ts";
+import {
+  EMPTY_MEMORY,
+  SIGNAL_NAMES,
+  burstScores,
+  extractSignals,
+  foldIntoMemory,
+  monthIndex,
+} from "../src/lib/ranking/signals.ts";
 
 const SITE_BASE_URL = (
   process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
@@ -97,6 +105,29 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(here, "..", "public", "data");
 const feedDir = path.join(dataDir, "feed");
 const memoryPath = path.join(dataDir, "memory.json");
+const predictionsPath = path.join(dataDir, "predictions.json");
+
+/**
+ * How long the log of what the ranking claimed is kept, and how thinly the
+ * bottom band is sampled into it.
+ *
+ * A ranking that keeps no record of its own predictions cannot be checked
+ * against what happened, and this one kept none: each build overwrote the feed
+ * snapshots, the Pages artifact expires after a day, and the memory file
+ * carries authors and terms but not a single score. Two weeks after launch
+ * there was no way to ask whether last week's front page deserved it, and
+ * there never would be.
+ *
+ * The head of the list is kept whole, because that is the claim the site
+ * makes. The rest is sampled, because it is only needed as the control group a
+ * base rate is computed against, and one in sixteen still leaves a few hundred
+ * papers a build. The sampling interval is written into every entry so the
+ * weights are read off the data rather than assumed by whoever audits it.
+ */
+const PREDICTION_MONTHS = 12;
+const PREDICTION_BUILDS_MAX = 60;
+const REST_SAMPLE_ONE_IN = 16;
+const TIER_INDEX = { headline: 0, notable: 1, rest: 2 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -135,6 +166,92 @@ async function loadMemory() {
   return EMPTY_MEMORY;
 }
 
+/* ------------------------------------------------------------- predictions */
+
+/**
+ * Deterministic 1-in-`interval` sample, keyed on the paper id.
+ *
+ * Deterministic on purpose: a rebuild of the same batch selects exactly the
+ * same papers, so re-running the deploy cannot quietly enlarge the control
+ * group or change which papers the audit is based on. FNV-1a, because it needs
+ * to spread ids evenly and nothing else.
+ */
+function sampled(id, interval) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < id.length; i += 1) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash % interval === 0;
+}
+
+async function loadPredictions() {
+  try {
+    const local = JSON.parse(await readFile(predictionsPath, "utf8"));
+    if (local?.version === 1) {
+      return local;
+    }
+  } catch {
+    // No local copy, which is expected on CI, where the checkout is clean.
+  }
+  try {
+    const response = await fetch(`${SITE_BASE_URL}/data/predictions.json`, {
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (response.ok) {
+      const remote = await response.json();
+      if (remote?.version === 1) {
+        return remote;
+      }
+    }
+  } catch (error) {
+    console.warn(`predictions: could not read the previous build (${error.message})`);
+  }
+  return { version: 1, builds: [] };
+}
+
+/**
+ * Append this build's claims to the log, and drop the ones too old to teach
+ * anything. Entries are keyed by calendar day: the deploy also runs on every
+ * push, and ten records of the same Monday would weight that Monday ten times
+ * in any average taken over the log.
+ */
+function recordPredictions(previous, cohortList, pulses, rankedAt) {
+  const cohorts = {};
+  for (const [category, group] of cohortList) {
+    const rows = [];
+    for (const paper of group) {
+      const pulse = pulses.get(paper.id);
+      if (!pulse) {
+        continue;
+      }
+      if (pulse.tier === "rest" && !sampled(paper.id, REST_SAMPLE_ONE_IN)) {
+        continue;
+      }
+      rows.push([paper.id, pulse.score, TIER_INDEX[pulse.tier], pulse.newcomer ? 1 : 0]);
+    }
+    if (rows.length > 0) {
+      cohorts[category] = rows;
+    }
+  }
+  const entry = {
+    rankedAt,
+    restSampledOneIn: REST_SAMPLE_ONE_IN,
+    /** [id, score, tier (0 headline, 1 notable, 2 rest), newcomer]. */
+    cohorts,
+  };
+
+  const day = rankedAt.slice(0, 10);
+  const cutoff = Date.now() - PREDICTION_MONTHS * 30.44 * 24 * 60 * 60 * 1000;
+  const kept = (previous.builds ?? [])
+    .filter((build) => build.rankedAt.slice(0, 10) !== day)
+    .filter((build) => Date.parse(build.rankedAt) >= cutoff);
+  return {
+    version: 1,
+    builds: [entry, ...kept].slice(0, PREDICTION_BUILDS_MAX),
+  };
+}
+
 /* -------------------------------------------------------------- enrichment */
 
 /** arXiv mints a DOI for every submission from 2022 on. Older ids have none. */
@@ -167,6 +284,33 @@ function idFromDoi(doi) {
   return match ? match[1].toLowerCase() : null;
 }
 
+/**
+ * Set once OpenAlex says the day's allowance is gone.
+ *
+ * OpenAlex used to be an unmetered public API. It now bills: a caller gets a
+ * fixed number of free credits a day and then receives HTTP 429 with
+ * `retryAfter` measured in hours rather than seconds. Retrying that is not
+ * patience, it is nine hours of the same answer, and the backoff below was
+ * written for a throttle that clears. When this trips the pass stops asking
+ * and the build says so, because "the citation lane is thin because we are out
+ * of credit" is a different fact from "OpenAlex was slow today", and only one
+ * of the two is fixed by waiting.
+ */
+let openAlexBudgetSpent = false;
+
+/** Both conditions arrive as 429; only the body and headers tell them apart. */
+async function budgetExhausted(response) {
+  if (response.headers.get("x-ratelimit-remaining") === "0") {
+    return true;
+  }
+  try {
+    const body = await response.clone().json();
+    return /budget/i.test(body?.message ?? "");
+  } catch {
+    return false;
+  }
+}
+
 async function fetchBatch(dois) {
   const params = new URLSearchParams({
     filter: `doi:${dois.join("|")}`,
@@ -181,6 +325,10 @@ async function fetchBatch(dois) {
         signal: AbortSignal.timeout(30_000),
         headers: { "User-Agent": `ScholarPulse/1.0 (mailto:${CONTACT})` },
       });
+      if (response.status === 429 && (await budgetExhausted(response))) {
+        openAlexBudgetSpent = true;
+        return null;
+      }
       if (response.status === 429 || response.status >= 500) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -427,13 +575,20 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
     }
     const results = await fetchBatch(dois.slice(i, i + BATCH_SIZE));
     done += 1;
+    if (openAlexBudgetSpent) {
+      console.warn(
+        `  OpenAlex free credits are spent for the day after ${done} batches; ` +
+          "the rest keep the counts Semantic Scholar gave",
+      );
+      return { matched: matched.size, unreachable: false, budgetSpent: true };
+    }
     if (results === null) {
       failed += 1;
       // Several consecutive failures mean the upstream is unhappy, not that we
       // were unlucky; stop asking rather than burn the whole budget on retries.
       if (failed >= 3 && failed === done) {
         console.warn("  OpenAlex is not responding; keeping what Semantic Scholar found");
-        return { matched: matched.size, unreachable: true };
+        return { matched: matched.size, unreachable: true, budgetSpent: false };
       }
     } else {
       for (const work of results) {
@@ -457,7 +612,7 @@ async function enrichFromOpenAlex(dois, wanted, enrichment, exhausted) {
       (failed ? `, ${failed} batches failed` : ""),
   );
   report("+ OpenAlex", enrichment);
-  return { matched: matched.size, unreachable: false };
+  return { matched: matched.size, unreachable: false, budgetSpent: false };
 }
 
 /**
@@ -521,11 +676,13 @@ async function enrich(papers) {
   // A low match rate is expected and self-correcting; a broken request is
   // neither, and the two look identical from the outside. Say which it is,
   // every build, so a regression cannot hide behind "OpenAlex is just slow".
-  const diagnosis = openAlex.unreachable
-    ? "unreachable"
-    : rate >= 0.05
-      ? "ok"
-      : await checkQueryShape();
+  const diagnosis = openAlex.budgetSpent
+    ? "budget-exhausted"
+    : openAlex.unreachable
+      ? "unreachable"
+      : rate >= 0.05
+        ? "ok"
+        : await checkQueryShape();
   if (diagnosis === "ok") {
     if (rate < 0.05) {
       console.log(
@@ -533,6 +690,12 @@ async function enrich(papers) {
           "match rate is OpenAlex not having indexed these preprints yet",
       );
     }
+  } else if (diagnosis === "budget-exhausted") {
+    console.warn(
+      "  OpenAlex is metered now and this build has spent the day's free " +
+        "credits. Reference counts are unaffected, since they come from " +
+        "Semantic Scholar; the reception lane keeps whatever S2 reported.",
+    );
   } else if (diagnosis === "no-match") {
     console.warn(
       "  WARNING: a paper indexed since 2020 did not match either. The request " +
@@ -587,6 +750,32 @@ function buildCohorts(papers) {
   return cohorts;
 }
 
+/**
+ * Signals that carry no opinion in this cohort, because every paper in it has
+ * the same value.
+ *
+ * Scoring is cohort-relative, so a constant column becomes a constant
+ * percentile and drops out of the ranking entirely. That is the right
+ * behaviour, and it is also invisible: nothing in the output distinguishes a
+ * signal that argued and lost from one that was never consulted.
+ *
+ * It is not hypothetical. `term_burst_mean` compares the last six months
+ * against the eighteen before them, and the memory only starts when the site
+ * does, so until the site has been running well over six months there is no
+ * baseline, `burstScores` correctly returns nothing, and the signal is flat
+ * zero for every paper. It carries 5.7% of the model's weight and has been
+ * inert on every build since launch. Inside the newcomer pool it is worse: all
+ * four author signals are constant there by construction, which leaves 78% of
+ * what still moves the ranking sitting on title length, whether the title has
+ * a colon, and abstract length.
+ */
+function inertSignals(group, memory, bursts, now) {
+  const signals = group.map((paper) => extractSignals(paper, memory, bursts, now));
+  return SIGNAL_NAMES.filter((name) =>
+    signals.every((signal) => signal[name] === signals[0][name]),
+  );
+}
+
 async function main() {
   const skipEnrichment = process.argv.includes("--no-enrich");
   let files;
@@ -633,7 +822,13 @@ async function main() {
   const pulses = new Map();
   const tally = { headline: 0, notable: 0, rest: 0, newcomer: 0 };
   const laneUse = { signals: 0, references: 0, reception: 0 };
-  for (const [category, group] of buildCohorts(papers)) {
+  const bursts = burstScores(memory, now);
+  const inertIn = new Map(SIGNAL_NAMES.map((name) => [name, 0]));
+  const cohortList = buildCohorts(papers);
+  for (const [category, group] of cohortList) {
+    for (const name of inertSignals(group, memory, bursts, now)) {
+      inertIn.set(name, inertIn.get(name) + 1);
+    }
     const scored = scoreCohort(group, memory, now, enrichment);
     group.forEach((paper, index) => {
       pulses.set(paper.id, scored[index]);
@@ -661,9 +856,40 @@ async function main() {
     await writeFile(path.join(feedDir, file), JSON.stringify(snapshot));
   }
 
+  // A signal inert in every cohort is one the model paid for and never got.
+  // Reported as a share of total |weight| because that is the size of the
+  // claim: "the ranking is running on 94% of the model it advertises".
+  const deadSignals = SIGNAL_NAMES.filter((name) => inertIn.get(name) === cohortList.length);
+  const totalWeight = Object.values(RANKING_MODEL.weights).reduce(
+    (sum, weight) => sum + Math.abs(weight),
+    0,
+  );
+  const deadWeight =
+    deadSignals.reduce((sum, name) => sum + Math.abs(RANKING_MODEL.weights[name] ?? 0), 0) /
+    totalWeight;
+
   const next = foldIntoMemory(memory, papers);
   await mkdir(dataDir, { recursive: true });
   await writeFile(memoryPath, JSON.stringify(next));
+
+  const rankedAt = new Date().toISOString();
+  const predictions = recordPredictions(
+    await loadPredictions(),
+    cohortList,
+    pulses,
+    rankedAt,
+  );
+  await writeFile(predictionsPath, JSON.stringify(predictions));
+  const logged = predictions.builds[0];
+  const loggedRows = Object.values(logged.cohorts).reduce(
+    (sum, rows) => sum + rows.length,
+    0,
+  );
+  console.log(
+    `predictions: logged ${loggedRows.toLocaleString()} of ` +
+      `${papers.length.toLocaleString()} papers (the whole head, one rest paper ` +
+      `in ${REST_SAMPLE_ONE_IN}) across ${predictions.builds.length} builds on record`,
+  );
 
   const manifestPath = path.join(dataDir, "manifest.json");
   let manifest = {};
@@ -687,11 +913,16 @@ async function main() {
     matchRate: Number(matchRate.toFixed(4)),
     knownAuthors: Object.keys(next.authors).length,
     monthsOfMemory: Object.keys(next.volume).length,
+    // Signals that were constant in every cohort and therefore did not
+    // participate in the ranking at all, and what fraction of the model's
+    // weight that silently withdraws.
+    inertSignals: deadSignals,
+    inertWeightShare: Number(deadWeight.toFixed(4)),
   };
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 
   const share = (n) => `${((n / papers.length) * 100).toFixed(1)}%`;
-  const cohorts = buildCohorts(papers).length;
+  const cohorts = cohortList.length;
   console.log(
     `done: ${tally.headline} headline, ${tally.notable} notable, ` +
       `${tally.rest} rest, ${share(tally.newcomer)} of the feed has no author history`,
@@ -706,6 +937,24 @@ async function main() {
       `${Object.keys(next.terms).length.toLocaleString()} terms, ` +
       `${Object.keys(next.volume).length} months`,
   );
+  if (deadSignals.length > 0) {
+    console.warn(
+      `signals: ${deadSignals.join(", ")} carried no opinion in any of the ` +
+        `${cohorts} cohorts, which is ${(deadWeight * 100).toFixed(1)}% of the ` +
+        "model's weight not being used",
+    );
+  }
+  const partlyInert = SIGNAL_NAMES.filter(
+    (name) => inertIn.get(name) > 0 && inertIn.get(name) < cohorts,
+  );
+  if (partlyInert.length > 0) {
+    console.log(
+      "signals: " +
+        partlyInert
+          .map((name) => `${name} inert in ${inertIn.get(name)}/${cohorts}`)
+          .join(", "),
+    );
+  }
 }
 
 await main();
