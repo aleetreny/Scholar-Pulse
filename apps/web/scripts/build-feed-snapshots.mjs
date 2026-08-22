@@ -31,9 +31,36 @@ const RSS_ITEMS = 40;
 const POLITE_DELAY_MS = 3200; // arXiv asks for ~1 request every 3 seconds.
 const RETRIES = 3;
 
+/**
+ * How much gets harvested for the corpus memory, as opposed to displayed.
+ *
+ * The feed shows a hundred papers per category and that is a display choice.
+ * It was also, accidentally, the ranking's entire view of arXiv: the ranker
+ * folds whatever the feed fetched into its memory of who publishes what, so
+ * the memory only ever saw a hundred papers a week per field. In the busiest
+ * ones that is not a week, it is hours. cs.AI's hundred spanned 10.8 hours,
+ * cs.LG's 21.9. The memory was learning about 6% of the field it was ranking,
+ * which is why 44% of every cohort arrives with authors it has never seen and
+ * the author signals, 45% of the model's weight, go constant and drop out.
+ *
+ * So the harvest and the feed are separated here. Paging back ten days covers
+ * the weekly schedule with slack for a missed run, and the fold is idempotent
+ * per paper, so the overlap between consecutive runs costs nothing. Measured
+ * against the live site this takes the corpus from about 3,750 unique papers a
+ * week to about 8,000, for roughly 30 extra arXiv requests.
+ *
+ * The corpus is written outside public/ on purpose. It is build input, not
+ * something the site serves.
+ */
+const INGEST_DAYS = Number(process.env.INGEST_DAYS ?? 10);
+const CORPUS_PAGE = 200;
+/** A ceiling on the busiest category, so one field cannot eat the clock. */
+const MAX_CORPUS_PAGES = 12;
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const outDir = path.join(here, "..", "public", "data", "feed");
 const rssDir = path.join(here, "..", "public", "data", "rss");
+const corpusDir = path.join(here, "..", ".corpus");
 
 /* ------------------------------- RSS -------------------------------- */
 
@@ -96,13 +123,18 @@ function parseArgs(argv) {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function fetchCategory(category, max) {
+/**
+ * One page of a category, newest first. `mayBeEmpty` is set past the first
+ * page, where an empty result means the category is exhausted rather than that
+ * arXiv returned an error entry.
+ */
+async function fetchPage(category, start, count, mayBeEmpty) {
   const params = new URLSearchParams({
     search_query: `cat:${category}`,
     sortBy: "submittedDate",
     sortOrder: "descending",
-    start: "0",
-    max_results: String(max),
+    start: String(start),
+    max_results: String(count),
   });
   const url = `${ARXIV_API_BASE}/query?${params}`;
 
@@ -116,7 +148,7 @@ async function fetchCategory(category, max) {
         throw new Error(`HTTP ${response.status}`);
       }
       const feed = parseArxivFeed(await response.text());
-      if (feed.papers.length === 0) {
+      if (feed.papers.length === 0 && !mayBeEmpty) {
         throw new Error("empty feed (arXiv error entry or empty category)");
       }
       return feed.papers;
@@ -129,6 +161,44 @@ async function fetchCategory(category, max) {
     }
   }
   return null;
+}
+
+/**
+ * Everything submitted to a category since `since`, or at least `feedMax`
+ * papers, whichever reaches further back.
+ *
+ * The two conditions are both needed. A quiet category may not have published
+ * `feedMax` papers in ten days and the feed still wants a full page; a busy
+ * one passes `feedMax` in half a day and the corpus still wants the rest of
+ * the window. Returns null only when the first page failed outright, which is
+ * the case the caller counts as a failed category; losing a later page costs
+ * some corpus and leaves the feed intact.
+ */
+async function harvestCategory(category, feedMax, since) {
+  const papers = [];
+  const seen = new Set();
+  let start = 0;
+
+  for (let page = 0; page < MAX_CORPUS_PAGES; page += 1) {
+    const size = Math.max(feedMax, CORPUS_PAGE);
+    const batch = await fetchPage(category, start, size, page > 0);
+    if (batch === null) {
+      return page === 0 ? null : papers;
+    }
+    for (const paper of batch) {
+      if (!seen.has(paper.id)) {
+        seen.add(paper.id);
+        papers.push(paper);
+      }
+    }
+    start += batch.length;
+    const oldest = papers.at(-1)?.published ?? "";
+    if (batch.length < size || (papers.length >= feedMax && oldest < since)) {
+      break;
+    }
+    await sleep(POLITE_DELAY_MS);
+  }
+  return papers;
 }
 
 async function main() {
@@ -145,7 +215,9 @@ async function main() {
 
   await mkdir(outDir, { recursive: true });
   await mkdir(rssDir, { recursive: true });
+  await mkdir(corpusDir, { recursive: true });
   const generatedAt = new Date().toISOString();
+  const since = new Date(Date.now() - INGEST_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const labelFor = new Map(
     CATEGORY_GROUPS.flatMap((group) =>
       group.categories.map(({ id, label }) => [id, label]),
@@ -154,10 +226,15 @@ async function main() {
   const succeeded = [];
   const failed = [];
 
-  console.log(`Fetching ${targets.length} categories (${max} papers each)…`);
+  console.log(
+    `Fetching ${targets.length} categories (${max} for the feed, ` +
+      `${INGEST_DAYS} days for the corpus)…`,
+  );
+  let harvested = 0;
   for (const [index, category] of targets.entries()) {
-    const papers = await fetchCategory(category, max);
-    if (papers) {
+    const all = await harvestCategory(category, max, since);
+    if (all) {
+      const papers = all.slice(0, max);
       const snapshot = { category, fetchedAt: generatedAt, papers };
       await writeFile(
         path.join(outDir, `${category}.json`),
@@ -167,8 +244,17 @@ async function main() {
         path.join(rssDir, `${category}.xml`),
         toRss(category, labelFor.get(category) ?? category, papers, generatedAt),
       );
+      // Build input, not site content: the ranker folds this into its memory
+      // and nothing serves it.
+      await writeFile(
+        path.join(corpusDir, `${category}.json`),
+        JSON.stringify({ category, fetchedAt: generatedAt, since, papers: all }),
+      );
+      harvested += all.length;
       succeeded.push(category);
-      console.log(`  ${category}: ${papers.length} papers`);
+      console.log(
+        `  ${category}: ${papers.length} in the feed, ${all.length} into the corpus`,
+      );
     } else {
       failed.push(category);
     }
@@ -176,6 +262,7 @@ async function main() {
       await sleep(POLITE_DELAY_MS);
     }
   }
+  console.log(`Corpus harvest: ${harvested.toLocaleString()} category rows`);
 
   // Partial runs (--cats) must not shrink the manifest's category list:
   // the client treats absence from the manifest as "no snapshot exists".

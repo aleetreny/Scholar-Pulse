@@ -100,6 +100,7 @@ const MIN_COHORT = 12;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(here, "..", "public", "data");
 const feedDir = path.join(dataDir, "feed");
+const corpusDir = path.join(here, "..", ".corpus");
 const memoryPath = path.join(dataDir, "memory.json");
 const predictionsPath = path.join(dataDir, "predictions.json");
 
@@ -160,6 +161,42 @@ async function loadMemory() {
   }
   console.log("memory: starting empty; author signals stay dormant until it fills");
   return EMPTY_MEMORY;
+}
+
+/* ------------------------------------------------------------------ corpus */
+
+/**
+ * Everything the snapshot builder harvested, which is more than the feed shows.
+ *
+ * The feed is a hundred papers per category because that is a readable page.
+ * Folding only those into the memory made the ranking's whole view of arXiv a
+ * hundred papers a week per field, which in cs.AI is ten hours of submissions.
+ * The corpus reaches back ten days instead, roughly doubling what the memory
+ * learns per build, and the papers the feed displays are a subset of it.
+ *
+ * Absent for a checkout that has not run the snapshot builder, or a partial
+ * `--cats` run, so the caller falls back to folding the feed itself.
+ */
+async function loadCorpus() {
+  let files;
+  try {
+    files = (await readdir(corpusDir)).filter((name) => name.endsWith(".json"));
+  } catch {
+    return null;
+  }
+  if (files.length === 0) {
+    return null;
+  }
+  const unique = new Map();
+  for (const file of files) {
+    const harvest = JSON.parse(await readFile(path.join(corpusDir, file), "utf8"));
+    for (const paper of harvest.papers ?? []) {
+      if (!unique.has(paper.id)) {
+        unique.set(paper.id, paper);
+      }
+    }
+  }
+  return [...unique.values()];
 }
 
 /* ------------------------------------------------------------- predictions */
@@ -705,7 +742,19 @@ async function main() {
     deadSignals.reduce((sum, name) => sum + Math.abs(RANKING_MODEL.weights[name] ?? 0), 0) /
     totalWeight;
 
-  const next = foldIntoMemory(memory, papers);
+  // Scored on the feed, remembered from the corpus. The two are deliberately
+  // different sizes: what is worth showing a reader and what is worth knowing
+  // about the field are not the same question.
+  const corpus = await loadCorpus();
+  if (corpus) {
+    console.log(
+      `corpus: folding ${corpus.length.toLocaleString()} papers, ` +
+        `${(corpus.length / papers.length).toFixed(1)}x what the feed shows`,
+    );
+  } else {
+    console.log("corpus: none harvested, folding the feed itself");
+  }
+  const next = foldIntoMemory(memory, corpus ?? papers);
   await mkdir(dataDir, { recursive: true });
   await writeFile(memoryPath, JSON.stringify(next));
 

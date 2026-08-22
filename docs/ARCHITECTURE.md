@@ -45,6 +45,15 @@ The static application does not depend on the Python services.
 Scoring happens entirely at build time; the browser only reads the result. There is
 no database and no server.
 
+0. **Harvest.** The snapshot builder writes two things per category: the
+   hundred newest papers, which the site displays, and everything submitted in
+   the last ten days, which it does not. The second lands in `apps/web/.corpus`
+   and exists only to be folded into the memory. They were the same thing until
+   it was measured: a hundred papers is ten hours of cs.AI, so the ranking's
+   entire view of the field was a hundred papers a week, and 44% of every
+   cohort arrived with authors it had never seen. Separating them roughly
+   doubles the corpus, from about 3,750 unique papers a week to about 8,000,
+   for around 30 extra arXiv requests.
 1. **Memory.** The ranker fetches `data/memory.json` from the previously deployed
    site: which authors and which words it has seen, and when. The deployment is
    the storage. Signals are computed against that memory as it stood *before* the

@@ -22,11 +22,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # Headroom, not a measured need. The arXiv pass is paced at one request
-    # every 3.2s by arXiv's own request and takes about four minutes; ranking
-    # takes under six, bounded by its own enrichment budget rather than by this
-    # cap. Eleven or twelve minutes is the realistic run. The margin is here
-    # because both upstreams throttle anonymous callers at their own discretion,
-    # and a deploy killed mid-flight costs more than one that runs long.
+    # every 3.2s by arXiv's own request; it now pages back ten days for the
+    # corpus rather than taking a single page per category, which is roughly
+    # 125 requests and seven minutes against four. Ranking takes under six,
+    # bounded by its own enrichment budget rather than by this cap. Thirteen or
+    # fourteen minutes is the realistic run. The margin is here because the
+    # upstreams throttle anonymous callers at their own discretion, and a
+    # deploy killed mid-flight costs more than one that runs long.
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -51,6 +53,10 @@ jobs:
         run: npm test
         working-directory: apps/web
 
+      # Writes two things: the hundred papers per category the site displays,
+      # under public/data/feed, and everything submitted in the last ten days
+      # under apps/web/.corpus, which the ranker folds into its memory and
+      # nothing serves.
       - name: Build feed snapshots from arXiv
         run: node scripts/build-feed-snapshots.mjs
         working-directory: apps/web
