@@ -665,12 +665,31 @@ async function main() {
     );
   }
 
+  const rankedAt = new Date().toISOString();
   for (const [file, snapshot] of snapshots) {
-    snapshot.papers = snapshot.papers.map((paper) => ({
-      ...paper,
-      pulse: pulses.get(paper.id),
-    }));
-    snapshot.rankedAt = new Date().toISOString();
+    snapshot.papers = snapshot.papers.map((paper) => {
+      const counts = enrichment.get(paper.id);
+      return {
+        ...paper,
+        pulse: pulses.get(paper.id),
+        // Carried into the snapshot so the paper page has something true to
+        // show on first paint. The browser asks Semantic Scholar too, but its
+        // anonymous pool answers roughly one request in five, so without this
+        // most visits saw an empty space where the counts belong. Absent
+        // rather than zeroed when the index did not answer for this paper:
+        // "unknown" and "zero" are different claims here as everywhere else.
+        ...(counts
+          ? {
+              metrics: {
+                citations: counts.citations ?? null,
+                references: counts.references ?? null,
+                asOf: rankedAt,
+              },
+            }
+          : {}),
+      };
+    });
+    snapshot.rankedAt = rankedAt;
     await writeFile(path.join(feedDir, file), JSON.stringify(snapshot));
   }
 
@@ -690,7 +709,6 @@ async function main() {
   await mkdir(dataDir, { recursive: true });
   await writeFile(memoryPath, JSON.stringify(next));
 
-  const rankedAt = new Date().toISOString();
   const predictions = recordPredictions(
     await loadPredictions(),
     cohortList,

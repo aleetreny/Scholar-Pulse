@@ -31,6 +31,29 @@ export type Pulse = {
   reasons: PulseReason[];
 };
 
+/**
+ * Counts an external index reported when the site last built.
+ *
+ * They are written into the feed snapshot because the paper page could not
+ * otherwise show them: Semantic Scholar's anonymous pool answers a browser
+ * about one time in five, so a reader arriving at a paper usually saw nothing
+ * at all where the citation and reference counts should be. The build already
+ * asks for both in order to rank, four hundred papers per request and with a
+ * key, so this costs one field per paper and no extra call.
+ *
+ * Stale by up to a week by construction. The page still asks Semantic Scholar
+ * live and prefers the answer when it arrives; this is the floor, not the
+ * ceiling.
+ */
+export type PaperMetrics = {
+  /** Citations recorded at build time. Zero here is a measurement. */
+  citations: number | null;
+  /** Bibliography length. Null means not parsed yet, which is not zero. */
+  references: number | null;
+  /** When the build asked. */
+  asOf: string;
+};
+
 export type Paper = {
   /** Bare arXiv id without version, e.g. "2401.12345" or "math/0211159". */
   id: string;
@@ -50,6 +73,8 @@ export type Paper = {
   absUrl: string;
   /** Present in feed snapshots; absent for papers fetched live from search. */
   pulse?: Pulse;
+  /** Present in feed snapshots when the index answered for this paper. */
+  metrics?: PaperMetrics;
 };
 
 export type FeedResponse = {

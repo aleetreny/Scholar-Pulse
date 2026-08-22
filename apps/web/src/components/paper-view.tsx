@@ -226,10 +226,15 @@ export function PaperView({ arxivId }: { arxivId: string }) {
 
   const saved = isSaved(paper.id);
   const bibtex = toBibtex(paper);
-  // Semantic Scholar merges a preprint's versions, so its count is the better
-  // one; OpenAlex is the fallback when S2 is rate-limited. Null means neither
-  // index answered, which is not the same claim as zero.
-  const citations = extras?.citationCount ?? oa?.citedByCount ?? null;
+  // Live first, because it is current: Semantic Scholar merges a preprint's
+  // versions so its count is the better one, then OpenAlex. The snapshot's own
+  // figure is the floor under both, and on most visits it is the only one
+  // there, since S2's anonymous pool answers a browser about one time in five.
+  // Null means nothing anywhere knows, which is not the same claim as zero.
+  const live = extras?.citationCount ?? oa?.citedByCount ?? null;
+  const citations = live ?? paper.metrics?.citations ?? null;
+  const references = extras?.referenceCount ?? paper.metrics?.references ?? null;
+  const measuredAt = live === null && paper.metrics ? paper.metrics.asOf : null;
 
   return (
     <article className="main__column paper-page">
@@ -275,7 +280,9 @@ export function PaperView({ arxivId }: { arxivId: string }) {
             title={
               extras?.influentialCitationCount
                 ? t("paper.influential", { n: extras.influentialCitationCount })
-                : undefined
+                : measuredAt
+                  ? t("paper.asOf", { date: formatAbsoluteDate(measuredAt, lang) })
+                  : undefined
             }
           >
             <TrendingUp />
@@ -435,7 +442,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         <CitationGraph
           workId={oa.workId}
           referencedWorks={oa.referencedWorks}
-          referenceCount={extras?.referenceCount ?? null}
+          referenceCount={references}
           citationCount={citations}
         />
       ) : null}
