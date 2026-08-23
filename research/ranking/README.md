@@ -214,4 +214,4 @@ which had been inert on every build since the ranking launched because it had no
 baseline to compare against, started contributing. The table above says what
 that is expected to be worth. Whether it was is a question for
 `apps/web/scripts/verify-ranking.mjs` and the prediction log, not for this
-directory: from late November 2026 there will be cohorts old enough to grade.
+directory: the first cohort is gradable from 2026-11-21.

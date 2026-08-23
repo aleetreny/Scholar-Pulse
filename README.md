@@ -143,7 +143,7 @@ against what actually happened.
 honest answer rather than a limitation: a preprint has no citations because it
 is a preprint, and the study measured that a cohort needs about three months
 before its top ten has settled into its field's top decile. The log starts on
-2026-08-23, so the first real verdict is available from **late November 2026**.
+2026-08-23, so the first cohort is gradable from **2026-11-21**.
 
 ## Repository layout
 
