@@ -204,3 +204,14 @@ above it:
 
 So the model is not broken. It is starved. What it needs is not a better fit,
 it is a memory that has seen the field.
+
+**That memory was built.** On 2026-08-23 the harvest was widened from a hundred
+papers per category to ten days of submissions, and twelve months of arXiv were
+folded in over `scripts/backfill-memory.mjs`. The live corpus went from 42,565
+authors across five months to 516,858 across thirteen, the share of each cohort
+with no author history at all went from 46.8% to 0%, and `term_burst_mean`,
+which had been inert on every build since the ranking launched because it had no
+baseline to compare against, started contributing. The table above says what
+that is expected to be worth. Whether it was is a question for
+`apps/web/scripts/verify-ranking.mjs` and the prediction log, not for this
+directory: from late November 2026 there will be cohorts old enough to grade.
