@@ -438,10 +438,14 @@ export function PaperView({ arxivId }: { arxivId: string }) {
         </div>
       </section>
 
-      {oa ? (
+      {/* Shown whenever there is anything to show. Gating the whole section on
+          OpenAlex answering meant a paper whose bibliography the build had
+          already counted rendered no literature section at all, which is the
+          common case now that OpenAlex meters its free tier. */}
+      {oa || references !== null ? (
         <CitationGraph
-          workId={oa.workId}
-          referencedWorks={oa.referencedWorks}
+          workId={oa?.workId ?? null}
+          referencedWorks={oa?.referencedWorks ?? []}
           referenceCount={references}
           citationCount={citations}
         />

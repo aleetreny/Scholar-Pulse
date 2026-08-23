@@ -159,7 +159,14 @@ export function CitationGraph({
   referenceCount,
   citationCount,
 }: {
-  workId: string;
+  /**
+   * The paper's OpenAlex work, when OpenAlex answered. Null when it did not,
+   * which is now a routine outcome rather than an outage: OpenAlex meters its
+   * free tier and a reader who has spent the day's allowance gets HTTP 429 for
+   * hours. The section still has something true to say without it, so it says
+   * that instead of disappearing.
+   */
+  workId: string | null;
   referencedWorks: string[];
   /**
    * Length of the bibliography according to Semantic Scholar, which parses
@@ -188,13 +195,16 @@ export function CitationGraph({
         }
         t={t}
       />
-      <GraphSection
-        label={t("paper.citedBy")}
-        hint={t("paper.citedByHint")}
-        count={citationCount}
-        load={() => getCitations(workId, PAGE)}
-        t={t}
-      />
+      {/* Nothing to ask for the citing side without a work to ask about. */}
+      {workId !== null ? (
+        <GraphSection
+          label={t("paper.citedBy")}
+          hint={t("paper.citedByHint")}
+          count={citationCount}
+          load={() => getCitations(workId, PAGE)}
+          t={t}
+        />
+      ) : null}
     </section>
   );
 }
