@@ -130,12 +130,23 @@ function monthBounds(month) {
  * which the protocol treats as "come back", not as a failure; four of the
  * first five requests in testing were 503 before the same query returned
  * 1,300 records.
+ *
+ * The retry ladder honours the deadline as well as the attempt count. Eight
+ * attempts at a four-minute timeout plus backoff is over half an hour, so a
+ * single stubborn page could outlive the whole budget and take the deploy's
+ * wall clock with it; a run is meant to stop when its time is up, not when it
+ * finally gives up.
  */
-async function fetchPage(query) {
+async function fetchPage(query, deadline) {
   for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
+    if (Date.now() > deadline) {
+      console.warn("    out of budget mid-page");
+      return null;
+    }
     try {
       const response = await fetch(`${OAI_BASE}?${query}`, {
-        signal: AbortSignal.timeout(240_000),
+        // Bounded by whichever runs out first, the request or the budget.
+        signal: AbortSignal.timeout(Math.max(10_000, Math.min(240_000, deadline - Date.now()))),
         headers: { "User-Agent": "ScholarPulse/1.0 (backfill; github.com/aleetreny/Scholar-Pulse)" },
       });
       if (response.status === 503 || response.status >= 500) {
@@ -221,7 +232,7 @@ async function harvestMonth(month, deadline) {
   let seen = 0;
 
   for (;;) {
-    const body = await fetchPage(query);
+    const body = await fetchPage(query, deadline);
     if (!body) {
       return { papers: [...papers.values()], pages, seen, complete: false };
     }
