@@ -31,11 +31,16 @@ Scholar-Pulse/
 ## Public web data flow
 
 1. The deployment workflow runs `apps/web/scripts/build-feed-snapshots.mjs`.
-2. The script fetches current arXiv metadata and produces static feed and RSS files.
-3. `apps/web/scripts/rank-snapshots.mjs` scores those snapshots (see below) and writes
-   the ranking back into them.
+2. The script fetches current arXiv metadata and produces static feed and RSS
+   files, plus a wider harvest that feeds the corpus memory and is never served.
+3. `apps/web/scripts/rank-snapshots.mjs` scores those snapshots (see below), writes
+   the ranking and the build's citation and reference counts back into them, and
+   appends what it claimed to the prediction log.
 4. Next.js exports the application and generated data as a static site.
-5. The browser queries OpenAlex and Semantic Scholar for search, citation, and enrichment features.
+5. The browser queries OpenAlex for search, author lookup and the citation graph,
+   and Semantic Scholar for TLDRs, similar papers and fresher counts. Every one of
+   those is an enhancement: the counts and the ranking are already in the snapshot,
+   so a page renders completely with both upstreams unreachable.
 6. Personal state remains in the browser and can be exported as BibTeX or JSON.
 
 The static application does not depend on the Python services.
@@ -69,18 +74,27 @@ no database and no server.
    keyname to match what the Atom feed produces; on 119 papers present in both
    sources the two agreed exactly, which is the property that makes the
    backfill merge into existing author records rather than duplicate every
-   researcher. Budget about 160 bytes of memory.json per paper folded. Signals are computed against that memory as it stood *before* the
-   batch being scored, so no paper is credited with a track record its authors
-   gained this morning.
-2. **Enrichment.** Two indexes, asked for different things. Semantic Scholar goes
-   first, four hundred arXiv ids per request, because it parses preprint PDFs and
-   is therefore the only source of reference counts, the strongest cold-start
-   signal in the study. OpenAlex follows, fifty DOIs per request, for citation
-   counts: it has a record for ~97% of submissions within days, but it catalogues
-   a preprint *without* parsing its bibliography, so its `referenced_works_count`
-   is zero for all of them and is deliberately discarded. Recording that zero
-   would tell the ranker "this paper cites nothing" when the truth is "we have
-   not looked", and the reference lane cannot tell those apart.
+   researcher. Budget about 160 bytes of memory.json per paper folded.
+
+   Signals are computed against that memory as it stood *before* the batch
+   being scored, so no paper is credited with a track record its authors gained
+   this morning.
+2. **Enrichment.** One index. Semantic Scholar is asked for reference and
+   citation counts, four hundred arXiv ids per request, because it parses
+   preprint PDFs and is therefore the only free source of reference counts, the
+   strongest cold-start signal in the study.
+
+   OpenAlex used to run a second pass here for citation counts and no longer
+   does. It was never a source of reference counts, since it catalogues a
+   preprint *without* parsing its bibliography and its `referenced_works_count`
+   is zero for all of them, which would tell the ranker "this paper cites
+   nothing" when the truth is "we have not looked". Measured on citations, its
+   whole pass added 33 papers S2 did not know about, every one of them a zero,
+   and no new non-zero citation at all. It has since started metering its free
+   tier, which made it a billed dependency in the critical path buying nothing.
+   The browser still uses it for search, author lookup and the citation graph,
+   where it genuinely is the better source, and now tells a reader when the
+   daily allowance rather than a passing throttle is the problem.
 
    Optional by construction: failures, rate limits and preprints that are not
    indexed yet all reduce to "this paper is ranked on fewer lanes". Semantic
@@ -117,8 +131,11 @@ no database and no server.
 4. **Fold forward.** The batch is folded into the memory and written back out for
    the next build, so the corpus the ranker learns from grows on its own. The
    memory is pruned to a two-year window and holds only author records, term
-   frequencies and monthly volumes, roughly 1 MB, so it cannot grow without
-   bound as the site keeps running.
+   frequencies and monthly volumes, so it cannot grow without bound as the site
+   keeps running. Size scales with what has been folded rather than with how
+   long the site has run: about 160 bytes per paper, so 2.5 MB before the
+   backfill and roughly 30 MB after a year of arXiv. Only the build ever
+   downloads it; the browser reads the feed snapshots and the manifest.
 
    Each paper is folded exactly once. The workflow runs on every push as well
    as weekly, and every run refetches the same newest-100-per-category, so the
