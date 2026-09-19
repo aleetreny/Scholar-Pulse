@@ -1,217 +1,141 @@
-# Ranking research
+# Ranking review, September 2026
 
-Offline study behind the pivot from a chronological feed to a ranked preview of
-the recent papers most likely to matter. Nothing in this directory runs in
-production; it exists to decide what production should do, and to leave the
-evidence auditable.
+The current ranker is `pulse-v2`. This directory distinguishes retrospective
+research from prospective evidence about the live application.
 
-**It shipped.** `export_model.py` refits the study on the subset of signals a
-static build can actually compute and writes the coefficients into
-`apps/web/src/lib/ranking/model.generated.ts`. The scoring itself lives in
-`apps/web/src/lib/ranking/`, runs at build time in
-`apps/web/scripts/rank-snapshots.mjs`, and is covered by `npm test` in
-`apps/web`. Regenerate the model rather than hand-editing it.
+## Corrections to the previous study
 
-## The question
+The original account is preserved in [legacy-study.md](legacy-study.md). Two
+problems prevent treating its dense-memory numbers as causal deployment evidence:
 
-A paper's impact is measured in citations, and a paper that appeared this
-morning has none. So the whole product rests on one empirical claim: that the
-metadata visible on day zero already carries a usable signal about what a paper
-will become. These experiments test that claim, on real papers, against real
-outcomes, and then try to break the result.
+- `memoryFor(..., dense=true)` included every submission before a weekly build,
+  including its target papers. Target papers therefore supplied their own author
+  histories. The reported 0% newcomer share was not independent evidence of
+  historical coverage. The replay now excludes current target IDs from all memory
+  arms; previous numbers have not been relabeled as results of this correction.
+- The replay fetched current reference counts and current arXiv metadata for old
+  papers. Neither immutable first-version bibliographies nor day-zero indexing
+  availability was observed. A production replay cannot reconstruct those facts
+  from a later API response.
 
-## Corpora
+The 2017–2018 curated-landmark metadata calibration also does not calibrate
+fused rankings in every current discipline. V2 retains that model as a prior,
+but removes the probability claim and historical lift from the live interface.
+Its approximate collaborator statistic is still batch-dependent. This limitation
+is explicit rather than disguised as an exact coauthor graph.
 
-Three public sources, none redistributed here. `fetch_data.sh` pulls each from
-its own home.
+## What changes in v2
 
-| Corpus | Size | What it provides |
-| --- | --- | --- |
-| hep-th citation graph (KDD Cup 2003 / SNAP) | 27,770 arXiv papers, 351,864 citations, 1992–2003 | Hard ground truth. arXiv ids of that era encode the submission month, so every paper *and every citation* is timestamped and the world can be replayed month by month. |
-| arXiv metadata sample | 41,000 papers, 1993–2018 | Title, abstract, authors, categories, date: the same payload ScholarPulse already snapshots. |
-| UKP Lab curated hits | 198 papers (93 inside the sample above; 87 in scope after category filtering) | Papers that demonstrably mattered in cs.LG / cs.CL, 2017-05 → 2018-03, with measured citation counts. |
+- Per-display-category cohorts include cross-listed papers. No unrelated-field pool.
+- External lanes rank on a shared percentile scale. Their weight is observed
+  coverage; missing counts contribute zero centered evidence, not zero citations.
+- Citations are compared inside 28-day publication-age buckets. A bucket needs at
+  least eight valid observations and variation before it contributes.
+- Once a paper is at least 28 days old, the citation lane's weight is 4. This was
+  selected from the small grid below; younger papers retain weight 1.
+- Existing newcomer comparison/reservations are retained. The percentile is
+  within the corresponding newcomer/established comparison group. Ties in input
+  evidence remain tied; unrounded standing and a stable ID order prevent rounded
+  scores or source ordering from silently changing the page.
+- Explanations include actual reference/citation contributions, and distinguish
+  a cohort having a lane from an individual paper having an observation.
 
-## Protocol
+For lane coverage c and descending within-known percentile p, its centered
+contribution is `c * (1 / (0.2 + p) - 1 / 0.7)`. Unknown observations contribute
+zero. The metadata lane uses the same transform at full coverage. This extends
+[RRF](https://research.google/pubs/reciprocal-rank-fusion-outperforms-condorcet-and-individual-rank-learning-methods/)
+with explicit common scaling and coverage weights; the original paper does not
+establish the value of these extensions for scientific impact.
 
-Every number is produced under a constraint a deployment actually faces.
+## Reproducible fusion experiment
 
-- **Time-sliced features.** A citation exists from the moment the *citing* paper
-  is posted, so scoring a paper submitted in month T uses only edges with source
-  month < T. The slicing happens once, centrally, in `hepth_features.py`.
-- **Rolling-origin validation.** To score test month T, training uses only
-  cohorts whose labels were already complete at T (months m with m + horizon ≤ T).
-  A random split would let 2001 teach the model how to rank 1998.
-- **Cohort-relative everything.** Comparisons happen inside one month's batch;
-  the target is a paper's percentile among its peers, not its raw count, so the
-  model cannot win by learning the calendar.
-- **Bootstrap over cohorts, not papers.** Papers within a month share a graph
-  state and a topic mix, so months are the independent replicates.
+Source: [SNAP hep-th](https://snap.stanford.edu/data/cit-HepTh.html), a public
+citation graph. The source is not committed; its SHA-256 is recorded in
+[fusion-validation.json](fusion-validation.json). After rejecting undecodable or
+time-inconsistent edges: 27,761 nodes, 351,864 edges, 943 excluded edges.
 
-## Files
+Protocol:
 
-| File | Role |
-| --- | --- |
-| `fetch_data.sh` | Download the three corpora. |
-| `backtest_deployed.mjs` | Replay the site's weekly job over a period old enough to have outcomes, and grade it. |
-| `prepare_data.py` | Normalise them into parquet; validates the month decoding. |
-| `hepth_features.py` | Causal features on the citation graph, at any observation window. |
-| `arxiv_features.py` | Day-zero features from arXiv metadata alone. |
-| `metrics.py` | NDCG, precision@k, lift, paired bootstrap. |
-| `models.py` | Heuristics, ridge, Poisson GLM, gradient boosting, pairwise learning-to-rank, reciprocal rank fusion. |
-| `run_hepth.py` | E1–E7: cold start, observation window, mixed-age boards, tier ablation, horizons, stability, feature selection. |
-| `run_arxiv.py` | E8: same question on modern arXiv metadata. |
-| `run_audit.py` | E10–E12: where the signal lives, calibration, robustness. |
-| `run_final.py` | E13–E15: the fixes, and whether they work. |
-| `export_model.py` | Refit on the deployable signals; emit the shipped model. |
+1. Count observed citations through publication month + 1. Grade **additional**
+   citations in months + 2 through + 24. No future citation enters an input.
+2. Five fixed coverage scenarios simulate index missingness with deterministic,
+   independent ID hashes for references and citations.
+3. Select a reception multiplier from `[1, 2, 4]` on **1993–1995** cohorts only.
+   All their 24-month labels complete before January 1998. Mean NDCG@10 across
+   the five scenarios was 0.6335, 0.6404, 0.6432; multiplier 4 was selected.
+4. Compare against the former partial-lane fusion on **1998–April 2001**, 40
+   cohorts and 9,348 papers with complete 24-month horizons. Use logarithmic
+   citation gain in NDCG@10; report paired monthly bootstrap intervals.
 
-`backtest_deployed.mjs` is the only file here that imports the deployed code
-rather than describing it, and the only one whose corpus is 2026 rather than
-2018. It exists because everything above answers "does this work in
-principle" and none of it answers "does the thing on the site work".
+| Reference coverage | Citation coverage | Old fusion | V2 fusion | Paired difference, 95% interval |
+| --- | --- | --- | --- | --- |
+| 100% | 100% | 0.792 | 0.852 | +0.060 [0.045, 0.075] |
+| 75% | 75% | 0.753 | 0.819 | +0.066 [0.053, 0.081] |
+| 100% | 25% | 0.655 | 0.672 | +0.017 [0.006, 0.030] |
+| 25% | 100% | 0.820 | 0.858 | +0.038 [0.025, 0.052] |
+| 25% | 25% | 0.671 | 0.675 | +0.004 [-0.017, 0.023] |
+
+**Rejected candidate:** equal-weight coverage fusion lost 0.040 NDCG@10 when
+citation coverage was 25% and references complete. Its full results are retained
+in the JSON. Those evaluation results were examined before the training grid
+above was run; this is retrospective evidence, **not a blinded holdout**.
+
+This experiment compares **two external lanes**, omitting the metadata model
+because the graph contains no author/title features. It does not validate the
+complete production system, newborn papers or transfer to other disciplines.
+Publication months are decoded from IDs, and bibliographies in the static graph
+may contain later revisions. Random missingness is not the same as real index
+selection. Bootstrap intervals describe this protocol; they cannot remove those
+limitations or dependence between citations across neighboring months.
 
 ```bash
-RESEARCH_DATA=/workspace/rankdata ./research/ranking/fetch_data.sh
-cd research/ranking
-python prepare_data.py && python hepth_features.py && python arxiv_features.py
-python run_hepth.py && python run_arxiv.py && python run_audit.py && python run_final.py
-python export_model.py          # writes apps/web/src/lib/ranking/model.generated.ts
+mkdir -p data/review-corpora
+curl -fL https://snap.stanford.edu/data/cit-HepTh.txt.gz \
+  -o data/review-corpora/cit-HepTh.txt.gz
+node research/ranking/check_fusion.mjs
+# Refit the generated reception multiplier using the same fixed protocol:
+node research/ranking/check_fusion.mjs --export
 ```
 
-Runtime is about seven minutes end to end on four cores.
+The command writes detailed cohort results under the ignored data directory.
+`fusion-model.generated.ts` records the training grid and source hash; the
+metadata coefficients in `model.generated.ts` are unchanged.
 
-## What shipped, and what it cost
+## Prospective evaluation
 
-The deployed model is not the best model in this study; it is the best model
-that can be computed from an Atom feed and defended a year from now.
+The legacy log's first date, **2026-08-23T15:06:47.298Z**, is preserved, and its
+first eligible evaluation is **2026-11-21T15:06:47.298Z**. Each new version needs
+its own 90-day follow-up. A Saturday workflow runs the evaluator and retains the
+JSON report as an Actions artifact; immature cohorts cause no external queries.
 
-| Variant | AUC | lift@10 | Why not this one |
-| --- | --- | --- | --- |
-| All 24 research features, unconstrained | 0.835 | 8.2× | Four features cannot be computed, or cannot be afforded (see below). |
-| 20 deployable features, unconstrained | 0.806 | 4.7× | Six coefficients pointed against their own univariate direction: cancellation artefacts that hold only while the corpus correlations do. |
-| **12 deployable features, non-negative** | **0.789** | **6.2×** | **Shipped.** Each signal is pre-oriented and its weight pinned at or above zero, so nothing can cancel, the fit survives a change of cohort, and every score decomposes into readable contributions. lift@10 is *higher* than the unconstrained variant's. |
+V2 logs all candidates, displayed positions and three baselines on the identical
+candidate set: the former formula, newest-first and reference-count order. The
+former-formula comparator uses the new per-category candidates and current
+as-of-build memory; it is not a reconstruction of what the old website displayed.
+Full candidates avoid the biased NDCG that would result from grading only the
+old log's oversampled head. New entries keep initial citations only when actually
+observed in the ranking run; stale cached counts cannot serve as that baseline.
 
-Four of the twenty-four are excluded before fitting. Co-authorship PageRank and
-the two TF-IDF distinctiveness measures need the whole graph or a fitted
-vectoriser, neither of which survives a static build. `pair_novelty` is
-excluded for a different reason worth recording: it is cheap to compute and
-expensive to *remember*. Tracking which word pairs have been seen together
-needs a set that grows to ~11 MB of state carried between builds, and the
-signal sits at AUC 0.503, which is noise. Dropping it improved every metric (AUC 0.788
-→ 0.789, lift@10 6.00× → 6.15×) and cut the memory file from 5.4 MB to 1.1 MB.
+The evaluator reports every discipline separately and keeps versions separate.
+For V2 the outcome is future citation **gain**, not the cumulative count that
+already influenced the predictor. It requires at least 80% outcome/baseline
+coverage, complete original top-ten outcomes in every arm, and at least five
+observed positive papers. Missing observations and downward index corrections
+are excluded and counted through coverage. Legacy rows retain their sampling
+weights and are evaluated by within-field AUC and band lift. Expanded control
+weights never count as extra independent positives.
 
-Eight of the remaining twenty were then given zero weight by the fit and are
-not shipped either: claim language, hedging, `has_numbers`, `cross_list`,
-`abstract_sentences`, `term_burst_max`, and both raw author-productivity counts.
+Reports remain diagnostic: daily builds overlap and cross-listed papers appear
+in multiple disciplines. They must not be treated as independent replication or
+pooled raw cross-field citation counts. A future significance analysis should
+cluster at least by calendar block and account for shared papers.
 
-## What came out
+## Sources and tooling
 
-1. **Cold-start ranking works.** On hep-th, ranking a month's submissions on day
-   zero reaches NDCG@10 = 0.67 against 0.36 for random ordering; the top ten
-   collect 3.0× the citations of an average paper from the same month.
-   ΔNDCG@10 = +0.31 [+0.28, +0.35] over 52 held-out months.
-2. **The reference list beats the citation graph.** Six features derived from
-   what a paper cites (how many, how recent, how spread out) scored 0.687,
-   *higher* than all 26 features together (0.658). PageRank, co-citation
-   z-scores and velocity added noise, not signal. Greedy selection independently
-   converged on four reference-list features and nothing else.
-3. **Waiting is the strongest lever.** A one-month observation window lifts
-   NDCG@10 from 0.658 to 0.732; three months to 0.823; six to 0.870. On a
-   rolling board the width trades freshness against discrimination: 4.4× lift
-   at one month, 8.8× at three, 14.0× at six, 21.9× at twelve, and three
-   months is where 91% of the top ten already falls in its cohort's top decile.
-4. **Atypical combinations did not replicate here.** The Uzzi et al. novelty and
-   conventionality z-scores, computed against an analytic configuration-model
-   null, ranked below random on their own and were dropped by feature selection.
-   Age-normalising a mixed-age board did not help either, at any width; it
-   costs a steady ~0.05 NDCG (0.861 → 0.821 at three months, 0.951 → 0.894 at
-   twenty-four). The label is already age-invariant, so there was no bias to
-   correct and the division only added variance.
-5. **On modern arXiv metadata, authorship carries the signal.** AUC 0.836
-   [0.801, 0.869]; the top ten of a month are 9.6× enriched in papers that
-   became landmarks. Author signals alone score 0.818; content signals alone
-   0.690; writing style is close to noise.
-6. **Which makes the naive model a reputation detector.** The best-connected 10%
-   of authors take 60% of the board. Hits by unknown authors land at the 49th
-   percentile, a coin flip, against the 88th for established ones.
-7. **The fix is nearly free.** Ranking newcomers in their own lane on content
-   signals and reserving 30% of slots costs 0.03 AUC and raises outsider hits
-   from the 49th to the 73rd percentile, while *improving* recall@25.
-8. **Publish tiers, not positions.** Bagging does not damp input noise (every
-   replica reads the same perturbed inputs). Under 5% jitter a strict top-10
-   keeps 71% of its members; tier assignment keeps 95%.
-9. **The score can be shown honestly.** After isotonic calibration the predicted
-   and observed hit rates agree band by band and the ordering is monotone.
-10. **Chronological ordering is indistinguishable from shuffling.** Within a
-    month's feed, newest-first scores AUC 0.483 against 0.502 for a random
-    shuffle, and put zero landmark papers in the top ten across eleven months.
+- Hirako, Sasano & Takeda (2023), [Realistic Citation Count Prediction Task for Newly Published Papers](https://aclanthology.org/2023.findings-eacl.84/): motivates strict temporal information boundaries.
+- Cormack, Clarke & Büttcher (2009), [Reciprocal rank fusion](https://research.google/pubs/reciprocal-rank-fusion-outperforms-condorcet-and-individual-rank-learning-methods/): rank fusion baseline.
+- Abramo, D'Angelo & Felici (2019), [Predicting long-term publication impact through a combination of early citations and journal impact factor](https://arxiv.org/abs/1909.08907): prediction varies with exposure time and discipline; no journal prestige signal was added here.
+- [SNAP hep-th dataset](https://snap.stanford.edu/data/cit-HepTh.html): the experiment's graph and provenance.
+- Kassis, Agarwal, He, Patel & Brueckner (2026), [Scientific Agent Skills](https://doi.org/10.48550/arXiv.2609.00065): procedural literature-lookup tooling used during the review; not evidence for this ranker's effectiveness.
 
-## What it does in production
-
-Everything above is 2017-18 data and a curated label. `backtest_deployed.mjs`
-asks the narrower question: the weekly job is replayed over February and March
-2026 in cs.LG, cs.CL and hep-th, scoring each cohort with the deployed ranker
-on what a build standing in that week could have known, and grading it against
-the citations those papers had by August 2026. Twenty-seven cohorts, 2,576
-papers, five to six months of accrual.
-
-The label is not the study's label and the numbers are not comparable to it.
-"Became a demonstrable reference in its field" was a 1.4% event in a curated
-list; here 52% of papers have at least one citation, the cohort's top decile
-starts at four, and 0.7% reach twenty. What can be compared is rankers against
-each other on the same cohorts.
-
-| Ranker | NDCG@10 | lift@10 | P@10 | AUC (top decile) |
-| --- | --- | --- | --- | --- |
-| **as deployed** (signals + reference lane) | **0.414** [0.374, 0.458] | **1.68x** [1.35, 2.06] | 0.237 | 0.598 [0.573, 0.621] |
-| reference count alone | 0.417 [0.370, 0.474] | 1.63x [1.35, 1.99] | 0.222 | 0.594 [0.559, 0.629] |
-| the twelve signals alone | 0.317 [0.284, 0.353] | 1.44x [1.11, 1.86] | 0.181 | 0.578 [0.554, 0.602] |
-| random shuffle | 0.339 [0.293, 0.383] | 1.22x [0.98, 1.49] | 0.178 | 0.530 [0.501, 0.561] |
-| newest first | 0.258 [0.225, 0.290] | 1.03x [0.79, 1.32] | 0.115 | 0.493 [0.454, 0.534] |
-
-Three things fall out of that table, in descending order of how much they hurt.
-
-1. **The feed does beat the feed it replaced, and the margin is real.**
-   ΔNDCG@10 = +0.156 [+0.106, +0.205] over newest-first, better in 85% of
-   cohorts. E10's finding survives contact with 2026: chronological ordering is
-   worse than a shuffle.
-2. **Nearly all of it is the reference count.** Sorting the cohort by nothing
-   but the length of its bibliography scores 0.417 against the full system's
-   0.414. The twelve signals, the cohort percentiles, the non-negative fit, the
-   newcomer lane and the reciprocal-rank fusion together add nothing that
-   survives a confidence interval. The lane the study called strongest is
-   carrying the product, and the model the README explains at length is along
-   for the ride.
-3. **On their own, the twelve signals rank below a shuffle.** 0.317 against
-   0.339 on NDCG@10, and 0.181 against 0.178 on precision@10. They order the
-   whole list slightly better than chance (AUC 0.578 against 0.530), but the
-   head of the list, which is the only part the product shows, is not better
-   than random.
-
-The reason is coverage, and it is fixable. The site ingests a hundred papers
-per category per week, roughly 14% of these three fields, so 44% of every
-cohort consists of papers whose authors it has never seen. Inside that pool all
-four author signals are constant and drop out, which leaves title length,
-whether the title has a colon, and abstract length holding 78% of what still
-moves the ranking. Fold the whole corpus into the memory instead, changing
-nothing else, and the same twelve signals go from below a shuffle to clearly
-above it:
-
-| Ranker | NDCG@10 | lift@10 | AUC (top decile) | AUC (>=20 citations) |
-| --- | --- | --- | --- | --- |
-| the twelve signals, site's ingestion (44% newcomers) | 0.317 | 1.44x | 0.578 | 0.698 |
-| the twelve signals, whole corpus (0% newcomers) | 0.393 | 1.60x | 0.637 | 0.800 |
-| as deployed, whole corpus | 0.476 | 2.03x | 0.648 | 0.822 |
-
-So the model is not broken. It is starved. What it needs is not a better fit,
-it is a memory that has seen the field.
-
-**That memory was built.** On 2026-08-23 the harvest was widened from a hundred
-papers per category to ten days of submissions, and twelve months of arXiv were
-folded in over `scripts/backfill-memory.mjs`. The live corpus went from 42,565
-authors across five months to 516,858 across thirteen, the share of each cohort
-with no author history at all went from 46.8% to 0%, and `term_burst_mean`,
-which had been inert on every build since the ranking launched because it had no
-baseline to compare against, started contributing. The table above says what
-that is expected to be worth. Whether it was is a question for
-`apps/web/scripts/verify-ranking.mjs` and the prediction log, not for this
-directory: the first cohort is gradable from 2026-11-21.
+Sources checked on 19 September 2026.

@@ -1,7 +1,7 @@
 "use client";
 
-import { searchSnapshots } from "@/lib/data/feed";
-import { searchPapers as searchOpenAlex } from "@/lib/data/openalex";
+import { searchSnapshots } from "./feed.ts";
+import { searchPapers as searchOpenAlex } from "./openalex.ts";
 import type { FeedResponse, SearchSort } from "@/lib/types";
 
 function isAbort(error: unknown, signal?: AbortSignal): boolean {
@@ -32,6 +32,6 @@ export async function searchPapers(
     if (isAbort(error, signal)) {
       throw error;
     }
-    return searchSnapshots(query, followedTopics, start, max);
+    return searchSnapshots(query, followedTopics, start, max, { fieldId, sort: !query.trim() && sort === "relevance" ? "citations" : sort, byAuthor, signal });
   }
 }

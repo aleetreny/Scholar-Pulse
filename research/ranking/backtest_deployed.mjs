@@ -13,7 +13,7 @@
 // It cannot be answered by waiting: the feed only holds papers days old, and a
 // paper days old has no citations. So the site's own weekly job is replayed
 // over a period far enough back to have outcomes. February and March 2026 are
-// scored, using only what a build standing in those weeks could have known,
+// scored, using historical metadata reconstructed today (not immutable v1 records),
 // and graded against the citations those papers had collected by the time this
 // was run.
 //
@@ -341,18 +341,19 @@ async function main() {
   const outcomes = await fetchOutcomes([...wanted]);
 
   const memoryFor = (at, weeks, dense) => {
+    const targetIds = new Set(Object.values(builds.find((build) => build.at === at)?.cohorts ?? {}).flat());
     if (dense) {
       const from = new Date(Date.parse(at) - weeks * 7 * 864e5).toISOString();
       return foldIntoMemory(
         EMPTY_MEMORY,
-        [...byId.values()].filter((p) => p.published >= from && p.published < at),
+        [...byId.values()].filter((p) => p.published >= from && p.published < at && !targetIds.has(p.id)),
       );
     }
     let memory = EMPTY_MEMORY;
     for (const build of builds.filter((b) => b.at < at).slice(-weeks)) {
       memory = foldIntoMemory(
         memory,
-        Object.values(build.cohorts).flat().map((id) => byId.get(id)).filter(Boolean),
+        Object.values(build.cohorts).flat().filter((id) => !targetIds.has(id)).map((id) => byId.get(id)).filter(Boolean),
       );
     }
     return memory;

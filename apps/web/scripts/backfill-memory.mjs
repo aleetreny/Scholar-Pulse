@@ -1,3 +1,4 @@
+import { loadState, validMemory } from "./state.mjs";
 // Folds historical arXiv metadata into the ranker's corpus memory.
 //
 //   node scripts/backfill-memory.mjs                 # the last 12 whole months
@@ -268,34 +269,9 @@ async function harvestMonth(month, deadline) {
 /* ------------------------------------------------------------------ memory */
 
 async function loadMemory() {
-  try {
-    const local = JSON.parse(await readFile(memoryPath, "utf8"));
-    if (local?.version === 1) {
-      console.log("memory: starting from the local copy");
-      return local;
-    }
-  } catch {
-    // No local copy, which is expected on CI, where the checkout is clean.
-  }
-  try {
-    const response = await fetch(`${SITE_BASE_URL}/data/memory.json`, {
-      signal: AbortSignal.timeout(180_000),
-    });
-    if (response.ok) {
-      const remote = await response.json();
-      if (remote?.version === 1) {
-        console.log(
-          `memory: carried over from the live site, ` +
-            `${Object.keys(remote.authors ?? {}).length.toLocaleString()} authors`,
-        );
-        return remote;
-      }
-    }
-  } catch (error) {
-    console.warn(`memory: could not read the live site (${error.message})`);
-  }
-  console.log("memory: starting empty");
-  return EMPTY_MEMORY;
+  return loadState(memoryPath, `${SITE_BASE_URL}/data/memory.json`, validMemory, {
+    allowEmpty: process.argv.includes("--bootstrap"), empty: EMPTY_MEMORY,
+  });
 }
 
 async function main() {

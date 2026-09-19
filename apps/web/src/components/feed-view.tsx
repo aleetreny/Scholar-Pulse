@@ -11,7 +11,6 @@ import { categoryLabel } from "@/lib/categories";
 import { getFeed, getManifest } from "@/lib/data/feed";
 import { formatRelativeDate } from "@/lib/format";
 import { type StringKey, useT } from "@/lib/i18n";
-import { MODEL_INFO } from "@/lib/ranking/score";
 import { useFeedSort, useHydrated, useTopics } from "@/lib/store";
 import type { PulseTier } from "@/lib/types";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
@@ -92,7 +91,7 @@ function Feed({ topics }: { topics: string[] }) {
 
   // Snapshot metadata: when the feed was last rebuilt, and whether any
   // followed field has no snapshot in this deployment.
-  const [manifest, setManifest] = useState<{ generatedAt: string; categories: string[] } | null>(null);
+  const [manifest, setManifest] = useState<{ generatedAt: string; categories: string[]; freshness?: Record<string, string>; refresh?: { carried: string[] } } | null>(null);
   useEffect(() => {
     let cancelled = false;
     getManifest()
@@ -143,7 +142,7 @@ function Feed({ topics }: { topics: string[] }) {
               <span className="page-head__stamp">
                 {" "}
                 {t("feed.updated", {
-                  when: formatRelativeDate(manifest.generatedAt, lang),
+                  when: formatRelativeDate(activeCategories.map((id) => manifest.freshness?.[id] ?? manifest.generatedAt).sort()[0], lang),
                 })}
               </span>
             ) : null}
@@ -214,6 +213,10 @@ function Feed({ topics }: { topics: string[] }) {
         </p>
       ) : null}
 
+      {manifest?.refresh?.carried.some((id) => activeCategories.includes(id)) ? (
+        <p className="notice notice--quiet">{t("feed.carried")}</p>
+      ) : null}
+
       {loading ? (
         <PaperListSkeleton />
       ) : error ? (
@@ -228,10 +231,7 @@ function Feed({ topics }: { topics: string[] }) {
         <>
           {ranked ? (
             <p className="notice notice--quiet feed-method">
-              {t("feed.rankedNote", {
-                lift: MODEL_INFO.liftAt10.toFixed(1),
-                auc: MODEL_INFO.auc.toFixed(2),
-              })}
+              {t("feed.rankedNote")}
             </p>
           ) : null}
           <div className="paper-list" data-sort={ranked ? "pulse" : "recent"}>

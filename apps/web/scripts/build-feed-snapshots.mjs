@@ -10,7 +10,7 @@
 //
 // Requires Node >= 23.6 (type stripping), since it imports the app's TS modules.
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,7 +26,10 @@ const SITE_BASE_URL = (
   process.env.SITE_BASE_URL ?? "https://aleetreny.github.io/Scholar-Pulse"
 ).replace(/\/$/, "");
 
-const PAPERS_PER_CATEGORY = 100;
+const PAPERS_PER_CATEGORY = 500;
+const MIN_FEED_PAPERS = 100;
+const HARVEST_BUDGET_MS = Number(process.env.HARVEST_BUDGET_MS ?? 720_000);
+let harvestDeadline = Infinity;
 const RSS_ITEMS = 40;
 const POLITE_DELAY_MS = 3200; // arXiv asks for ~1 request every 3 seconds.
 const RETRIES = 3;
@@ -58,9 +61,10 @@ const CORPUS_PAGE = 200;
 const MAX_CORPUS_PAGES = 12;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const outDir = path.join(here, "..", "public", "data", "feed");
-const rssDir = path.join(here, "..", "public", "data", "rss");
-const corpusDir = path.join(here, "..", ".corpus");
+const dataDir = process.env.SCHOLARPULSE_DATA_DIR ?? path.join(here, "..", "public", "data");
+const outDir = path.join(dataDir, "feed");
+const rssDir = path.join(dataDir, "rss");
+const corpusDir = process.env.SCHOLARPULSE_CORPUS_DIR ?? path.join(here, "..", ".corpus");
 
 /* ------------------------------- RSS -------------------------------- */
 
@@ -139,9 +143,10 @@ async function fetchPage(category, start, count, mayBeEmpty) {
   const url = `${ARXIV_API_BASE}/query?${params}`;
 
   for (let attempt = 1; attempt <= RETRIES; attempt += 1) {
+    if (Date.now() >= harvestDeadline) return null;
     try {
       const response = await fetch(url, {
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(Math.max(1, Math.min(30_000, harvestDeadline - Date.now()))),
         headers: { "User-Agent": "ScholarPulse/1.0 (snapshot builder; github.com/aleetreny/Scholar-Pulse)" },
       });
       if (!response.ok) {
@@ -155,7 +160,7 @@ async function fetchPage(category, start, count, mayBeEmpty) {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`  ${category}: attempt ${attempt}/${RETRIES} failed: ${message}`);
-      if (attempt < RETRIES) {
+      if (attempt < RETRIES && Date.now() + POLITE_DELAY_MS * attempt * 2 < harvestDeadline) {
         await sleep(POLITE_DELAY_MS * attempt * 2);
       }
     }
@@ -180,7 +185,7 @@ async function harvestCategory(category, feedMax, since) {
   let start = 0;
 
   for (let page = 0; page < MAX_CORPUS_PAGES; page += 1) {
-    const size = Math.max(feedMax, CORPUS_PAGE);
+    const size = CORPUS_PAGE;
     const batch = await fetchPage(category, start, size, page > 0);
     if (batch === null) {
       return page === 0 ? null : papers;
@@ -193,7 +198,7 @@ async function harvestCategory(category, feedMax, since) {
     }
     start += batch.length;
     const oldest = papers.at(-1)?.published ?? "";
-    if (batch.length < size || (papers.length >= feedMax && oldest < since)) {
+    if (batch.length < size || (papers.length >= Math.min(feedMax, MIN_FEED_PAPERS) && oldest < since)) {
       break;
     }
     await sleep(POLITE_DELAY_MS);
@@ -217,6 +222,7 @@ async function main() {
   await mkdir(rssDir, { recursive: true });
   await mkdir(corpusDir, { recursive: true });
   const generatedAt = new Date().toISOString();
+  harvestDeadline = Date.now() + HARVEST_BUDGET_MS;
   const since = new Date(Date.now() - INGEST_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const labelFor = new Map(
     CATEGORY_GROUPS.flatMap((group) =>
@@ -231,10 +237,27 @@ async function main() {
       `${INGEST_DAYS} days for the corpus)…`,
   );
   let harvested = 0;
+  const carried = [];
+  const freshness = {};
+  let consecutiveFailures = 0;
   for (const [index, category] of targets.entries()) {
-    const all = await harvestCategory(category, max, since);
+    const all = consecutiveFailures >= 3 || Date.now() >= harvestDeadline
+      ? null : await harvestCategory(category, max, since);
     if (all) {
-      const papers = all.slice(0, max);
+      consecutiveFailures = 0;
+      // Rank the full recent harvest, retaining at least 100 candidates for
+      // quiet disciplines and a hard cap for bounded static payloads.
+      const recentCount = all.filter((paper) => paper.published >= since).length;
+      let papers = all.slice(0, Math.min(max, Math.max(Math.min(max, MIN_FEED_PAPERS), recentCount)));
+      try {
+        const prior = JSON.parse(await readFile(path.join(outDir, `${category}.json`), "utf8"));
+        const old = new Map(prior.papers.map((paper) => [paper.id, paper]));
+        papers = papers.map((paper) => {
+          const previous = old.get(paper.id);
+          return previous?.versionedId === paper.versionedId && previous.metrics
+            ? { ...paper, metrics: previous.metrics } : paper;
+        });
+      } catch { /* New category: no cached counts. */ }
       const snapshot = { category, fetchedAt: generatedAt, papers };
       await writeFile(
         path.join(outDir, `${category}.json`),
@@ -252,13 +275,24 @@ async function main() {
       );
       harvested += all.length;
       succeeded.push(category);
+      freshness[category] = generatedAt;
       console.log(
         `  ${category}: ${papers.length} in the feed, ${all.length} into the corpus`,
       );
     } else {
-      failed.push(category);
+      consecutiveFailures += 1;
+      try {
+        const snapshot = JSON.parse(await readFile(path.join(outDir, `${category}.json`), "utf8"));
+        if (snapshot.category !== category || !Array.isArray(snapshot.papers) || !snapshot.papers.length) throw new Error("Invalid fallback");
+        carried.push(category);
+        freshness[category] = snapshot.fetchedAt;
+        await writeFile(path.join(rssDir, `${category}.xml`), toRss(category, labelFor.get(category) ?? category, snapshot.papers, snapshot.fetchedAt));
+        console.warn(`  ${category}: preserving snapshot from ${snapshot.fetchedAt}`);
+      } catch {
+        failed.push(category);
+      }
     }
-    if (index < targets.length - 1) {
+    if (index < targets.length - 1 && consecutiveFailures < 3 && Date.now() < harvestDeadline) {
       await sleep(POLITE_DELAY_MS);
     }
   }
@@ -268,16 +302,22 @@ async function main() {
   // the client treats absence from the manifest as "no snapshot exists".
   const manifestPath = path.join(outDir, "..", "manifest.json");
   let previous = [];
+  let previousManifest = {};
   try {
-    const { readFile } = await import("node:fs/promises");
-    previous = JSON.parse(await readFile(manifestPath, "utf8")).categories ?? [];
+    previousManifest = JSON.parse(await readFile(manifestPath, "utf8"));
+    previous = previousManifest.categories ?? [];
   } catch {
     // First run: no previous manifest.
   }
   const categories = [...new Set([...previous, ...succeeded])].sort();
   await writeFile(
     manifestPath,
-    JSON.stringify({ generatedAt, categories }, null, 2),
+    JSON.stringify({
+      ...previousManifest, generatedAt: succeeded.length ? generatedAt : previousManifest.generatedAt,
+      categories, attemptedAt: generatedAt,
+      freshness: { ...(previousManifest.freshness ?? {}), ...freshness },
+      refresh: { fresh: succeeded, carried, missing: failed },
+    }, null, 2),
   );
 
   console.log(
@@ -286,7 +326,7 @@ async function main() {
   // Tolerate a few upstream failures, but fail the build when most of the
   // run came back empty, since deploying a gutted feed would be worse than
   // keeping yesterday's site.
-  if (failed.length > targets.length / 2) {
+  if (failed.length > targets.length / 2 || categories.length === 0) {
     process.exit(1);
   }
 }

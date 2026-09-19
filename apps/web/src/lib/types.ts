@@ -22,8 +22,17 @@ export type Pulse = {
   /** 0-100 percentile among comparable papers in the same field. */
   score: number;
   tier: PulseTier;
-  /** Calibrated share of papers in this band that became references. */
-  probability: number;
+  /** Legacy metadata-study calibration. Not a validated live probability. */
+  probability?: number;
+  /** Unrounded standing used for ordering, preserving ties in the evidence. */
+  percentile?: number;
+  modelVersion?: string;
+  cohort?: string;
+  cohortSize?: number;
+  /** Coverage of external evidence in the comparison group. */
+  coverage?: { references: number; reception: number };
+  /** Stable order for otherwise identical evidence. */
+  tieBreaker?: string;
   lanes: PulseLane[];
   /** Nothing is known about any of its authors yet. */
   newcomer: boolean;
@@ -81,9 +90,11 @@ export type FeedResponse = {
   papers: Paper[];
   totalResults: number;
   start: number;
+  /** Search is limited to saved recent snapshots when the index is offline. */
+  source?: "openalex" | "snapshots";
 };
 
-export type SearchSort = "relevance" | "recent";
+export type SearchSort = "relevance" | "recent" | "citations";
 
 export type RelatedPaper = {
   title: string;

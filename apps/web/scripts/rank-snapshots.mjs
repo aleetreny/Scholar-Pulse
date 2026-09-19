@@ -1,8 +1,10 @@
+import { loadState, validMemory, validPredictions, writeJson } from "./state.mjs";
+import { recordPredictions } from "./predictions.mjs";
 // Scores the feed snapshots and writes the ranking back into them.
 //
 // Runs after build-feed-snapshots.mjs, as a separate step on purpose: it can be
-// re-run without hitting arXiv again, and if it fails the site still deploys
-// with a plain chronological feed rather than not deploying at all.
+// re-run without hitting arXiv again. State-read failures stop publication;
+// external enrichment failures use the last observed counts where available.
 //
 //   node scripts/rank-snapshots.mjs
 //   node scripts/rank-snapshots.mjs --no-enrich     # skip the external index
@@ -13,9 +15,8 @@
 //    how often, is loaded from the *previous* deployment. There is no database:
 //    the last build's output is the storage, fetched over HTTPS from the live
 //    site. Signals are computed against that memory as it stood before this
-//    batch, never against a memory that already contains the papers being
-//    scored, because that would hand every author in today's feed a track
-//    record they did not have this morning.
+//    batch. Overlapping candidates from an earlier deployment may already be
+//    in that memory: this is a ranking-time observation, not a day-zero replay.
 //
 // 2. Semantic Scholar is asked, four hundred arXiv ids at a time, how many
 //    references each paper has and how many citations it has already
@@ -29,7 +30,7 @@
 //
 // Requires Node >= 23.6 (type stripping), since it imports the app's TS modules.
 
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -94,75 +95,22 @@ const S2_BACKOFF_MS = [5000, 15000, 30000];
  */
 const ENRICH_BUDGET_MS = Number(process.env.ENRICH_BUDGET_MS ?? 420_000);
 const RETRIES = 3;
-/** Percentiles need a cohort; below this, papers are pooled with the rest. */
-const MIN_COHORT = 12;
-
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dataDir = path.join(here, "..", "public", "data");
+const dataDir = process.env.SCHOLARPULSE_DATA_DIR ?? path.join(here, "..", "public", "data");
 const feedDir = path.join(dataDir, "feed");
-const corpusDir = path.join(here, "..", ".corpus");
+const corpusDir = process.env.SCHOLARPULSE_CORPUS_DIR ?? path.join(here, "..", ".corpus");
 const memoryPath = path.join(dataDir, "memory.json");
 const predictionsPath = path.join(dataDir, "predictions.json");
 
-/**
- * How long the log of what the ranking claimed is kept, and how thinly the
- * bottom band is sampled into it.
- *
- * A ranking that keeps no record of its own predictions cannot be checked
- * against what happened, and this one kept none: each build overwrote the feed
- * snapshots, the Pages artifact expires after a day, and the memory file
- * carries authors and terms but not a single score. Two weeks after launch
- * there was no way to ask whether last week's front page deserved it, and
- * there never would be.
- *
- * The head of the list is kept whole, because that is the claim the site
- * makes. The rest is sampled, because it is only needed as the control group a
- * base rate is computed against, and one in sixteen still leaves a few hundred
- * papers a build. The sampling interval is written into every entry so the
- * weights are read off the data rather than assumed by whoever audits it.
- */
-const PREDICTION_MONTHS = 12;
-const PREDICTION_BUILDS_MAX = 60;
-const REST_SAMPLE_ONE_IN = 16;
-const TIER_INDEX = { headline: 0, notable: 1, rest: 2 };
-
+// V2 logs complete cohorts in predictions.mjs and preserves all earlier entries.
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /* ------------------------------------------------------------------ memory */
 
 async function loadMemory() {
-  try {
-    const local = JSON.parse(await readFile(memoryPath, "utf8"));
-    if (local?.version === 1) {
-      console.log("memory: reusing the local copy");
-      return local;
-    }
-  } catch {
-    // No local copy, which is expected on CI, where the checkout is clean.
-  }
-  try {
-    const response = await fetch(`${SITE_BASE_URL}/data/memory.json`, {
-      // Generous because this file grows with the corpus: a backfilled memory
-      // is tens of megabytes, and thirty seconds was sized for a two.
-      signal: AbortSignal.timeout(180_000),
-    });
-    if (response.ok) {
-      const remote = await response.json();
-      if (remote?.version === 1) {
-        const authors = Object.keys(remote.authors ?? {}).length;
-        const terms = Object.keys(remote.terms ?? {}).length;
-        console.log(
-          `memory: carried over from the live site: ${authors.toLocaleString()} authors, ` +
-            `${terms.toLocaleString()} terms`,
-        );
-        return remote;
-      }
-    }
-  } catch (error) {
-    console.warn(`memory: could not read the previous build (${error.message})`);
-  }
-  console.log("memory: starting empty; author signals stay dormant until it fills");
-  return EMPTY_MEMORY;
+  return loadState(memoryPath, `${SITE_BASE_URL}/data/memory.json`, validMemory, {
+    allowEmpty: process.argv.includes("--bootstrap"), empty: EMPTY_MEMORY,
+  });
 }
 
 /* ------------------------------------------------------------------ corpus */
@@ -170,11 +118,8 @@ async function loadMemory() {
 /**
  * Everything the snapshot builder harvested, which is more than the feed shows.
  *
- * The feed is a hundred papers per category because that is a readable page.
- * Folding only those into the memory made the ranking's whole view of arXiv a
- * hundred papers a week per field, which in cs.AI is ten hours of submissions.
- * The corpus reaches back ten days instead, roughly doubling what the memory
- * learns per build, and the papers the feed displays are a subset of it.
+ * The feed keeps up to 500 recent candidates per category. The corpus contains
+ * the complete successful harvest, including any rows beyond that display cap.
  *
  * Absent for a checkout that has not run the snapshot builder, or a partial
  * `--cats` run, so the caller falls back to folding the feed itself.
@@ -203,88 +148,10 @@ async function loadCorpus() {
 
 /* ------------------------------------------------------------- predictions */
 
-/**
- * Deterministic 1-in-`interval` sample, keyed on the paper id.
- *
- * Deterministic on purpose: a rebuild of the same batch selects exactly the
- * same papers, so re-running the deploy cannot quietly enlarge the control
- * group or change which papers the audit is based on. FNV-1a, because it needs
- * to spread ids evenly and nothing else.
- */
-function sampled(id, interval) {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < id.length; i += 1) {
-    hash ^= id.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193) >>> 0;
-  }
-  return hash % interval === 0;
-}
-
 async function loadPredictions() {
-  try {
-    const local = JSON.parse(await readFile(predictionsPath, "utf8"));
-    if (local?.version === 1) {
-      return local;
-    }
-  } catch {
-    // No local copy, which is expected on CI, where the checkout is clean.
-  }
-  try {
-    const response = await fetch(`${SITE_BASE_URL}/data/predictions.json`, {
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (response.ok) {
-      const remote = await response.json();
-      if (remote?.version === 1) {
-        return remote;
-      }
-    }
-  } catch (error) {
-    console.warn(`predictions: could not read the previous build (${error.message})`);
-  }
-  return { version: 1, builds: [] };
-}
-
-/**
- * Append this build's claims to the log, and drop the ones too old to teach
- * anything. Entries are keyed by calendar day: the deploy also runs on every
- * push, and ten records of the same Monday would weight that Monday ten times
- * in any average taken over the log.
- */
-function recordPredictions(previous, cohortList, pulses, rankedAt) {
-  const cohorts = {};
-  for (const [category, group] of cohortList) {
-    const rows = [];
-    for (const paper of group) {
-      const pulse = pulses.get(paper.id);
-      if (!pulse) {
-        continue;
-      }
-      if (pulse.tier === "rest" && !sampled(paper.id, REST_SAMPLE_ONE_IN)) {
-        continue;
-      }
-      rows.push([paper.id, pulse.score, TIER_INDEX[pulse.tier], pulse.newcomer ? 1 : 0]);
-    }
-    if (rows.length > 0) {
-      cohorts[category] = rows;
-    }
-  }
-  const entry = {
-    rankedAt,
-    restSampledOneIn: REST_SAMPLE_ONE_IN,
-    /** [id, score, tier (0 headline, 1 notable, 2 rest), newcomer]. */
-    cohorts,
-  };
-
-  const day = rankedAt.slice(0, 10);
-  const cutoff = Date.now() - PREDICTION_MONTHS * 30.44 * 24 * 60 * 60 * 1000;
-  const kept = (previous.builds ?? [])
-    .filter((build) => build.rankedAt.slice(0, 10) !== day)
-    .filter((build) => Date.parse(build.rankedAt) >= cutoff);
-  return {
-    version: 1,
-    builds: [entry, ...kept].slice(0, PREDICTION_BUILDS_MAX),
-  };
+  return loadState(predictionsPath, `${SITE_BASE_URL}/data/predictions.json`, validPredictions, {
+    allowEmpty: process.argv.includes("--bootstrap"), empty: { version: 2, builds: [] }, timeout: 60_000,
+  });
 }
 
 /* -------------------------------------------------------------- enrichment */
@@ -342,7 +209,7 @@ async function fetchS2Batch(ids) {
         return null;
       }
       const body = await response.json();
-      return Array.isArray(body) ? body : null;
+      return Array.isArray(body) && body.length === ids.length ? body : null;
     } catch (error) {
       if (attempt === RETRIES) {
         console.warn(`  Semantic Scholar batch failed: ${error.message}`);
@@ -457,10 +324,10 @@ async function enrichFromS2(papers, enrichment, exhausted) {
         matched += 1;
         const id = slice[index];
         const current = enrichment.get(id) ?? {};
-        if (typeof work.referenceCount === "number" && work.referenceCount > 0) {
+        if (Number.isFinite(work.referenceCount) && work.referenceCount > 0) {
           current.references = work.referenceCount;
         }
-        if (typeof work.citationCount === "number") {
+        if (Number.isFinite(work.citationCount) && work.citationCount >= 0) {
           current.citations = Math.max(current.citations ?? 0, work.citationCount);
         }
         enrichment.set(id, current);
@@ -575,39 +442,6 @@ async function enrich(papers) {
 /* ------------------------------------------------------------------ scoring */
 
 /**
- * Group papers into the cohorts they are ranked within.
- *
- * A paper is compared with the field it was filed under, not with the whole
- * feed: citation habits differ enough between fields that a single pool would
- * rank the discipline rather than the paper. Fields too small to produce
- * meaningful percentiles are pooled together instead of being scored on their
- * own handful of papers.
- */
-function buildCohorts(papers) {
-  const byCategory = new Map();
-  for (const paper of papers) {
-    const key = paper.primaryCategory || "unknown";
-    if (!byCategory.has(key)) {
-      byCategory.set(key, []);
-    }
-    byCategory.get(key).push(paper);
-  }
-  const cohorts = [];
-  const leftovers = [];
-  for (const [category, group] of byCategory) {
-    if (group.length >= MIN_COHORT) {
-      cohorts.push([category, group]);
-    } else {
-      leftovers.push(...group);
-    }
-  }
-  if (leftovers.length > 0) {
-    cohorts.push(["(small fields)", leftovers]);
-  }
-  return cohorts;
-}
-
-/**
  * Signals that carry no opinion in this cohort, because every paper in it has
  * the same value.
  *
@@ -664,9 +498,24 @@ async function main() {
   );
 
   const memory = await loadMemory();
-  const { enrichment, diagnosis, matchRate, references } = skipEnrichment
+  const previousPredictions = await loadPredictions();
+  const result = skipEnrichment
     ? { enrichment: new Map(), diagnosis: "skipped", matchRate: 0, references: 0 }
     : await enrich(papers);
+  const { enrichment, diagnosis, matchRate } = result;
+  // Last observed counts remain useful through a transient index outage.
+  // Preserve their actual observation time; never relabel cached data as fresh.
+  for (const paper of papers) {
+    if (!enrichment.has(paper.id) && paper.metrics) {
+      const { citations, references, asOf } = paper.metrics;
+      enrichment.set(paper.id, {
+        ...(Number.isFinite(citations) && citations >= 0 ? { citations } : {}),
+        ...(Number.isFinite(references) && references > 0 ? { references } : {}),
+        asOf,
+      });
+    }
+  }
+  const references = [...enrichment.values()].filter((entry) => entry.references !== undefined).length;
 
   // "Now" is the newest submission in the batch, not the wall clock: it keeps a
   // re-run reproducible and stops a late build from ageing every author by a
@@ -676,25 +525,26 @@ async function main() {
     memory.month || 0,
   );
 
+  const rankedAt = new Date().toISOString();
   const pulses = new Map();
   const tally = { headline: 0, notable: 0, rest: 0, newcomer: 0 };
   const laneUse = { signals: 0, references: 0, reception: 0 };
   const bursts = burstScores(memory, now);
   const inertIn = new Map(SIGNAL_NAMES.map((name) => [name, 0]));
-  const cohortList = buildCohorts(papers);
+  const cohortList = [...snapshots.values()].map((snapshot) => [snapshot.category, snapshot.papers]);
   for (const [category, group] of cohortList) {
     for (const name of inertSignals(group, memory, bursts, now)) {
       inertIn.set(name, inertIn.get(name) + 1);
     }
-    const scored = scoreCohort(group, memory, now, enrichment);
+    const scored = scoreCohort(group, memory, now, enrichment, { category, asOf: rankedAt, bursts });
     group.forEach((paper, index) => {
-      pulses.set(paper.id, scored[index]);
+      pulses.set(`${category}/${paper.id}`, scored[index]);
       tally[scored[index].tier] += 1;
       if (scored[index].newcomer) {
         tally.newcomer += 1;
       }
     });
-    const lanes = scored[0]?.lanes ?? [];
+    const lanes = [...new Set(scored.flatMap((pulse) => pulse.lanes))];
     for (const lane of lanes) {
       laneUse[lane] += 1;
     }
@@ -704,13 +554,12 @@ async function main() {
     );
   }
 
-  const rankedAt = new Date().toISOString();
   for (const [file, snapshot] of snapshots) {
     snapshot.papers = snapshot.papers.map((paper) => {
       const counts = enrichment.get(paper.id);
       return {
         ...paper,
-        pulse: pulses.get(paper.id),
+        pulse: pulses.get(`${snapshot.category}/${paper.id}`),
         // Carried into the snapshot so the paper page has something true to
         // show on first paint. The browser asks Semantic Scholar too, but its
         // anonymous pool answers roughly one request in five, so without this
@@ -722,14 +571,14 @@ async function main() {
               metrics: {
                 citations: counts.citations ?? null,
                 references: counts.references ?? null,
-                asOf: rankedAt,
+                asOf: counts.asOf ?? rankedAt,
               },
             }
           : {}),
       };
     });
     snapshot.rankedAt = rankedAt;
-    await writeFile(path.join(feedDir, file), JSON.stringify(snapshot));
+    await writeJson(path.join(feedDir, file), snapshot);
   }
 
   // A signal inert in every cohort is one the model paid for and never got.
@@ -758,24 +607,22 @@ async function main() {
   }
   const next = foldIntoMemory(memory, corpus ?? papers);
   await mkdir(dataDir, { recursive: true });
-  await writeFile(memoryPath, JSON.stringify(next));
+  await writeJson(memoryPath, next);
 
   const predictions = recordPredictions(
-    await loadPredictions(),
-    cohortList,
-    pulses,
+    previousPredictions,
+    [...snapshots.values()], memory, enrichment, now,
     rankedAt,
   );
-  await writeFile(predictionsPath, JSON.stringify(predictions));
-  const logged = predictions.builds[0];
+  await writeJson(predictionsPath, predictions);
+  const logged = predictions.builds.at(-1);
   const loggedRows = Object.values(logged.cohorts).reduce(
     (sum, rows) => sum + rows.length,
     0,
   );
   console.log(
     `predictions: logged ${loggedRows.toLocaleString()} of ` +
-      `${papers.length.toLocaleString()} papers (the whole head, one rest paper ` +
-      `in ${REST_SAMPLE_ONE_IN}) across ${predictions.builds.length} builds on record`,
+      `${papers.length.toLocaleString()} unique papers across ${predictions.builds.length} immutable builds`,
   );
 
   const manifestPath = path.join(dataDir, "manifest.json");
@@ -787,6 +634,7 @@ async function main() {
   }
   manifest.ranking = {
     rankedAt: new Date().toISOString(),
+    modelVersion: "pulse-v2",
     papers: papers.length,
     enriched: enrichment.size,
     // Papers with a real reference count. The reference lane is the strongest
@@ -806,9 +654,10 @@ async function main() {
     inertSignals: deadSignals,
     inertWeightShare: Number(deadWeight.toFixed(4)),
   };
-  await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
+  await writeJson(manifestPath, manifest);
 
-  const share = (n) => `${((n / papers.length) * 100).toFixed(1)}%`;
+  const cohortRows = tally.headline + tally.notable + tally.rest;
+  const share = (n) => `${((n / cohortRows) * 100).toFixed(1)}%`;
   const cohorts = cohortList.length;
   console.log(
     `done: ${tally.headline} headline, ${tally.notable} notable, ` +

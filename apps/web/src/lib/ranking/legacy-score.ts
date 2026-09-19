@@ -1,7 +1,3 @@
-import { FUSION_MODEL } from "./fusion-model.generated.ts";
-import { rankEvidence, percentileRank, validCount } from "./fusion.ts";
-export { percentileRank } from "./fusion.ts";
-
 import { RANKING_MODEL } from "./model.generated.ts";
 import {
   type CorpusMemory,
@@ -42,14 +38,52 @@ export type { Pulse, PulseLane, PulseReason, PulseTier };
 const WEIGHTS: Partial<Record<keyof Signals, number>> = RANKING_MODEL.weights;
 const CALIBRATION = RANKING_MODEL.calibration;
 
-export const RANKING_VERSION = "pulse-v2";
-/** Share reserved inside each band, retained from the original model. */
+/** Reciprocal-rank-fusion constant. Small k sharpens the head of the list. */
+const RRF_K = 20;
+/** Share of board positions reserved for papers with no author history. */
 export const NEWCOMER_QUOTA = 0.3;
 const TIER_HEADLINE = 0.95;
 const TIER_NOTABLE = 0.8;
+/**
+ * How many papers an external index must cover before its lane is consulted.
+ * An absolute floor, not a share of the cohort: coverage of new preprints is
+ * always a minority, and a share-based rule silently switched the lane off.
+ */
 export const MIN_ENRICHED = 8;
 
-/** Historical metadata-study calibration; not a live fused-score probability. */
+/**
+ * Percentile of each value within the array, ties averaged, mapped to (0, 1).
+ *
+ * Ties matter more than they look: in a fresh snapshot almost every paper has
+ * zero citations, so the reception lane is nearly all ties. Averaging them
+ * makes that lane a near-constant, which is exactly right: it then carries no
+ * opinion instead of imposing an arbitrary order.
+ */
+export function percentileRank(values: number[]): number[] {
+  const n = values.length;
+  if (n === 0) {
+    return [];
+  }
+  const order = values
+    .map((value, index) => ({ value, index }))
+    .sort((a, b) => a.value - b.value);
+  const ranks = new Array<number>(n);
+  let i = 0;
+  while (i < n) {
+    let j = i;
+    while (j + 1 < n && order[j + 1].value === order[i].value) {
+      j += 1;
+    }
+    const shared = (i + j) / 2 + 1;
+    for (let k = i; k <= j; k += 1) {
+      ranks[order[k].index] = shared;
+    }
+    i = j + 1;
+  }
+  return ranks.map((rank) => rank / (n + 1));
+}
+
+/** Calibrated probability for a percentile, by linear interpolation. */
 export function calibrate(percentile: number): number {
   const clamped = Math.min(Math.max(percentile, 0), 1);
   for (let i = 1; i < CALIBRATION.length; i += 1) {
@@ -97,32 +131,57 @@ function laneScores(
   return { total, contributions };
 }
 
-/** Compare citation counts only within the same publication-age window.
- * Quiet disciplines can span years in a single feed; raw citations otherwise
- * reward time on the shelf. Fixed 28-day windows do not estimate a citation
- * growth curve or divide day-old counts by nearly zero exposure.
+/** Ranks from best to worst, 1-based, ties averaged. */
+function descendingRanks(values: number[]): number[] {
+  const percentiles = percentileRank(values.map((value) => -value));
+  return percentiles.map((percentile) => percentile * (values.length + 1));
+}
+
+/**
+ * A lane built from data that only exists for part of the cohort.
+ *
+ * External indexes lag: a preprint posted this morning has no entry anywhere,
+ * so on any given build only a minority of the feed carries a reference count
+ * or a citation count. Two things follow, and both were wrong before.
+ *
+ * First, a lane must not be discarded just because coverage is partial. Fifteen
+ * papers with known citation counts among a hundred still say something true
+ * about those fifteen, and refusing to look loses the strongest evidence the
+ * system has.
+ *
+ * Second, and this was the damaging one, a paper the index has not reached
+ * yet must not be scored as if it were a paper with zero references. "Unknown"
+ * and "zero" are different claims, and conflating them punishes papers for
+ * being new, which is precisely the population this product exists to rank.
+ *
+ * So the lane ranks only the papers it knows about and seats the rest at its
+ * neutral midpoint. That has a property worth stating: the spread of ranks a
+ * lane produces grows with its coverage, so a lane that knows about fifteen
+ * papers moves the consensus about a seventh as much as one that knows about
+ * all hundred. Its influence scales with its evidence, with no weight to tune.
  */
-function receptionEvidence(papers: Paper[], enrichment: Map<string, Enrichment>, asOf: number) {
-  const buckets = new Map<number, number[]>();
-  papers.forEach((paper, i) => {
-    const age = (asOf - Date.parse(paper.published)) / 864e5;
-    if (!Number.isFinite(age) || age < 0) return;
-    const key = Math.floor(age / 28);
-    buckets.set(key, [...(buckets.get(key) ?? []), i]);
+function partialLane(
+  values: (number | undefined)[],
+  minimum: number,
+): number[] | null {
+  const known: number[] = [];
+  const positions: number[] = [];
+  values.forEach((value, index) => {
+    if (value !== undefined) {
+      known.push(value);
+      positions.push(index);
+    }
   });
-  const contributions = papers.map(() => 0);
-  const coverage = papers.map(() => 0);
-  for (const indices of buckets.values()) {
-    const lane = rankEvidence(indices.map((i) => enrichment.get(papers[i].id)?.citations), MIN_ENRICHED);
-    if (!lane) continue;
-    indices.forEach((position, i) => {
-      const ageDays = (asOf - Date.parse(papers[position].published)) / 864e5;
-      const weight = ageDays >= FUSION_MODEL.minimumAgeDays ? FUSION_MODEL.receptionWeight : 1;
-      contributions[position] = weight * lane.contributions[i];
-      coverage[position] = lane.coverage;
-    });
+  if (known.length < minimum || known.every((value) => value === known[0])) {
+    return null;
   }
-  return { contributions, coverage };
+  const ranked = percentileRank(known.map((value) => -value));
+  const neutral = (known.length + 1) / 2;
+  const ranks = new Array<number>(values.length).fill(neutral);
+  positions.forEach((position, i) => {
+    ranks[position] = ranked[i] * (known.length + 1);
+  });
+  return ranks;
 }
 
 /**
@@ -134,30 +193,39 @@ export function scoreCohort(
   memory: CorpusMemory,
   now: number,
   enrichment: Map<string, Enrichment> = new Map(),
-  context: { category?: string; asOf?: string; bursts?: Map<string, number> } = {},
 ): Pulse[] {
   if (papers.length === 0) {
     return [];
   }
-  const bursts = context.bursts ?? burstScores(memory, now);
+  const bursts = burstScores(memory, now);
   const signals = papers.map((paper) => extractSignals(paper, memory, bursts, now));
   const { total, contributions } = laneScores(signals);
 
-  // Shift the arbitrary metadata scale above zero before ranking; only its
-  // order is used. A constant metadata lane contributes nothing.
-  const minimum = Math.min(...total);
-  const metadata = rankEvidence(total.map((value) => value - minimum), 1);
-  const references = rankEvidence(
-    papers.map((paper) => {
-      const value = enrichment.get(paper.id)?.references;
-      return validCount(value) && value > 0 ? value : undefined;
-    }), MIN_ENRICHED,
+  const lanes: number[][] = [descendingRanks(total)];
+  const laneNames: PulseLane[] = ["signals"];
+
+  const references = partialLane(
+    papers.map((paper) => enrichment.get(paper.id)?.references),
+    MIN_ENRICHED,
   );
-  const asOf = context.asOf ? Date.parse(context.asOf) : Math.max(...papers.map((paper) => Date.parse(paper.published)));
-  const reception = receptionEvidence(papers, enrichment, asOf);
+  if (references) {
+    lanes.push(references);
+    laneNames.push("references");
+  }
+  const reception = partialLane(
+    papers.map((paper) => enrichment.get(paper.id)?.citations),
+    MIN_ENRICHED,
+  );
+  if (reception) {
+    lanes.push(reception);
+    laneNames.push("reception");
+  }
+
+  // Reciprocal rank fusion. It ignores each lane's scale, so a percentile, a
+  // reference count and a citation count combine without any calibration step
+  // between them, and no single extreme value can capture the consensus.
   const fused = papers.map((_, i) =>
-    (metadata?.contributions[i] ?? 0) +
-    (references?.contributions[i] ?? 0) + reception.contributions[i],
+    lanes.reduce((sum, lane) => sum + 1 / (RRF_K + lane[i]), 0),
   );
 
   // Papers whose authors are all unknown to the site are scored against each
@@ -185,27 +253,14 @@ export function scoreCohort(
   return papers.map((_, i) => {
     const percentile =
       (newcomer[i] ? outsiderPercentiles[i] : establishedPercentiles[i]) ?? 0.5;
-    const positive = contributions[i].filter((reason) => reason.contribution > 0);
-    const positiveTotal = positive.reduce((sum, reason) => sum + reason.contribution, 0);
-    const metadataContribution = Math.max(0, metadata?.contributions[i] ?? 0);
-    const reasons: PulseReason[] = [
-      ...positive.map((reason) => ({ ...reason, contribution: metadataContribution * reason.contribution / positiveTotal })),
-      { signal: "references", contribution: references?.contributions[i] ?? 0 },
-      { signal: "reception", contribution: reception.contributions[i] },
-    ].filter((reason) => reason.contribution > 0)
-      .sort((a, b) => b.contribution - a.contribution).slice(0, 3);
-    const laneNames: PulseLane[] = ["signals"];
-    if (references && validCount(enrichment.get(papers[i].id)?.references) && enrichment.get(papers[i].id)!.references! > 0) laneNames.push("references");
-    if (reception.coverage[i] > 0 && validCount(enrichment.get(papers[i].id)?.citations)) laneNames.push("reception");
+    const reasons: PulseReason[] = [...contributions[i]]
+      .sort((a, b) => b.contribution - a.contribution)
+      .filter((reason) => reason.contribution > 0)
+      .slice(0, 3);
     return {
       score: Math.round(percentile * 100),
-      percentile,
       tier: tierFor(percentile),
-      modelVersion: RANKING_VERSION,
-      cohort: context.category ?? papers[i].primaryCategory,
-      cohortSize: papers.length,
-      tieBreaker: papers[i].id,
-      coverage: { references: references?.coverage ?? 0, reception: reception.coverage[i] },
+      probability: calibrate(percentile),
       lanes: laneNames,
       newcomer: newcomer[i],
       reasons,
@@ -244,6 +299,7 @@ export function interleave<T>(
   return out;
 }
 
+/** Headline numbers from the fit, for the interface to quote honestly. */
 const BAND_ORDER: PulseTier[] = ["headline", "notable", "rest"];
 
 /**
@@ -260,16 +316,14 @@ export function orderByPulse<T>(items: T[], pulseOf: (item: T) => Pulse | undefi
   const unscored = items.filter((item) => !pulseOf(item));
   const ordered = BAND_ORDER.flatMap((band) =>
     interleave(
-      items.filter((item) => pulseOf(item)?.tier === band)
-        .sort((a, b) => (pulseOf(a)?.tieBreaker ?? "").localeCompare(pulseOf(b)?.tieBreaker ?? "")),
+      items.filter((item) => pulseOf(item)?.tier === band),
       (item) => pulseOf(item)?.newcomer ?? false,
-      (item) => pulseOf(item)?.percentile ?? (pulseOf(item)?.score ?? 0) / 100,
+      (item) => pulseOf(item)?.score ?? 0,
     ),
   );
   return [...ordered, ...unscored];
 }
 
-/** Historical metadata fit only. Not validation of the live fused ranker. */
 export const MODEL_INFO = {
   auc: RANKING_MODEL.validation.auc,
   aucLow: RANKING_MODEL.validation.aucLow,
