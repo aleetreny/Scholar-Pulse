@@ -44,10 +44,10 @@ const EN = {
     "No snapshot yet for {fields}. These fields will appear after the next site update.",
 
   "feed.sortAria": "Order the feed",
-  "feed.sortPulse": "Pulse",
+  "feed.sortPulse": "Recommended",
   "feed.sortRecent": "Newest",
   "feed.rankedNote":
-    "Ranked by predicted impact from submission-day metadata: on held-out months the top ten were {lift}x richer in papers that became references (AUC {auc}). Shown as bands rather than positions, because the exact order is not that certain. Open any paper to see why it scored what it did.",
+    "Promising recent work in each field, combining metadata, references and early citations when available. A guide to what to read, with future impact still uncertain. Open a paper to see its evidence.",
 
   "pulse.tier.headline": "Front page",
   "pulse.tier.notable": "Notable",
@@ -57,9 +57,16 @@ const EN = {
   "pulse.band.rest": "The rest of the feed",
   "pulse.badgeTitle": "Pulse {score} of 100 among comparable papers in this field",
   "pulse.scoreTitle": "Pulse {score} of 100",
-  "pulse.standing": "Ahead of {score}% of the recent papers in its field",
-  "pulse.calibrated":
-    "Historically, {rate}% of papers scoring this well went on to become references in their field.",
+  "pulse.standing": "Standing: {score} of 100 within its comparison group",
+  "pulse.uncertainty": "This is a relative discovery score, not a probability of future impact. Missing index data stays unknown.",
+  "pulse.cohort": "Compared in {field}, with {n} candidates.",
+  "pulse.signal.references": "Reference list within this field",
+  "pulse.signal.reception": "Citations among papers of similar age",
+  "feed.carried": "Some fields show their last available snapshot while the source recovers. The date above reflects those papers.",
+  "paper.citationCount": "{n} citations",
+  "search.mostCited": "Most cited",
+  "search.citationNote": "Recorded citations highlight established work and favor older papers. They do not measure scientific quality or predict future importance.",
+  "search.limited": "The live index is unavailable. These results cover saved recent papers only; field matching uses arXiv categories.",
   "pulse.lanesLabel": "Evidence:",
   "pulse.lane.signals": "submission metadata",
   "pulse.lane.references": "reference list",
@@ -67,7 +74,7 @@ const EN = {
   "pulse.newcomer": "no author history yet",
   "pulse.newcomerShort": "New group",
   "pulse.newcomerWhy":
-    "None of these authors has appeared in the feed before, so this paper is ranked against other newcomers and holds one of the positions reserved for them. Without that reservation, papers from unknown groups land around the 49th percentile, a coin flip, while papers from established ones land around the 88th.",
+    "No author history is available in our corpus. These papers are compared with one another and have reserved space within each band.",
   "pulse.signal.team_size": "Team size",
   "pulse.signal.author_new_frac": "Authors with a track record",
   "pulse.signal.author_degree_max": "Best-connected author",
@@ -102,7 +109,7 @@ const EN = {
   "search.allFields": "All fields",
   "search.recent": "Recent",
   "search.clearRecent": "Clear",
-  "search.emptyTitle": "Find your next reference",
+  "search.emptyTitle": "Explore a discipline or search for a paper",
   "search.emptyBody":
     "Search across every arXiv paper by keyword, phrase, or author, then filter by field and sort by freshness.",
   "search.noResultsTitle": "No results",
@@ -241,10 +248,10 @@ const ES: Record<StringKey, string> = {
     "Aún no hay datos para {fields}. Estos campos aparecerán tras la próxima actualización del sitio.",
 
   "feed.sortAria": "Ordenar el feed",
-  "feed.sortPulse": "Pulso",
+  "feed.sortPulse": "Destacados",
   "feed.sortRecent": "Recientes",
   "feed.rankedNote":
-    "Ordenado por impacto previsto a partir de los metadatos del día de publicación: en meses no vistos, el top diez concentró {lift}× más papers que acabaron siendo referencia (AUC {auc}). Se muestra por bandas y no por posiciones, porque el orden exacto no es tan seguro. Abre cualquier paper para ver por qué puntuó lo que puntuó.",
+    "Trabajos recientes prometedores en cada disciplina, combinando metadatos, referencias y primeras citas cuando existen. Una guía de lectura cuyo impacto futuro sigue siendo incierto. Abre un paper para ver su evidencia.",
 
   "pulse.tier.headline": "Portada",
   "pulse.tier.notable": "Notable",
@@ -254,9 +261,16 @@ const ES: Record<StringKey, string> = {
   "pulse.band.rest": "El resto del feed",
   "pulse.badgeTitle": "Pulso {score} sobre 100 entre papers comparables de este campo",
   "pulse.scoreTitle": "Pulso {score} sobre 100",
-  "pulse.standing": "Por delante del {score}% de los papers recientes de su campo",
-  "pulse.calibrated":
-    "Históricamente, el {rate}% de los papers con esta puntuación acabaron siendo referencia en su campo.",
+  "pulse.standing": "Posición relativa: {score} sobre 100 en su grupo de comparación",
+  "pulse.uncertainty": "Es una puntuación relativa para descubrir lecturas, no una probabilidad de impacto futuro. Los datos ausentes siguen siendo desconocidos.",
+  "pulse.cohort": "Comparado en {field}, entre {n} candidatos.",
+  "pulse.signal.references": "Bibliografía dentro de esta disciplina",
+  "pulse.signal.reception": "Citas entre papers de antigüedad similar",
+  "feed.carried": "Algunas disciplinas muestran su última lista disponible mientras se recupera la fuente. La fecha indicada corresponde a esos papers.",
+  "paper.citationCount": "{n} citas",
+  "search.mostCited": "Más citados",
+  "search.citationNote": "Las citas registradas permiten encontrar trabajos consolidados y favorecen a los más antiguos. No miden la calidad científica ni predicen la importancia futura.",
+  "search.limited": "El índice en vivo no está disponible. Estos resultados solo incluyen papers recientes guardados; las disciplinas se filtran mediante categorías de arXiv.",
   "pulse.lanesLabel": "Evidencia:",
   "pulse.lane.signals": "metadatos de publicación",
   "pulse.lane.references": "lista de referencias",
@@ -264,7 +278,7 @@ const ES: Record<StringKey, string> = {
   "pulse.newcomer": "aún sin historial de autoría",
   "pulse.newcomerShort": "Grupo nuevo",
   "pulse.newcomerWhy":
-    "Ninguno de estos autores había aparecido antes en el feed, así que este paper se ordena frente a otros novatos y ocupa uno de los huecos reservados para ellos. Sin esa reserva, los papers de grupos desconocidos caen al percentil 49, una moneda al aire, frente al 88 de los ya establecidos.",
+    "No hay historial de estos autores en nuestro corpus. Estos papers se comparan entre sí y tienen un espacio reservado dentro de cada banda.",
   "pulse.signal.team_size": "Tamaño del equipo",
   "pulse.signal.author_new_frac": "Autores con trayectoria",
   "pulse.signal.author_degree_max": "Autor mejor conectado",
@@ -299,7 +313,7 @@ const ES: Record<StringKey, string> = {
   "search.allFields": "Todos los campos",
   "search.recent": "Recientes",
   "search.clearRecent": "Borrar",
-  "search.emptyTitle": "Encuentra tu próxima referencia",
+  "search.emptyTitle": "Explora una disciplina o busca un paper",
   "search.emptyBody":
     "Busca en todos los papers de arXiv por palabra clave, frase o autor, y filtra por campo y ordena por novedad.",
   "search.noResultsTitle": "Sin resultados",

@@ -15,7 +15,7 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-type PageData = { key: string; papers: Paper[]; total: number };
+type PageData = { key: string; papers: Paper[]; total: number; source?: FeedResponse["source"] };
 type PageError = { key: string; message: string };
 
 /**
@@ -50,7 +50,7 @@ export function usePaginatedPapers(
         if (controller.signal.aborted) {
           return;
         }
-        setData({ key, papers: response.papers, total: response.totalResults });
+        setData({ key, papers: response.papers, total: response.totalResults, source: response.source });
       })
       .catch((fetchError: unknown) => {
         if (controller.signal.aborted || isAbortError(fetchError)) {
@@ -98,6 +98,8 @@ export function usePaginatedPapers(
             key,
             papers: [...previous.papers, ...fresh],
             total: response.totalResults,
+            source: previous.source === "snapshots" || response.source === "snapshots"
+              ? "snapshots" : response.source ?? previous.source,
           };
         });
         setMoreKey((value) => (value === key ? null : value));
@@ -112,5 +114,5 @@ export function usePaginatedPapers(
 
   const retry = useCallback(() => setReloadToken((token) => token + 1), []);
 
-  return { papers, total, loading, loadingMore, error, hasMore, loadMore, retry };
+  return { papers, total, source: current?.source, loading, loadingMore, error, hasMore, loadMore, retry };
 }

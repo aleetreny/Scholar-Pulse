@@ -1,0 +1,162 @@
+{
+  "selectedReceptionWeight": 4,
+  "training": {
+    "from": "1993-01",
+    "to": "1995-12",
+    "labelsCompleteBy": "1997-12",
+    "grid": [
+      {
+        "weight": 1,
+        "meanNdcg10": 0.6334645457632768
+      },
+      {
+        "weight": 2,
+        "meanNdcg10": 0.6403672117280043
+      },
+      {
+        "weight": 4,
+        "meanNdcg10": 0.6431982960910841
+      }
+    ]
+  },
+  "rejectedEqualWeight": [
+    {
+      "refCoverage": 1,
+      "citationCoverage": 1,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.7916628030505909,
+      "currentNdcg10": 0.79331321064985,
+      "delta": 0.0016504075992591627,
+      "delta95": [
+        -0.00853612690293554,
+        0.012184342888444366
+      ]
+    },
+    {
+      "refCoverage": 0.75,
+      "citationCoverage": 0.75,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.7525129037777155,
+      "currentNdcg10": 0.7471101025269422,
+      "delta": -0.005402801250773304,
+      "delta95": [
+        -0.015087015198434407,
+        0.004388595181070648
+      ]
+    },
+    {
+      "refCoverage": 1,
+      "citationCoverage": 0.25,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.6546132076772514,
+      "currentNdcg10": 0.6148277015717971,
+      "delta": -0.03978550610545428,
+      "delta95": [
+        -0.05400639187893606,
+        -0.025984320796283034
+      ]
+    },
+    {
+      "refCoverage": 0.25,
+      "citationCoverage": 1,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.8199688481972706,
+      "currentNdcg10": 0.8563497566642152,
+      "delta": 0.03638090846694464,
+      "delta95": [
+        0.02358794896074571,
+        0.050065999488298416
+      ]
+    },
+    {
+      "refCoverage": 0.25,
+      "citationCoverage": 0.25,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.6713027899038768,
+      "currentNdcg10": 0.6726483719984004,
+      "delta": 0.001345582094523623,
+      "delta95": [
+        -0.0049512927553407885,
+        0.008331426944789593
+      ]
+    }
+  ],
+  "protocol": "Reception weight chosen from [1,2,4] on 1993-1995 cohorts; labels complete by end 1997. Evaluation 1998-2001 hep-th, observation through month+1, gains months+2..+24. Missingness simulates indexing loss. Static references may include revisions. Evaluation outcomes were examined for the rejected equal-weight candidate before this grid was run; retrospective evidence, not a blinded holdout. Not a validation of the complete production ranker.",
+  "source": "https://snap.stanford.edu/data/cit-HepTh.html",
+  "sha256": "7df944b502bd7b687b0e7e94ba9b0a87f202693254558ae5f8ea45657697eb32",
+  "nodes": 27761,
+  "edges": 351864,
+  "invalid": 943,
+  "arms": [
+    {
+      "refCoverage": 1,
+      "citationCoverage": 1,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.7916628030505909,
+      "currentNdcg10": 0.8517278598288055,
+      "delta": 0.06006505677821461,
+      "delta95": [
+        0.045324036517284186,
+        0.07528176556851258
+      ]
+    },
+    {
+      "refCoverage": 0.75,
+      "citationCoverage": 0.75,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.7525129037777155,
+      "currentNdcg10": 0.8189209994879809,
+      "delta": 0.0664080957102654,
+      "delta95": [
+        0.052576421502605365,
+        0.08085938166981789
+      ]
+    },
+    {
+      "refCoverage": 1,
+      "citationCoverage": 0.25,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.6546132076772514,
+      "currentNdcg10": 0.6719588350042393,
+      "delta": 0.017345627326987856,
+      "delta95": [
+        0.006228339355287419,
+        0.03020029332975107
+      ]
+    },
+    {
+      "refCoverage": 0.25,
+      "citationCoverage": 1,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.8199688481972706,
+      "currentNdcg10": 0.8582514522192641,
+      "delta": 0.03828260402199357,
+      "delta95": [
+        0.024775884976165882,
+        0.0523871998990549
+      ]
+    },
+    {
+      "refCoverage": 0.25,
+      "citationCoverage": 0.25,
+      "cohorts": 40,
+      "papers": 9348,
+      "legacyNdcg10": 0.6713027899038768,
+      "currentNdcg10": 0.6748786802517438,
+      "delta": 0.0035758903478669835,
+      "delta95": [
+        -0.01704990058187903,
+        0.022824458996978582
+      ]
+    }
+  ]
+}

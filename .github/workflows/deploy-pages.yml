@@ -65,7 +65,15 @@ jobs:
         run: npm test
         working-directory: apps/web
 
-      # Writes two things: the hundred papers per category the site displays,
+      - name: Check types and lint
+        run: npm run typecheck && npm run lint
+        working-directory: apps/web
+
+      - name: Preserve the published histories and snapshots
+        run: node scripts/restore-site.mjs
+        working-directory: apps/web
+
+      # Writes two things: up to 500 candidates per category for the site,
       # under public/data/feed, and everything submitted in the last ten days
       # under apps/web/.corpus, which the ranker folds into its memory and
       # nothing serves.
@@ -79,8 +87,10 @@ jobs:
           github.event_name == 'workflow_dispatch'
           && github.event.inputs.backfill_months != ''
           && github.event.inputs.backfill_months != '0'
-        run: node scripts/backfill-memory.mjs --months ${{ github.event.inputs.backfill_months }}
+        run: node scripts/backfill-memory.mjs --months "$BACKFILL_MONTHS"
         working-directory: apps/web
+        env:
+          BACKFILL_MONTHS: ${{ github.event.inputs.backfill_months }}
 
       - name: Build feed snapshots from arXiv
         run: node scripts/build-feed-snapshots.mjs
@@ -107,6 +117,15 @@ jobs:
         working-directory: apps/web
         env:
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Archive immutable ranking observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: ranking-history-${{ github.run_id }}
+          path: |
+            apps/web/public/data/predictions.json
+            apps/web/public/data/manifest.json
+          retention-days: 90
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

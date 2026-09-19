@@ -1,6 +1,6 @@
 "use client";
 
-import { withSignal } from "@/lib/data/with-signal";
+import { withSignal } from "./with-signal.ts";
 import type { FeedResponse, GraphPaper, Paper, SearchSort } from "@/lib/types";
 
 /**
@@ -194,6 +194,7 @@ function toPaper(work: OAWork): Paper | null {
     comment: null,
     pdfUrl: `https://arxiv.org/pdf/${arxivId}`,
     absUrl: `https://arxiv.org/abs/${arxivId}`,
+    ...(typeof work.cited_by_count === "number" ? { metrics: { citations: work.cited_by_count, references: null, asOf: new Date().toISOString() } } : {}),
   };
 }
 
@@ -295,12 +296,12 @@ export async function searchPapers(
       "per-page": String(OA_PAGE_SIZE),
       page: String(acc.nextPage),
     });
-    if (!byAuthor) {
+    if (!byAuthor && query.trim()) {
       params.set("search", query);
     }
     if (sort === "recent") {
       params.set("sort", "publication_date:desc");
-    } else if (byAuthor) {
+    } else if (byAuthor || sort === "citations" || !query.trim()) {
       // No relevance score without a search param; most-cited is the
       // natural "relevance" for an author's papers.
       params.set("sort", "cited_by_count:desc");
@@ -329,6 +330,7 @@ export async function searchPapers(
   }
 
   return {
+    source: "openalex",
     papers: acc.items.slice(start, start + max),
     totalResults: acc.exhausted
       ? acc.items.length

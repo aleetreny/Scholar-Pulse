@@ -56,6 +56,8 @@ export function PulseScore({ pulse }: { pulse: Pulse }) {
 }
 
 const SIGNAL_LABEL: Record<string, StringKey> = {
+  references: "pulse.signal.references",
+  reception: "pulse.signal.reception",
   team_size: "pulse.signal.team_size",
   author_new_frac: "pulse.signal.author_new_frac",
   author_degree_max: "pulse.signal.author_degree_max",
@@ -103,9 +105,8 @@ export function PulseExplainer({ pulse }: { pulse: Pulse }) {
       </div>
 
       <p className="pulse-panel__calibration">
-        {t("pulse.calibrated", {
-          rate: (pulse.probability * 100).toFixed(1),
-        })}
+        {t("pulse.uncertainty")}
+        {pulse.cohort ? ` ${t("pulse.cohort", { field: pulse.cohort, n: pulse.cohortSize ?? 0 })}` : ""}
       </p>
 
       {pulse.reasons.length > 0 ? (
@@ -113,7 +114,7 @@ export function PulseExplainer({ pulse }: { pulse: Pulse }) {
           {pulse.reasons.map((reason) => (
             <li key={reason.signal}>
               <span className="pulse-reasons__label">
-                {t(SIGNAL_LABEL[reason.signal])}
+                {SIGNAL_LABEL[reason.signal] ? t(SIGNAL_LABEL[reason.signal]) : reason.signal}
               </span>
               <span
                 className="pulse-reasons__bar"

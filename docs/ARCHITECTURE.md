@@ -1,169 +1,76 @@
 # Architecture
 
-ScholarPulse separates the public reading experience from optional local analytics workflows. The public web application stays deployable as static files, while the Python packages can ingest and process larger research datasets independently.
+ScholarPulse has a public static reading application and independent optional
+Python analytics. The public site does not call the Python services.
 
-## Components
+## Public application
 
-```text
-Scholar-Pulse/
-|-- apps/
-|   |-- web/                 # Static Next.js application
-|   |-- dashboard/           # Optional Plotly analytics dashboard
-|   `-- dashboard_api/       # Optional FastAPI data service
-|-- research/
-|   `-- ranking/           # Offline ranking study and model exporter
-|-- pipelines/
-|   |-- common/              # Settings, files, logging, and snapshots
-|   |-- db/                  # Database models and migrations
-|   |-- ingestion/           # arXiv collection and normalization
-|   |-- embeddings/          # Embedding export, import, and local execution
-|   |-- enrichment/          # External metadata enrichment
-|   |-- space/               # Dimensionality reduction and map artifacts
-|   |-- similarity/          # Similarity index construction and queries
-|   |-- publish/             # Dashboard-ready artifact generation
-|   `-- orchestration/       # Repeatable local and Prefect workflows
-|-- tests/                   # Unit, integration, and end-to-end tests
-|-- infra/                   # Environment-specific setup
-|-- docs/                    # Maintainer documentation
-`-- data/                    # Local runtime data; contents are not versioned
-```
+`apps/web` is Next.js with static export, served at `/Scholar-Pulse/` on GitHub
+Pages. The browser reads generated JSON and queries OpenAlex for search, author
+lookup and citation graphs, plus Semantic Scholar for related work and fresh
+metrics. Reading lists and notes stay in browser storage and can be exported.
 
-## Public web data flow
+Deployment order:
 
-1. The deployment workflow runs `apps/web/scripts/build-feed-snapshots.mjs`.
-2. The script fetches current arXiv metadata and produces static feed and RSS
-   files, plus a wider harvest that feeds the corpus memory and is never served.
-3. `apps/web/scripts/rank-snapshots.mjs` scores those snapshots (see below), writes
-   the ranking and the build's citation and reference counts back into them, and
-   appends what it claimed to the prediction log.
-4. Next.js exports the application and generated data as a static site.
-5. The browser queries OpenAlex for search, author lookup and the citation graph,
-   and Semantic Scholar for TLDRs, similar papers and fresher counts. Every one of
-   those is an enhancement: the counts and the ranking are already in the snapshot,
-   so a page renders completely with both upstreams unreachable.
-6. Personal state remains in the browser and can be exported as BibTeX or JSON.
+1. `restore-site.mjs` retrieves the previous manifest, category snapshots, corpus
+   memory and prediction log. Network/validation failure aborts deployment.
+2. `build-feed-snapshots.mjs` harvests ten days of arXiv with paced requests and a
+   bounded budget. It keeps up to 500 recent candidates per category, retaining
+   up to 100 in quiet categories, plus a wider nonpublic `.corpus` harvest.
+   If a category cannot refresh, its old snapshot and timestamp survive.
+3. `rank-snapshots.mjs` reads the previous memory, obtains citation/reference
+   counts, ranks each displayed category, and writes per-paper scores, evidence
+   and count timestamps. Cross-listings get category-specific scores.
+4. The corpus is folded into the memory; completed backfill months and a two-year
+   ID ledger prevent duplicate counting. The existing collaborator statistic is
+   approximate, depending on the batches previously ingested.
+5. `predictions.mjs` preserves every old entry and appends the first complete v2
+   observation of a calendar day. Every candidate has displayed and baseline
+   ranks. Fresh initial citations are recorded for future-gain evaluation;
+   missing or stale observations are not invented.
+6. Next.js exports static files. Pages deployment publishes the complete new
+   state; prediction and manifest artifacts provide an additional backup.
 
-The static application does not depend on the Python services.
+The next deployment repeats the cycle. The large memory file is build input;
+browsers fetch category lists, never the author/topic corpus.
 
-## Ranking
+## Ranking and evaluation
 
-Scoring happens entirely at build time; the browser only reads the result. There is
-no database and no server.
+`score.ts` uses the existing generated metadata coefficients, normalized
+coverage-weighted reciprocal-rank fusion and publication-age citation groups.
+`fusion-model.generated.ts` contains the historical reception multiplier.
+`legacy-score.ts` freezes the former formula for paired baseline logging.
 
-0. **Harvest.** The snapshot builder writes two things per category: the
-   hundred newest papers, which the site displays, and everything submitted in
-   the last ten days, which it does not. The second lands in `apps/web/.corpus`
-   and exists only to be folded into the memory. They were the same thing until
-   it was measured: a hundred papers is ten hours of cs.AI, so the ranking's
-   entire view of the field was a hundred papers a week, and 44% of every
-   cohort arrived with authors it had never seen. Separating them roughly
-   doubles the corpus, from about 3,750 unique papers a week to about 8,000,
-   for around 30 extra arXiv requests.
-1. **Memory.** The ranker fetches `data/memory.json` from the previously deployed
-   site: which authors and which words it has seen, and when. The deployment is
-   the storage.
+The score is a percentile within its field and newcomer/established pool, not a
+calibrated probability. Explanations include external evidence actually observed
+for the paper. Candidate size, corpus coverage, discipline and index latency
+remain limitations. [Research](../research/ranking/README.md) records the
+experiment, rejected candidate and previous evaluation contamination.
 
-   `scripts/backfill-memory.mjs` fills it with history the site was not running
-   for, over arXiv's OAI-PMH endpoint rather than the query API: 1,300 records
-   a request across every category at once, against roughly 2,500 requests to
-   cover the same ground category by category. OAI answers HTTP 503 while it
-   assembles a response, which the protocol intends and the script retries. It
-   folds a month at a time, records each finished month in the memory, and
-   stops on a month boundary when its budget runs out, so it is safe to
-   interrupt and safe to re-run. Author names are rebuilt as forenames then
-   keyname to match what the Atom feed produces; on 119 papers present in both
-   sources the two agreed exactly, which is the property that makes the
-   backfill merge into existing author records rather than duplicate every
-   researcher. Budget about 160 bytes of memory.json per paper folded.
+`verify-ranking.mjs` skips external calls for immature cohorts. The pure
+`evaluation.mjs` grades within fields, separates model versions, enforces coverage
+and positive-observation gates, and compares v2 on citation gains after ranking.
+The Saturday workflow starts grading the original log on 21 November 2026.
+V2 needs its own 90 days. No old claims are overwritten or relabeled.
 
-   Signals are computed against that memory as it stood *before* the batch
-   being scored, so no paper is credited with a track record its authors gained
-   this morning.
-2. **Enrichment.** One index. Semantic Scholar is asked for reference and
-   citation counts, four hundred arXiv ids per request, because it parses
-   preprint PDFs and is therefore the only free source of reference counts, the
-   strongest cold-start signal in the study.
+## Discovery
 
-   OpenAlex used to run a second pass here for citation counts and no longer
-   does. It was never a source of reference counts, since it catalogues a
-   preprint *without* parsing its bibliography and its `referenced_works_count`
-   is zero for all of them, which would tell the ranker "this paper cites
-   nothing" when the truth is "we have not looked". Measured on citations, its
-   whole pass added 33 papers S2 did not know about, every one of them a zero,
-   and no new non-zero citation at all. It has since started metering its free
-   tier, which made it a billed dependency in the critical path buying nothing.
-   The browser still uses it for search, author lookup and the citation graph,
-   where it genuinely is the better source, and now tells a reader when the
-   daily allowance rather than a passing throttle is the problem.
+The feed merges followed category snapshots with stable deduplication. Selecting
+a discipline includes cross-listed work. Search can run with just a field and
+supports relevance, citations and recency. If OpenAlex is unavailable, saved
+snapshots are filtered by query, author and an explicit arXiv-to-field mapping;
+the interface discloses that the results are limited to recent saved papers.
 
-   Optional by construction: failures, rate limits and preprints that are not
-   indexed yet all reduce to "this paper is ranked on fewer lanes". Semantic
-   Scholar's anonymous pool is shared with every other unauthenticated caller and
-   throttles hard, so a 429 is treated as routine rather than exceptional. Three
-   things follow, and consecutive production runs needed all of them: the run
-   backs off and continues instead of abandoning the remaining batches; batches
-   are striped across the feed rather than cut contiguously, so a request that
-   does fail costs every field a slice of its coverage instead of costing a few
-   fields all of theirs; and throttled batches are retried once at the end of the
-   pass, since a 429 means the pool was busy just then, not that those papers are
-   unknowable.
+## Optional analytics
 
-   All three help, and none of them was a cure. Three consecutive production runs
-   of the same code got 86%, 64% and 31% of the feed: the anonymous pool is
-   shared with the whole internet, and no local backoff fixes a queue somebody
-   else is filling.
+- `pipelines/ingestion`: normalized versioned arXiv records in a local database.
+- `pipelines/embeddings`, `space`, `similarity`: vector exports/imports, PCA/UMAP
+  projections and HNSW retrieval with exact cosine reranking.
+- `pipelines/enrichment`, `publish`, `orchestration`: incremental metadata and
+  reproducible dashboard artifacts.
+- `apps/dashboard`, `apps/dashboard_api`: local Plotly dashboard and FastAPI API.
 
-   The actual fix is the `S2_API_KEY` secret, which is set. A key carries its own
-   rate limit of one request per second, so the build no longer competes for the
-   shared pool, and requests are spaced 1.1s apart instead of 3s, so the whole pass
-   takes about fifteen seconds. The code still runs without a key, at the pool's
-   mercy, so this is a coverage improvement rather than a dependency; every build
-   logs which of the two modes it is in, because a mistyped secret would
-   otherwise degrade to anonymous silently and look like a bad day upstream.
-
-   The graceful degradation stays regardless of the key, and it is the part worth
-   keeping: nothing is ever recorded as a zero that was not measured, and
-   whatever fails, fails evenly across fields. Even the 31% run produced a
-   reference lane in 61 of 78 cohorts, built entirely from real counts.
-3. **Scoring.** `apps/web/src/lib/ranking/` turns signals into a percentile within
-   the paper's own field, fuses the available lanes by reciprocal rank, ranks
-   papers with no author history in a separate lane, and assigns a band.
-4. **Fold forward.** The batch is folded into the memory and written back out for
-   the next build, so the corpus the ranker learns from grows on its own. The
-   memory is pruned to a two-year window and holds only author records, term
-   frequencies and monthly volumes, so it cannot grow without bound as the site
-   keeps running. Size scales with what has been folded rather than with how
-   long the site has run: about 160 bytes per paper, so 2.5 MB before the
-   backfill and roughly 30 MB after a year of arXiv. Only the build ever
-   downloads it; the browser reads the feed snapshots and the manifest.
-
-   Each paper is folded exactly once. The workflow runs on every push as well
-   as weekly, and every run refetches the same newest-100-per-category, so the
-   memory carries a ledger of ids it has already counted. Without it, the
-   eleven builds in the thirty-one hours after the ranking launched recorded 39,312
-   papers for August against a feed of 5,248, and gave twenty thousand authors
-   a publication count of twelve for a fortnight of arXiv.
-5. **Record the claim.** The build appends what it ranked to
-   `data/predictions.json`: the full front page and notable band, plus a
-   deterministic one-in-sixteen sample of the rest as a control group. That
-   file rides the same round trip through the deployment as the memory does,
-   pruned to twelve months and sixty builds. It exists because none of the
-   other outputs survive: the feed snapshots are overwritten each week and the
-   Pages artifact expires after a day, so before this the site kept no record
-   of anything it had ever claimed. `scripts/verify-ranking.mjs` reads the log
-   back, asks Semantic Scholar what those papers collected, and scores the
-   bands against the outcome, declining to judge cohorts under ninety days
-   old.
-
-Model coefficients live in `apps/web/src/lib/ranking/model.generated.ts` and are
-produced by `research/ranking/export_model.py`. They are generated, not authored:
-regenerate rather than edit.
-
-## Analytics data flow
-
-1. `pipelines/ingestion/` stores normalized paper metadata in the configured database.
-2. Embedding and enrichment jobs create versioned artifacts under `data/`.
-3. Space and similarity jobs derive visualization and retrieval artifacts.
-4. `pipelines/publish/` prepares compact data products for the optional dashboard and API.
-
-Generated data, logs, credentials, dependency directories, and build outputs are excluded from version control. Only source code, migrations, tests, configuration examples, and documentation belong in the repository.
+Existing Python tests cover ingestion idempotency/resume, exports, manifests,
+publication and dashboard transformations. They do not execute production-scale
+GPU embedding or clustering workloads. Generated data and credentials stay out
+of Git.

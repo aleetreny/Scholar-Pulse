@@ -18,6 +18,7 @@ const DEBOUNCE_MS = 450;
 
 const SORT_OPTIONS: { value: SearchSort; labelKey: StringKey }[] = [
   { value: "relevance", labelKey: "search.relevance" },
+  { value: "citations", labelKey: "search.mostCited" },
   { value: "recent", labelKey: "search.newest" },
 ];
 
@@ -28,8 +29,8 @@ export function SearchView() {
 
   const [input, setInput] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery.trim());
-  const [field, setField] = useState<string>("");
-  const [sort, setSort] = useState<SearchSort>("relevance");
+  const [field, setField] = useState<string>(() => FIELDS_OF_STUDY.some((field) => String(field.id) === searchParams.get("field")) ? searchParams.get("field")! : "");
+  const [sort, setSort] = useState<SearchSort>(() => SORT_OPTIONS.some((option) => option.value === searchParams.get("sort")) ? searchParams.get("sort") as SearchSort : "relevance");
   const inputRef = useRef<HTMLInputElement>(null);
   const { searches, addSearch, clearSearches } = useRecentSearches();
   const { topics } = useTopics();
@@ -40,6 +41,7 @@ export function SearchView() {
   // it survives URL mirroring and remounts with zero state juggling.
   const authorQuery = query.match(/^author:\s*(.+)$/i)?.[1]?.trim() ?? null;
   const effectiveQuery = authorQuery ?? query;
+  const effectiveSort = !effectiveQuery && sort === "relevance" ? "citations" : sort;
 
   // Debounce typing into the executed query, and mirror it into the URL so
   // searches are shareable and survive reloads.
@@ -51,12 +53,14 @@ export function SearchView() {
       if (clean) {
         params.set("q", clean);
       }
-      router.replace(clean ? `/search?${params}` : "/search", { scroll: false });
+      if (field) params.set("field", field);
+      if (sort !== "relevance") params.set("sort", sort);
+      router.replace(params.size ? `/search?${params}` : "/search", { scroll: false });
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
-  }, [input, router]);
+  }, [input, field, sort, router]);
 
-  const enabled = effectiveQuery.length > 0;
+  const enabled = effectiveQuery.length > 0 || field !== "";
   const queryKey = `${effectiveQuery}::${field}::${sort}::${authorQuery !== null}`;
   const topicsKey = topics.join(",");
 
@@ -75,7 +79,7 @@ export function SearchView() {
     [effectiveQuery, field, sort, authorQuery, topicsKey],
   );
 
-  const { papers, total, loading, loadingMore, error, hasMore, loadMore, retry } =
+  const { papers, total, source, loading, loadingMore, error, hasMore, loadMore, retry } =
     usePaginatedPapers(fetchPage, queryKey, enabled);
 
   function commitSearch() {
@@ -137,9 +141,10 @@ export function SearchView() {
             <button
               key={option.value}
               type="button"
-              data-active={sort === option.value}
-              aria-pressed={sort === option.value}
+              data-active={effectiveSort === option.value}
+              aria-pressed={effectiveSort === option.value}
               onClick={() => setSort(option.value)}
+              disabled={option.value === "relevance" && !effectiveQuery}
             >
               {t(option.labelKey)}
             </button>
@@ -168,6 +173,9 @@ export function SearchView() {
           </span>
         ) : null}
       </div>
+
+      {enabled && effectiveSort === "citations" ? <p className="notice notice--quiet">{t("search.citationNote")}</p> : null}
+      {source === "snapshots" ? <p className="notice notice--quiet">{t("search.limited")}</p> : null}
 
       {!enabled ? (
         searches.length > 0 ? (

@@ -9,7 +9,7 @@ import { TexText } from "@/components/tex-text";
 import { showToast } from "@/components/toast";
 import { categoryLabel } from "@/lib/categories";
 import { stashPaper } from "@/lib/data/paper-cache";
-import { formatAuthors, formatRelativeDate } from "@/lib/format";
+import { formatAuthors, formatRelativeDate, formatCount } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { paperHref } from "@/lib/paper-link";
 import { useLibrary } from "@/lib/store";
@@ -91,6 +91,7 @@ export const PaperCard = memo(function PaperCard({
       ) : null}
 
       <div className="paper-card__meta">
+        {paper.metrics?.citations != null ? <span className="chip">{t("paper.citationCount", { n: formatCount(paper.metrics.citations) })}</span> : null}
         {pulse ? <NewcomerMark pulse={pulse} /> : null}
         {paper.primaryCategory ? (
           <span className="chip" title={paper.primaryCategory}>

@@ -1,9 +1,10 @@
 "use client";
 
-import { orderByPulse } from "@/lib/ranking/score";
-import { withBase } from "@/lib/data/base";
+import { orderByPulse } from "../ranking/score.ts";
+import { withBase } from "./base.ts";
 import type { FeedSort } from "@/lib/store";
-import type { FeedResponse, Paper } from "@/lib/types";
+import { categoryInField, matchesSnapshot, sortSnapshotMatches } from "./search-options.ts";
+import type { FeedResponse, Paper, SearchSort } from "@/lib/types";
 
 /**
  * The "For you" feed reads prebuilt per-category JSON snapshots that ship
@@ -22,6 +23,8 @@ export type CategorySnapshot = {
 export type FeedManifest = {
   generatedAt: string;
   categories: string[];
+  freshness?: Record<string, string>;
+  refresh?: { fresh: string[]; carried: string[]; missing: string[] };
 };
 
 let manifestPromise: Promise<FeedManifest> | null = null;
@@ -84,7 +87,7 @@ export async function getFeed(
   start: number,
   max: number,
   focus?: string | null,
-  sort: FeedSort = "recent",
+  sort: FeedSort = "pulse",
 ): Promise<FeedPage> {
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
@@ -101,10 +104,10 @@ export async function getFeed(
 
   const seen = new Set<string>();
   let merged: Paper[] = [];
-  for (const { value } of loaded) {
+  for (const { value } of [...loaded].sort((a, b) => a.value.category.localeCompare(b.value.category))) {
     for (const paper of value.papers) {
       if (!seen.has(paper.id)) {
-        if (focus && paper.primaryCategory !== focus) {
+        if (focus && paper.primaryCategory !== focus && !paper.categories.includes(focus)) {
           continue;
         }
         seen.add(paper.id);
@@ -134,7 +137,7 @@ export async function getFeed(
 /**
  * Last-resort search over the shipped snapshots (title/author/abstract
  * substring match): instant and offline-friendly, but only covers each
- * category's latest ~100 submissions. Used when the live search upstream
+ * category's saved recent submissions. Used when the live search upstream
  * is unreachable. Followed categories are scanned first so their
  * already-cached snapshots cover the common case without extra fetches.
  */
@@ -143,9 +146,10 @@ export async function searchSnapshots(
   followed: string[],
   start: number,
   max: number,
+  options: { fieldId?: number | null; sort?: SearchSort; byAuthor?: boolean; signal?: AbortSignal } = {},
 ): Promise<FeedResponse> {
   const needle = query.replace(/^"|"$/g, "").toLowerCase().trim();
-  if (!needle) {
+  if (!needle && options.fieldId == null) {
     return { papers: [], totalResults: 0, start };
   }
 
@@ -153,11 +157,13 @@ export async function searchSnapshots(
   try {
     const manifest = await getManifest();
     const rest = manifest.categories.filter((id) => !followed.includes(id));
-    categories = [...followed, ...rest].slice(0, 20);
+    categories = [...followed, ...rest];
   } catch {
     // No manifest: scan whatever the caller follows.
   }
 
+  options.signal?.throwIfAborted();
+  categories = categories.filter((category) => categoryInField(category, options.fieldId ?? null));
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
   );
@@ -172,20 +178,18 @@ export async function searchSnapshots(
       if (seen.has(paper.id)) {
         continue;
       }
-      if (
-        paper.title.toLowerCase().includes(needle) ||
-        paper.abstract.toLowerCase().includes(needle) ||
-        paper.authors.some((author) => author.toLowerCase().includes(needle))
-      ) {
+      if (matchesSnapshot(paper, needle, options.fieldId ?? null, options.byAuthor ?? false)) {
         seen.add(paper.id);
         matches.push(paper);
       }
     }
   }
-  matches.sort((a, b) => b.published.localeCompare(a.published));
+  options.signal?.throwIfAborted();
+  const ordered = sortSnapshotMatches(matches, options.sort ?? "recent");
 
   return {
-    papers: matches.slice(start, start + max),
+    source: "snapshots",
+    papers: ordered.slice(start, start + max),
     totalResults: matches.length,
     start,
   };
