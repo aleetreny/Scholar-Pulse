@@ -3,7 +3,7 @@
 import { orderByPulse } from "../ranking/score.ts";
 import { withBase } from "./base.ts";
 import type { FeedSort } from "@/lib/store";
-import { categoryInField, matchesSnapshot, sortSnapshotMatches } from "./search-options.ts";
+import { matchesSnapshot, sortSnapshotMatches } from "./search-options.ts";
 import type { FeedResponse, Paper, SearchSort } from "@/lib/types";
 
 /**
@@ -89,32 +89,35 @@ export async function getFeed(
   focus?: string | null,
   sort: FeedSort = "pulse",
 ): Promise<FeedPage> {
+  const requested = focus ? [focus] : categories;
   const results = await Promise.allSettled(
-    categories.map((category) => fetchCategorySnapshot(category)),
+    requested.map((category) => fetchCategorySnapshot(category)),
   );
 
   const loaded = results.filter(
     (result): result is PromiseFulfilledResult<CategorySnapshot> =>
       result.status === "fulfilled",
   );
-  const missing = categories.filter((_, index) => results[index].status === "rejected");
-  if (loaded.length === 0 && categories.length > 0) {
+  const missing = requested.filter((_, index) => results[index].status === "rejected");
+  if (loaded.length === 0 && requested.length > 0) {
     throw new Error("The paper feed could not be loaded.");
   }
 
-  const seen = new Set<string>();
-  let merged: Paper[] = [];
+  const chosen = new Map<string, Paper>();
   for (const { value } of [...loaded].sort((a, b) => a.value.category.localeCompare(b.value.category))) {
     for (const paper of value.papers) {
-      if (!seen.has(paper.id)) {
-        if (focus && paper.primaryCategory !== focus && !paper.categories.includes(focus)) {
-          continue;
-        }
-        seen.add(paper.id);
-        merged.push(paper);
+      if (focus && paper.primaryCategory !== focus && !paper.categories.includes(focus)) {
+        continue;
+      }
+      // In the combined feed prefer the paper's primary discipline when it
+      // is followed; otherwise use a stable followed category. A focused feed
+      // always takes its own snapshot and therefore its own cohort score.
+      if (!chosen.has(paper.id) || value.category === paper.primaryCategory) {
+        chosen.set(paper.id, paper);
       }
     }
   }
+  let merged = [...chosen.values()];
   if (sort === "pulse" && merged.some((paper) => paper.pulse)) {
     merged = orderByPulse(merged, (paper) => paper.pulse);
   } else {
@@ -163,7 +166,8 @@ export async function searchSnapshots(
   }
 
   options.signal?.throwIfAborted();
-  categories = categories.filter((category) => categoryInField(category, options.fieldId ?? null));
+  // Filter papers, not snapshot names: an older cross-listing may survive
+  // only in a quieter category's snapshot after leaving a busy field's cap.
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
   );
