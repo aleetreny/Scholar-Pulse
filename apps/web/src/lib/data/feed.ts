@@ -1,6 +1,7 @@
 "use client";
 
 import { orderByPulse } from "../ranking/score.ts";
+import { canonicalCategory } from "../categories.ts";
 import { withBase } from "./base.ts";
 import type { FeedSort } from "@/lib/store";
 import { matchesSnapshot, sortSnapshotMatches } from "./search-options.ts";
@@ -89,7 +90,8 @@ export async function getFeed(
   focus?: string | null,
   sort: FeedSort = "pulse",
 ): Promise<FeedPage> {
-  const requested = focus ? [focus] : categories;
+  const focused = focus ? canonicalCategory(focus) : null;
+  const requested = [...new Set((focused ? [focused] : categories).map(canonicalCategory))];
   const results = await Promise.allSettled(
     requested.map((category) => fetchCategorySnapshot(category)),
   );
@@ -106,7 +108,7 @@ export async function getFeed(
   const chosen = new Map<string, Paper>();
   for (const { value } of [...loaded].sort((a, b) => a.value.category.localeCompare(b.value.category))) {
     for (const paper of value.papers) {
-      if (focus && paper.primaryCategory !== focus && !paper.categories.includes(focus)) {
+      if (focused && ![paper.primaryCategory, ...paper.categories].some((category) => canonicalCategory(category) === focused)) {
         continue;
       }
       // In the combined feed prefer the paper's primary discipline when it
@@ -168,6 +170,7 @@ export async function searchSnapshots(
   options.signal?.throwIfAborted();
   // Filter papers, not snapshot names: an older cross-listing may survive
   // only in a quieter category's snapshot after leaving a busy field's cap.
+  categories = [...new Set(categories.map(canonicalCategory))];
   const results = await Promise.allSettled(
     categories.map((category) => fetchCategorySnapshot(category)),
   );

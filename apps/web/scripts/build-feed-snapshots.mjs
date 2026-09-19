@@ -14,7 +14,7 @@ import { mkdir, writeFile, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { CATEGORY_GROUPS } from "../src/lib/categories.ts";
+import { CATEGORY_GROUPS, canonicalCategory } from "../src/lib/categories.ts";
 import { parseArxivFeed } from "../src/lib/arxiv-atom.ts";
 
 const ARXIV_API_BASE = (
@@ -211,7 +211,7 @@ async function main() {
   const allIds = CATEGORY_GROUPS.flatMap((group) =>
     group.categories.map(({ id }) => id),
   );
-  const targets = cats ?? allIds;
+  const targets = [...new Set((cats ?? allIds).map(canonicalCategory))];
   const unknown = targets.filter((id) => !allIds.includes(id));
   if (unknown.length > 0) {
     console.error(`Unknown categories: ${unknown.join(", ")}`);

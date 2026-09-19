@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TopicPicker } from "@/components/topic-picker";
 import { showToast } from "@/components/toast";
 import { withBase } from "@/lib/data/base";
+import { canonicalCategory } from "@/lib/categories";
 import { useT } from "@/lib/i18n";
 import { useHydrated, useTopics } from "@/lib/store";
 
@@ -45,7 +46,7 @@ export function TopicsView() {
               type="button"
               title={t("topics.rssCopyAria", { cat: id })}
               onClick={async () => {
-                const url = `${window.location.origin}${withBase(`/data/rss/${id}.xml`)}`;
+                const url = `${window.location.origin}${withBase(`/data/rss/${canonicalCategory(id)}.xml`)}`;
                 try {
                   await navigator.clipboard.writeText(url);
                   showToast(t("topics.rssCopied"));

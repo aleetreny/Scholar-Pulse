@@ -70,3 +70,20 @@ test("query-free field exploration sends an explicit most-cited request", async 
   assert.ok(url.searchParams.get("filter")!.includes("primary_topic.field.id:31"));
   assert.equal(result.source, "openalex");
 });
+
+test("saved Statistics Theory aliases load the canonical ranked feed once", async () => {
+  const requests: string[] = [];
+  const paper = makePaper("2609.45678", { primaryCategory: "math.ST", categories: ["math.ST"],
+    pulse: { score: 95, tier: "headline", lanes: [], newcomer: false, reasons: [], cohort: "math.ST" } });
+  globalThis.fetch = async (url) => {
+    requests.push(String(url));
+    assert.ok(String(url).endsWith("/math.ST.json"));
+    return new Response(JSON.stringify({ category: "math.ST", fetchedAt: "2026-09-19", papers: [paper] }));
+  };
+  const focused = await getFeed(["stat.TH"], 0, 20, "stat.TH");
+  assert.equal(focused.papers[0].id, paper.id);
+  assert.equal(focused.papers[0].pulse?.cohort, "math.ST");
+  const combined = await getFeed(["stat.TH", "math.ST"], 0, 20);
+  assert.equal(combined.papers.length, 1);
+  assert.equal(requests.length, 1);
+});

@@ -3,6 +3,14 @@ export type CategoryGroup = {
   categories: { id: string; label: string }[];
 };
 
+/** arXiv publishes Statistics Theory under math.ST; stat.TH is its alias.
+ * Source: https://arxiv.org/category_taxonomy
+ * Keep saved topic preferences readable while requesting the canonical feed.
+ */
+export function canonicalCategory(id: string): string {
+  return id === "stat.TH" ? "math.ST" : id;
+}
+
 /**
  * Curated slice of the arXiv taxonomy: the categories researchers follow most,
  * grouped by discipline. Ids match arXiv category codes exactly.
