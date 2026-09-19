@@ -144,13 +144,16 @@ function browserLang(): Lang {
 }
 
 export function useLang(): { lang: Lang; setLang: (lang: Lang) => void } {
+  const hydrated = useHydrated();
   const stored = useSyncExternalStore(
     langStore.subscribe,
     langStore.getSnapshot,
     langStore.getServerSnapshot,
   );
   return {
-    lang: stored ?? browserLang(),
+    // Static HTML is English. Match it during hydration, then apply the
+    // browser's language; choosing Spanish on the first render causes #418.
+    lang: stored ?? (hydrated ? browserLang() : "en"),
     setLang: (lang: Lang) => langStore.set(lang),
   };
 }
