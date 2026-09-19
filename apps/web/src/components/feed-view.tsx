@@ -7,7 +7,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { PaperCard } from "@/components/paper-card";
 import { EmptyState, ErrorBox, PaperListSkeleton } from "@/components/states";
 import { TopicPicker } from "@/components/topic-picker";
-import { categoryLabel } from "@/lib/categories";
+import { canonicalCategory, categoryLabel } from "@/lib/categories";
 import { getFeed, getManifest } from "@/lib/data/feed";
 import { formatRelativeDate } from "@/lib/format";
 import { type StringKey, useT } from "@/lib/i18n";
@@ -108,7 +108,7 @@ function Feed({ topics }: { topics: string[] }) {
     };
   }, []);
   const missingTopics = manifest
-    ? topics.filter((id) => !manifest.categories.includes(id))
+    ? topics.filter((id) => !manifest.categories.includes(canonicalCategory(id)))
     : [];
 
   const activeCategories = useMemo(
@@ -142,7 +142,7 @@ function Feed({ topics }: { topics: string[] }) {
               <span className="page-head__stamp">
                 {" "}
                 {t("feed.updated", {
-                  when: formatRelativeDate(activeCategories.map((id) => manifest.freshness?.[id] ?? manifest.generatedAt).sort()[0], lang),
+                  when: formatRelativeDate(activeCategories.map((id) => manifest.freshness?.[canonicalCategory(id)] ?? manifest.generatedAt).sort()[0], lang),
                 })}
               </span>
             ) : null}
@@ -213,7 +213,7 @@ function Feed({ topics }: { topics: string[] }) {
         </p>
       ) : null}
 
-      {manifest?.refresh?.carried.some((id) => activeCategories.includes(id)) ? (
+      {manifest?.refresh?.carried.some((id) => activeCategories.some((active) => canonicalCategory(active) === id)) ? (
         <p className="notice notice--quiet">{t("feed.carried")}</p>
       ) : null}
 
