@@ -56,10 +56,14 @@ V2 needs its own 90 days. No old claims are overwritten or relabeled.
 ## Discovery
 
 The feed merges followed category snapshots with stable deduplication. Selecting
-a discipline includes cross-listed work. Search can run with just a field and
+a discipline includes cross-listed work and uses that discipline's score. The
+combined feed prefers a paper's primary category score when that category is
+followed, otherwise a stable followed-category score. Search can run with just a field and
 supports relevance, citations and recency. If OpenAlex is unavailable, saved
 snapshots are filtered by query, author and an explicit arXiv-to-field mapping;
-the interface discloses that the results are limited to recent saved papers.
+the filter examines each paper's categories across all saved snapshots, including
+cross-listings retained only by a quieter field. The interface discloses that
+the results are limited to recent saved papers.
 
 ## Optional analytics
 
