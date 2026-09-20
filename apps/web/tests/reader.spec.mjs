@@ -370,3 +370,52 @@ test("partial feed failures identify the missing discipline and recover", async 
   );
   assert.equal(await page.locator(".error-box").count(), 0);
 });
+
+test("feed detail preserves its citation source when live enrichment fails", async ({ browser }) => {
+  // Both a positive count and a measured zero outrank another index's count.
+  for (const [snapshotCount, otherCount] of [[1, 0], [0, 20]]) {
+    const context = await browser.newContext({ locale: "en-US", timezoneId: "UTC" });
+    const page = await context.newPage();
+    await page.addInitScript(() => localStorage.setItem(
+      "scholarpulse.topics.v1", JSON.stringify(["cs.CV"]),
+    ));
+    await page.route("**/data/manifest.json", route => route.fulfill({
+      json: { generatedAt: "2026-09-20", categories: ["cs.CV"] },
+    }));
+    await page.route("**/data/feed/cs.CV.json", route => route.fulfill({
+      json: { category: "cs.CV", fetchedAt: "2026-09-20", papers: [{
+        id: "2609.19927", versionedId: "2609.19927v1",
+        title: "DirtyMoCap: Robust Motion Capture from Unconstrained Markers",
+        authors: ["Research author"], abstract: "Motion capture research",
+        published: "2026-09-19", updated: "2026-09-19",
+        categories: ["cs.CV"], primaryCategory: "cs.CV",
+        absUrl: "https://arxiv.org/abs/2609.19927",
+        pdfUrl: "https://arxiv.org/pdf/2609.19927",
+        metrics: { citations: snapshotCount, references: 31, asOf: "2026-09-19T22:25:13.716Z" },
+      }] },
+    }));
+    await page.route("**/api.semanticscholar.org/**", route =>
+      route.fulfill({ status: 404, json: { message: "Not found" } }),
+    );
+    await page.route("**/scholar-pulse-search.alejandrotreny100.workers.dev/**", route =>
+      route.fulfill({ json: { meta: { count: 1 }, results: [{
+        id: "https://openalex.org/W7213586499",
+        doi: "https://doi.org/10.48550/arxiv.2609.19927",
+        display_name: "DirtyMoCap: Robust Motion Capture from Unconstrained Markers",
+        cited_by_count: otherCount, referenced_works: [],
+      }] } }),
+    );
+    await page.goto("http://127.0.0.1:4175/Scholar-Pulse/");
+    const card = page.locator(".paper-card").first();
+    await card.waitFor();
+    assert.match(await card.innerText(), new RegExp(`${snapshotCount} citation`, "i"));
+    await card.locator("h3").click();
+    await page.getByRole("button", { name: /^Cited by/ }).waitFor();
+    await page.locator(".notice").waitFor();
+    const count = page.locator('.paper-page__stats [title*="Semantic Scholar"]');
+    assert.match(await count.getAttribute("title"), new RegExp(`^${snapshotCount} · Semantic Scholar ·`));
+    assert.match(await count.getAttribute("title"), /Sep 19, 2026/);
+    assert.match(await count.innerText(), snapshotCount === 1 ? /1\s+citation/i : /Not cited yet/i);
+    await context.close();
+  }
+});

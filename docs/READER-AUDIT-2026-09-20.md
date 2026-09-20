@@ -21,6 +21,11 @@ topped by one citation. The warning did not make that behaviour correct.
 - Search counts retain their OpenAlex work identity on cards, detail pages and
   shared URLs. Another provider or a preprint-only record cannot silently replace
   the count used for sorting. Citation graph counts describe that same work.
+- Feed detail keeps its Semantic Scholar snapshot when that provider is
+  unavailable, including measured zero counts. A real cross-index discrepancy
+  was `2609.19927`: the saved feed had one citation while its OpenAlex preprint
+  record had zero. The detail now preserves the feed's source and measurement
+  date; the follow-up graph explicitly names OpenAlex.
 - Original arXiv titles, bylines, abstracts and categories are preferred when
   available. A live example was `W2896457183`: OpenAlex returned an unrelated
   health-supplement title for arXiv `1810.04805`; the original record correctly
@@ -48,7 +53,7 @@ topped by one citation. The warning did not make that behaviour correct.
 | Feed and topics | Fresh onboarding, follow/unfollow, ranked feed; partial snapshot failure and recovery; canonical category aliases retained. |
 | Library | Save/remove, reading-status filters, note followed immediately by reload, JSON export/import, unique BibTeX identifiers. |
 | Locale/theme/mobile | English/Spanish, persistent dark theme, 390px mobile layout, no horizontal overflow or uncaught browser errors in the tested journeys. |
-| Regression protection | 74 data/ranking tests, 6 gateway tests, 2 Playwright reader journeys (19 checkpoints plus partial-feed recovery), lint, TypeScript, static export and 17 native Python tests. |
+| Regression protection | 74 data/ranking tests, 6 gateway tests, 3 Playwright reader journeys (19 checkpoints plus partial-feed recovery and feed citation-source preservation), lint, TypeScript, static export and 17 native Python tests. |
 
 The automated browser tests run against the actual static export with controlled
 upstream responses, including failures. Separate live tests use real services;

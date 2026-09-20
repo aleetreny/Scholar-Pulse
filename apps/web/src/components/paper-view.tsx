@@ -231,14 +231,17 @@ export function PaperView({ arxivId, workId }: { arxivId: string; workId?: strin
 
   const saved = isSaved(paper.id);
   const bibtex = toBibtex(paper);
-  // Search and detail use the same index work. A different provider must not
-  // replace the count that determined the result's citation ordering.
+  // Preserve the provider used by the originating search or feed. A missing
+  // live response must not replace its snapshot with another index's count.
   const live = paper.metrics?.source === "openalex"
-    ? oa?.citedByCount ?? paper.metrics.citations
-    : extras?.citationCount ?? oa?.citedByCount ?? null;
-  const citations = live ?? paper.metrics?.citations ?? null;
+    ? oa?.citedByCount ?? null
+    : extras?.citationCount ?? null;
+  const citations = live ?? paper.metrics?.citations ?? oa?.citedByCount ?? null;
+  const citationSource = paper.metrics?.source === "openalex" ||
+    (live === null && paper.metrics?.citations == null)
+    ? "OpenAlex" : "Semantic Scholar";
   const references = extras?.referenceCount ?? paper.metrics?.references ?? null;
-  const measuredAt = live === null && paper.metrics ? paper.metrics.asOf : null;
+  const measuredAt = live === null && paper.metrics?.citations != null ? paper.metrics.asOf : null;
 
   return (
     <article className="main__column paper-page">
@@ -281,20 +284,15 @@ export function PaperView({ arxivId, workId }: { arxivId: string; workId?: strin
         {citations !== null ? (
           <span
             className="stat-chip"
-            title={
-              paper.metrics?.source === "openalex"
-                ? `${citations.toLocaleString()} · OpenAlex`
-                : extras?.influentialCitationCount
-                ? t("paper.influential", { n: extras.influentialCitationCount })
-                : measuredAt
-                  ? t("paper.asOf", { date: formatAbsoluteDate(measuredAt, lang) })
-                  : undefined
-            }
+            title={[
+              citations.toLocaleString(),
+              citationSource,
+              measuredAt ? t("paper.asOf", { date: formatAbsoluteDate(measuredAt, lang) }) : null,
+              citationSource === "Semantic Scholar" && extras?.influentialCitationCount
+                ? t("paper.influential", { n: extras.influentialCitationCount }) : null,
+            ].filter(Boolean).join(" · ")}
           >
             <TrendingUp />
-            {/* A week-old preprint cannot have been cited, so "0 citations"
-                reads as a broken feed rather than as a measurement. The count
-                is only printed once there is a count worth printing. */}
             {citations > 0 ? (
               <>
                 <strong>{formatCount(citations)}</strong> {t(citations === 1 ? "paper.citation" : "paper.citations")}
