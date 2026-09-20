@@ -1,0 +1,41 @@
+name: Provision search key (one-time encrypted transfer)
+on:
+  push:
+    branches: [fix/search-consistency]
+    paths: [.github/workflows/provision-search-key.yml]
+permissions:
+  contents: read
+jobs:
+  encrypt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Encrypt secret for the deployment machine
+        env:
+          OPENALEX_API_KEY: ${{ secrets.OPENALEX_API_KEY }}
+          PUBLIC_KEY: |
+            -----BEGIN PUBLIC KEY-----
+            MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAvKJnutCkIPIs+GLQLuK1
+            qBjIv+K1HJVuZsiwbcF9G/FFhaKyZz8yBrrEIMRvc1NvasVOmvIuQT7TRhEBjckf
+            uoN6yBtIrqBfH0grUnxeqmsqgINOmRq7ik1Ir5sV9b+oD4BwDO23tRlmqyr8SwTp
+            112KXEHFTD6m2LM+j+579ObqWO1RFIAsLb21MHiJuTAm8n9JgWdEwAqQwrdnVHKs
+            jJjsLMxiTgSALe0T9kxk+VWtnZFxuiw0Xa8tX+e/op7MkV7iShSg8xyWHbe/Ppdb
+            hcUGDSpyUwFmmLYKlLbmOBpwfyM851mYyjX+CmiDixAcf0zKpKQzWmDEYONkyfFh
+            C9la7YbPkGsJrnpGutUG31If2SdS3hLOkRHZBTE5xbqKaT/HfJdw5MXGiYWFGeKo
+            4J8P0UG9sMBkS1VVduMElSizUwOhjeebv2KEiWKO6vj4wdD+PJVDBhtlRBbvkExp
+            zon5d3Alm4Jbw1Dublb0I22hnAUVtiWEFMH0pV0dB+S7AgMBAAE=
+            -----END PUBLIC KEY-----
+        run: |
+          node --input-type=module <<'JS'
+          import { publicEncrypt, constants } from 'node:crypto';
+          import { writeFileSync } from 'node:fs';
+          if (!process.env.OPENALEX_API_KEY) throw new Error('OPENALEX_API_KEY is missing');
+          writeFileSync('search-key.enc', publicEncrypt({key: process.env.PUBLIC_KEY, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash:'sha256'}, Buffer.from(process.env.OPENALEX_API_KEY.trim())));
+          JS
+      - uses: actions/upload-artifact@v7
+        with:
+          name: encrypted-search-key
+          path: search-key.enc
+          retention-days: 1
