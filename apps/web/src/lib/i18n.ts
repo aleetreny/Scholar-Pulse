@@ -145,7 +145,7 @@ const EN = {
   "paper.buildsOn": "Builds on",
   "paper.buildsOnHint": "selected indexed references",
   "paper.citedBy": "Cited by",
-  "paper.citedByHint": "most-cited follow-up papers",
+  "paper.citedByHint": "most-cited follow-up papers in OpenAlex",
   "paper.graphLoading": "Loading…",
   "paper.graphEmpty": "Nothing indexed here yet.",
   "paper.referencesNotListed":
@@ -354,7 +354,7 @@ const ES: Record<StringKey, string> = {
   "paper.buildsOn": "Se apoya en",
   "paper.buildsOnHint": "selección de referencias indexadas",
   "paper.citedBy": "Citado por",
-  "paper.citedByHint": "papers posteriores más citados",
+  "paper.citedByHint": "papers posteriores más citados en OpenAlex",
   "paper.graphLoading": "Cargando…",
   "paper.graphEmpty": "Aún no hay nada indexado aquí.",
   "paper.referencesNotListed":
