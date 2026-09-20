@@ -40,6 +40,7 @@ const EN = {
   "feed.emptyTitle": "Nothing here yet",
   "feed.emptyBody":
     "No recent papers for this selection. Try another topic or widen your feed.",
+  "feed.loadMissing": "Some fields could not be loaded: {fields}. Retry to include them.",
   "feed.missingSnapshot":
     "No snapshot yet for {fields}. These fields will appear after the next site update.",
 
@@ -65,7 +66,7 @@ const EN = {
   "feed.carried": "Some fields show their last available snapshot while the source recovers. The date above reflects those papers.",
   "paper.citationCount": "{n} citations",
   "search.mostCited": "Most cited",
-  "search.citationNote": "Recorded citations highlight established work and favor older papers. They do not measure scientific quality or predict future importance.",
+  "search.citationNote": "Sorted by citations recorded in OpenAlex.",
   "search.limited": "The live index is unavailable. These results cover saved recent papers only; field matching uses arXiv categories.",
   "pulse.lanesLabel": "Evidence:",
   "pulse.lane.signals": "submission metadata",
@@ -97,12 +98,14 @@ const EN = {
 
   "search.title": "Search arXiv",
   "search.sub":
-    "Every arXiv paper, by title, abstract, or author, powered by OpenAlex.",
+    "Search arXiv papers indexed by OpenAlex. For an author, type author: followed by their name.",
   "search.authorMode": "Author search: {author}",
-  "search.placeholder": "Search titles, abstracts, authors…",
+  "search.placeholder": "Search keywords, phrases, author:Name…",
   "search.inputAria": "Search arXiv",
   "search.clearAria": "Clear search",
   "search.sortAria": "Sort results",
+  "search.loading": "Loading",
+  "search.loadMore": "Load more results",
   "search.relevance": "Relevance",
   "search.newest": "Newest",
   "search.fieldAria": "Filter by field of study",
@@ -111,10 +114,10 @@ const EN = {
   "search.clearRecent": "Clear",
   "search.emptyTitle": "Explore a discipline or search for a paper",
   "search.emptyBody":
-    "Search across every arXiv paper by keyword, phrase, or author, then filter by field and sort by freshness.",
+    "Choose a field or search by keyword or phrase. For an author, use author: followed by a name.",
   "search.noResultsTitle": "No results",
   "search.noResultsBody":
-    "Nothing on arXiv matches “{query}”{inField}. Try fewer or broader terms.",
+    "No indexed papers match “{query}”{inField}. Try fewer or broader terms.",
   "search.inField": " in {field}",
   "search.resultsOne": "{n} result",
   "search.resultsMany": "{n} results",
@@ -123,6 +126,8 @@ const EN = {
   "paper.save": "Save",
   "paper.inLibrary": "In library",
   "paper.cite": "Cite",
+  "paper.citation": "citation",
+  "paper.citationCountOne": "{n} citation",
   "paper.citations": "citations",
   "paper.notCitedYet": "Not cited yet",
   "paper.asOf": "As counted when the site last updated, {date}",
@@ -138,16 +143,16 @@ const EN = {
   "paper.similar": "Similar papers",
   "paper.literature": "In the literature",
   "paper.buildsOn": "Builds on",
-  "paper.buildsOnHint": "its most-cited references",
+  "paper.buildsOnHint": "selected indexed references",
   "paper.citedBy": "Cited by",
-  "paper.citedByHint": "influential follow-up work",
+  "paper.citedByHint": "most-cited follow-up papers",
   "paper.graphLoading": "Loading…",
   "paper.graphEmpty": "Nothing indexed here yet.",
   "paper.referencesNotListed":
-    "The bibliography has been counted but not yet linked up: OpenAlex catalogues a preprint without parsing its references.",
+    "A reference count is available, but the linked bibliography could not be retrieved.",
   "paper.retry": "Retry",
   "paper.partialNotice":
-    "Citation metrics and similar papers are temporarily unavailable (Semantic Scholar rate limit). They will appear on the next visit.",
+    "Optional summaries and similar-paper suggestions could not be loaded for this visit.",
   "paper.copy": "Copy",
   "paper.bibtexCopied": "BibTeX copied",
   "paper.citationCopied": "Citation copied",
@@ -244,6 +249,7 @@ const ES: Record<StringKey, string> = {
   "feed.emptyTitle": "Aún no hay nada aquí",
   "feed.emptyBody":
     "No hay papers recientes para esta selección. Prueba otro tema o amplía tu feed.",
+  "feed.loadMissing": "No se han podido cargar estos campos: {fields}. Reintenta para incluirlos.",
   "feed.missingSnapshot":
     "Aún no hay datos para {fields}. Estos campos aparecerán tras la próxima actualización del sitio.",
 
@@ -269,7 +275,7 @@ const ES: Record<StringKey, string> = {
   "feed.carried": "Algunas disciplinas muestran su última lista disponible mientras se recupera la fuente. La fecha indicada corresponde a esos papers.",
   "paper.citationCount": "{n} citas",
   "search.mostCited": "Más citados",
-  "search.citationNote": "Las citas registradas permiten encontrar trabajos consolidados y favorecen a los más antiguos. No miden la calidad científica ni predicen la importancia futura.",
+  "search.citationNote": "Ordenados por las citas registradas en OpenAlex.",
   "search.limited": "El índice en vivo no está disponible. Estos resultados solo incluyen papers recientes guardados; las disciplinas se filtran mediante categorías de arXiv.",
   "pulse.lanesLabel": "Evidencia:",
   "pulse.lane.signals": "metadatos de publicación",
@@ -301,12 +307,14 @@ const ES: Record<StringKey, string> = {
 
   "search.title": "Buscar en arXiv",
   "search.sub":
-    "Todos los papers de arXiv por título, abstract o autor, con datos de OpenAlex.",
+    "Busca papers de arXiv indexados en OpenAlex. Para buscar un autor, escribe author: seguido de su nombre.",
   "search.authorMode": "Búsqueda por autor: {author}",
-  "search.placeholder": "Busca títulos, abstracts, autores…",
+  "search.placeholder": "Busca palabras, frases, author:Nombre…",
   "search.inputAria": "Buscar en arXiv",
   "search.clearAria": "Borrar búsqueda",
   "search.sortAria": "Ordenar resultados",
+  "search.loading": "Cargando",
+  "search.loadMore": "Cargar más resultados",
   "search.relevance": "Relevancia",
   "search.newest": "Más recientes",
   "search.fieldAria": "Filtrar por campo de estudio",
@@ -315,10 +323,10 @@ const ES: Record<StringKey, string> = {
   "search.clearRecent": "Borrar",
   "search.emptyTitle": "Explora una disciplina o busca un paper",
   "search.emptyBody":
-    "Busca en todos los papers de arXiv por palabra clave, frase o autor, y filtra por campo y ordena por novedad.",
+    "Elige un campo o busca por palabra clave o frase. Para buscar un autor, usa author: seguido de un nombre.",
   "search.noResultsTitle": "Sin resultados",
   "search.noResultsBody":
-    "Nada en arXiv coincide con «{query}»{inField}. Prueba con menos términos o más generales.",
+    "Ningún paper indexado coincide con «{query}»{inField}. Prueba con menos términos o más generales.",
   "search.inField": " en {field}",
   "search.resultsOne": "{n} resultado",
   "search.resultsMany": "{n} resultados",
@@ -327,6 +335,8 @@ const ES: Record<StringKey, string> = {
   "paper.save": "Guardar",
   "paper.inLibrary": "En la biblioteca",
   "paper.cite": "Citar",
+  "paper.citation": "cita",
+  "paper.citationCountOne": "{n} cita",
   "paper.citations": "citas",
   "paper.notCitedYet": "Aún sin citas",
   "paper.asOf": "Según la última actualización del sitio, {date}",
@@ -342,16 +352,16 @@ const ES: Record<StringKey, string> = {
   "paper.similar": "Papers similares",
   "paper.literature": "En la literatura",
   "paper.buildsOn": "Se apoya en",
-  "paper.buildsOnHint": "sus referencias más citadas",
+  "paper.buildsOnHint": "selección de referencias indexadas",
   "paper.citedBy": "Citado por",
-  "paper.citedByHint": "trabajo posterior influyente",
+  "paper.citedByHint": "papers posteriores más citados",
   "paper.graphLoading": "Cargando…",
   "paper.graphEmpty": "Aún no hay nada indexado aquí.",
   "paper.referencesNotListed":
-    "La bibliografía está contada pero todavía no enlazada: OpenAlex cataloga un preprint sin analizar sus referencias.",
+    "Hay un recuento de referencias, pero no se ha podido recuperar la bibliografía enlazada.",
   "paper.retry": "Reintentar",
   "paper.partialNotice":
-    "Las métricas de citas y los papers similares no están disponibles ahora mismo (límite de peticiones de Semantic Scholar). Aparecerán en la próxima visita.",
+    "No se han podido cargar los resúmenes opcionales y las sugerencias de papers similares en esta visita.",
   "paper.copy": "Copiar",
   "paper.bibtexCopied": "BibTeX copiado",
   "paper.citationCopied": "Cita copiada",

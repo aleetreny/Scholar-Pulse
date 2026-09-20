@@ -55,6 +55,8 @@ export type Pulse = {
  * ceiling.
  */
 export type PaperMetrics = {
+  source?: "openalex" | "semantic-scholar";
+  workId?: string;
   /** Citations recorded at build time. Zero here is a measurement. */
   citations: number | null;
   /** Bibliography length. Null means not parsed yet, which is not zero. */
@@ -90,7 +92,10 @@ export type FeedResponse = {
   papers: Paper[];
   totalResults: number;
   start: number;
-  /** Search is limited to saved recent snapshots when the index is offline. */
+  /** Independent of estimated upstream totals and deduplicated page length. */
+  hasMore?: boolean;
+  missing?: string[];
+  /** The catalogue that produced these results. */
   source?: "openalex" | "snapshots";
 };
 

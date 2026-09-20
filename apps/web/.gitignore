@@ -45,3 +45,6 @@ next-env.d.ts
 
 # corpus harvest: build input for the ranker's memory, never served
 /.corpus/
+
+/test-results/
+/playwright-report/

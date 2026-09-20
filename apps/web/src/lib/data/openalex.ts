@@ -3,28 +3,22 @@
 import { withSignal } from "./with-signal.ts";
 import type { FeedResponse, GraphPaper, Paper, SearchSort } from "@/lib/types";
 
-/**
- * OpenAlex client: the primary upstream for search, author lookups, and
- * the citation graph. Chosen over Semantic Scholar for these hot paths
- * because S2's anonymous pool is chronically rate-limited, while OpenAlex
- * serves unauthenticated CORS requests reliably in well under a second.
- * (S2 remains the source for TLDRs, similar papers, and merged citation
- * metrics, data OpenAlex doesn't have.)
- */
+/** Search and citation graph share one OpenAlex catalogue. */
 
 const OPENALEX_API_BASE = (
-  process.env.NEXT_PUBLIC_OPENALEX_API_BASE ?? "https://api.openalex.org"
+  process.env.NEXT_PUBLIC_OPENALEX_API_BASE ??
+  "https://scholar-pulse-search.alejandrotreny100.workers.dev"
 ).replace(/\/$/, "");
 
 /** OpenAlex source id for arXiv. Every query is scoped to it. */
 const ARXIV_SOURCE = "S4306400194";
 
-const REQUEST_TIMEOUT_MS = 12_000;
+const REQUEST_TIMEOUT_MS = 20_000;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const CACHE_MAX_ENTRIES = 120;
 
 const UNAVAILABLE_MESSAGE =
-  "OpenAlex didn't answer. It usually clears in a few seconds, so try again.";
+  "Search is temporarily unavailable. Please try again.";
 
 /**
  * OpenAlex now meters its free tier: a caller gets a daily allowance of
@@ -35,16 +29,18 @@ const UNAVAILABLE_MESSAGE =
  * 429, so they are told apart by the body, which is CORS-readable.
  */
 const BUDGET_MESSAGE =
-  "OpenAlex has cut this network off for the rest of the day: its free daily " +
-  "allowance is spent and resets at midnight UTC.";
+  "The search service has reached its daily allowance. It resets at midnight UTC.";
 
 async function isBudgetExhausted(response: Response): Promise<boolean> {
   if (response.headers.get("x-ratelimit-remaining") === "0") {
     return true;
   }
   try {
-    const body = (await response.clone().json()) as { message?: string };
-    return /budget/i.test(body.message ?? "");
+    const body = (await response.clone().json()) as {
+      message?: string;
+      error?: string;
+    };
+    return /budget/i.test(`${body.error ?? ""} ${body.message ?? ""}`);
   } catch {
     return false;
   }
@@ -97,14 +93,20 @@ async function fetchOA<T>(path: string, signal?: AbortSignal): Promise<T> {
     }
     if (response.status === 429) {
       throw new Error(
-        (await isBudgetExhausted(response)) ? BUDGET_MESSAGE : UNAVAILABLE_MESSAGE,
+        (await isBudgetExhausted(response))
+          ? BUDGET_MESSAGE
+          : UNAVAILABLE_MESSAGE,
       );
     }
     if (response.status === 404) {
       throw new Error("Not found on OpenAlex");
     }
     if (!response.ok) {
-      throw new Error(`OpenAlex responded with status ${response.status}`);
+      throw new Error(
+        response.status === 400
+          ? "This query could not be understood. Try fewer terms or check the search syntax."
+          : UNAVAILABLE_MESSAGE,
+      );
     }
     const data = (await response.json()) as T;
     cacheSet(url, data);
@@ -122,6 +124,19 @@ type OAAuthorship = { author?: { display_name?: string | null } };
 type OALocation = { landing_page_url?: string | null };
 
 type OAWork = {
+  arxiv_metadata?: Pick<
+    Paper,
+    | "id"
+    | "versionedId"
+    | "title"
+    | "abstract"
+    | "authors"
+    | "categories"
+    | "primaryCategory"
+    | "doi"
+    | "journalRef"
+    | "comment"
+  >;
   id?: string;
   display_name?: string | null;
   publication_date?: string | null;
@@ -134,7 +149,9 @@ type OAWork = {
 };
 
 /** OpenAlex ships abstracts as {word: [positions]}; rebuild the text. */
-function invertAbstract(index: Record<string, number[]> | null | undefined): string {
+function invertAbstract(
+  index: Record<string, number[]> | null | undefined,
+): string {
   if (!index) {
     return "";
   }
@@ -194,7 +211,20 @@ function toPaper(work: OAWork): Paper | null {
     comment: null,
     pdfUrl: `https://arxiv.org/pdf/${arxivId}`,
     absUrl: `https://arxiv.org/abs/${arxivId}`,
-    ...(typeof work.cited_by_count === "number" ? { metrics: { citations: work.cited_by_count, references: null, asOf: new Date().toISOString() } } : {}),
+    // Retain the index publication date used by its date ordering, while
+    // taking identity-bearing metadata from the original arXiv record.
+    ...(work.arxiv_metadata?.id === arxivId ? work.arxiv_metadata : {}),
+    ...(typeof work.cited_by_count === "number"
+      ? {
+          metrics: {
+            citations: work.cited_by_count,
+            references: null,
+            asOf: new Date().toISOString(),
+            source: "openalex",
+            workId: work.id?.split("/").pop(),
+          },
+        }
+      : {}),
   };
 }
 
@@ -232,6 +262,8 @@ type SearchAccumulator = {
   total: number;
   nextPage: number;
   exhausted: boolean;
+  updatedAt: number;
+  pending?: Promise<void>;
 };
 
 const SEARCH_CACHE_MAX = 20;
@@ -239,7 +271,7 @@ const searchCache = new Map<string, SearchAccumulator>();
 
 function accumulatorFor(key: string): SearchAccumulator {
   const existing = searchCache.get(key);
-  if (existing) {
+  if (existing && Date.now() - existing.updatedAt < CACHE_TTL_MS) {
     return existing;
   }
   if (searchCache.size >= SEARCH_CACHE_MAX) {
@@ -255,6 +287,7 @@ function accumulatorFor(key: string): SearchAccumulator {
     total: 0,
     nextPage: 1,
     exhausted: false,
+    updatedAt: Date.now(),
   };
   searchCache.set(key, fresh);
   return fresh;
@@ -277,64 +310,91 @@ export async function searchPapers(
   const key = `${byAuthor ? "au" : "q"}::${query}::${fieldId ?? ""}::${sort}`;
   const acc = accumulatorFor(key);
 
-  let fetches = 0;
-  while (
-    acc.items.length < start + max &&
-    !acc.exhausted &&
-    fetches < MAX_UPSTREAM_PAGES_PER_CALL
-  ) {
-    const filters = [`locations.source.id:${ARXIV_SOURCE}`];
-    if (fieldId !== null) {
-      filters.push(`primary_topic.field.id:${fieldId}`);
-    }
-    if (byAuthor) {
-      filters.push(`raw_author_name.search:${query}`);
-    }
-    const params = new URLSearchParams({
-      filter: filters.join(","),
-      select: SEARCH_SELECT,
-      "per-page": String(OA_PAGE_SIZE),
-      page: String(acc.nextPage),
-    });
-    if (!byAuthor && query.trim()) {
-      params.set("search", query);
-    }
-    if (sort === "recent") {
-      params.set("sort", "publication_date:desc");
-    } else if (byAuthor || sort === "citations" || !query.trim()) {
-      // No relevance score without a search param; most-cited is the
-      // natural "relevance" for an author's papers.
-      params.set("sort", "cited_by_count:desc");
-    }
+  // Serialize consumers of the same accumulator: abandoned React effects and
+  // rapid navigation must not advance the upstream cursor twice.
+  const fill = async () => {
+    let fetches = 0;
+    while (
+      acc.items.length < start + max &&
+      !acc.exhausted &&
+      fetches < MAX_UPSTREAM_PAGES_PER_CALL
+    ) {
+      const filters = [`locations.source.id:${ARXIV_SOURCE}`];
+      if (fieldId !== null) {
+        filters.push(`primary_topic.field.id:${fieldId}`);
+      }
+      if (byAuthor) {
+        const name = query
+          .replace(/[,:|"\\]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        filters.push(`raw_author_name.search:"${name}"`);
+      }
+      const params = new URLSearchParams({
+        filter: filters.join(","),
+        select: SEARCH_SELECT,
+        "per-page": String(OA_PAGE_SIZE),
+        page: String(acc.nextPage),
+      });
+      if (!byAuthor && query.trim()) {
+        params.set(/[?*]/.test(query) ? "search.exact" : "search", query);
+      }
+      if (sort === "recent") {
+        params.set("sort", "publication_date:desc");
+      } else if (byAuthor || sort === "citations" || !query.trim()) {
+        // No relevance score without a search param; most-cited is the
+        // natural "relevance" for an author's papers.
+        params.set("sort", "cited_by_count:desc");
+      }
 
-    const page = await fetchOA<OAListResponse>(`/works?${params}`, signal);
-    fetches += 1;
-    const results = page.results ?? [];
-    acc.total = page.meta?.count ?? acc.total;
-    acc.nextPage += 1;
-    for (const work of results) {
-      const paper = toPaper(work);
-      // Unsorted relevance pagination can drift between pages; dedupe so a
-      // work never renders twice (React keys are paper ids).
-      if (paper && !acc.seen.has(paper.id)) {
-        acc.seen.add(paper.id);
-        acc.items.push(paper);
-        if (work.id) {
-          acc.workIds.set(paper.id, work.id.split("/").pop() as string);
+      const page = await fetchOA<OAListResponse>(`/works?${params}`);
+      fetches += 1;
+      const results = page.results ?? [];
+      acc.total = page.meta?.count ?? acc.total;
+      acc.nextPage += 1;
+      acc.updatedAt = Date.now();
+      for (const work of results) {
+        const paper = toPaper(work);
+        // Unsorted relevance pagination can drift between pages; dedupe so a
+        // work never renders twice (React keys are paper ids).
+        if (paper && !acc.seen.has(paper.id)) {
+          acc.seen.add(paper.id);
+          acc.items.push(paper);
+          if (work.id) {
+            acc.workIds.set(paper.id, work.id.split("/").pop() as string);
+          }
         }
       }
+      if (
+        results.length < OA_PAGE_SIZE ||
+        (page.meta?.count !== undefined &&
+          (acc.nextPage - 1) * OA_PAGE_SIZE >= page.meta.count)
+      ) {
+        acc.exhausted = true;
+      }
     }
-    if (results.length < OA_PAGE_SIZE) {
-      acc.exhausted = true;
-    }
+  };
+  const pending = (acc.pending ?? Promise.resolve()).catch(() => {}).then(fill);
+  acc.pending = pending;
+  try {
+    await withSignal(pending, signal);
+  } finally {
+    void pending
+      .finally(() => {
+        if (acc.pending === pending) acc.pending = undefined;
+      })
+      .catch(() => {});
+  }
+
+  if (acc.items.length <= start && !acc.exhausted) {
+    throw new Error("These indexed matches could not be opened. Retry to continue searching.");
   }
 
   return {
     source: "openalex",
+    hasMore: !acc.exhausted || acc.items.length > start + max,
     papers: acc.items.slice(start, start + max),
-    totalResults: acc.exhausted
-      ? acc.items.length
-      : Math.max(acc.total, acc.items.length),
+    totalResults: acc.total,
     start,
   };
 }
@@ -376,8 +436,10 @@ export function resolveWork(
   arxivId: string,
   title: string | null,
   signal?: AbortSignal,
+  workId?: string,
 ): Promise<ResolvedWork | null> {
-  const cachedPromise = resolved.get(arxivId);
+  const resolutionKey = `${arxivId}::${workId ?? title ?? ""}`;
+  const cachedPromise = resolved.get(resolutionKey);
   if (cachedPromise) {
     return withSignal(cachedPromise, signal);
   }
@@ -385,6 +447,15 @@ export function resolveWork(
   // The shared resolution runs signal-free; each caller races it against
   // its own signal so an abandoned page can't poison the cache entry.
   const promise = (async () => {
+    if (workId && /^W\d+$/.test(workId)) {
+      const byId = await fetchOA<OAListResponse>(
+        `/works?filter=openalex:${workId}&select=${WORK_SELECT}`,
+      );
+      const hit = (byId.results ?? []).find(
+        (work) => arxivIdOf(work) === arxivId,
+      );
+      if (hit) return toResolved(hit);
+    }
     const byDoi = await fetchOA<OAListResponse>(
       `/works?filter=doi:10.48550/arxiv.${arxivId}&select=${WORK_SELECT}`,
     );
@@ -412,8 +483,8 @@ export function resolveWork(
     return null;
   })();
 
-  resolved.set(arxivId, promise);
-  promise.catch(() => resolved.delete(arxivId));
+  resolved.set(resolutionKey, promise);
+  promise.catch(() => resolved.delete(resolutionKey));
   return withSignal(promise, signal);
 }
 
@@ -421,8 +492,9 @@ export function resolveWork(
 export async function getPaperFromOpenAlex(
   arxivId: string,
   signal?: AbortSignal,
+  workId?: string,
 ): Promise<Paper> {
-  const work = await resolveWork(arxivId, null, signal);
+  const work = await resolveWork(arxivId, null, signal, workId);
   if (!work) {
     throw new Error("Not found on OpenAlex");
   }
@@ -432,14 +504,14 @@ export async function getPaperFromOpenAlex(
 /* ---------------------------- Citation graph -------------------------- */
 
 function toGraphPaper(work: OAWork): GraphPaper | null {
-  const title = clean(work.display_name);
+  const title = clean(work.arxiv_metadata?.title ?? work.display_name);
   if (!title) {
     return null;
   }
   const arxivId = arxivIdOf(work);
   return {
     title,
-    authors: (work.authorships ?? [])
+    authors: work.arxiv_metadata?.authors ?? (work.authorships ?? [])
       .map((authorship) => clean(authorship.author?.display_name))
       .filter(Boolean),
     year: work.publication_date

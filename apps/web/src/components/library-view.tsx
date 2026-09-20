@@ -102,6 +102,14 @@ function parseImport(raw: string): LibraryEntry[] {
       pdfUrl: str(record.pdfUrl) || `https://arxiv.org/pdf/${record.id}`,
       absUrl: str(record.absUrl) || `https://arxiv.org/abs/${record.id}`,
     };
+    // Preserve measured counts and work identity across our own backup round trip.
+    const metrics = record.metrics as Record<string, unknown> | undefined;
+    if (metrics && typeof metrics === "object" && typeof metrics.asOf === "string") {
+      const count = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+      cleanPaper.metrics = { citations: count(metrics.citations), references: count(metrics.references), asOf: metrics.asOf,
+        ...(metrics.source === "openalex" || metrics.source === "semantic-scholar" ? { source: metrics.source } : {}),
+        ...(typeof metrics.workId === "string" && /^W\d+$/.test(metrics.workId) ? { workId: metrics.workId } : {}) };
+    }
     const status = (item as { status?: unknown }).status;
     const savedAt = (item as { savedAt?: unknown }).savedAt;
     const note = (item as { note?: unknown }).note;
@@ -127,7 +135,7 @@ function LibraryCard({ entry, t }: { entry: LibraryEntry; t: Translate }) {
     <div className="library-entry">
       <div className="library-entry__body">
         <Link
-          href={paperHref(paper.id)}
+          href={paperHref(paper.id, paper.metrics?.workId)}
           style={{ display: "block" }}
           onClick={() => stashPaper(paper)}
         >
@@ -155,7 +163,7 @@ function LibraryCard({ entry, t }: { entry: LibraryEntry; t: Translate }) {
               defaultValue={entry.note}
               placeholder={t("lib.notePlaceholder")}
               aria-label={t("lib.noteAria")}
-              onBlur={(event) => setNote(paper.id, event.target.value)}
+              onChange={(event) => setNote(paper.id, event.target.value)}
             />
           </div>
         ) : null}

@@ -15,7 +15,14 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-type PageData = { key: string; papers: Paper[]; total: number; source?: FeedResponse["source"] };
+type PageData = {
+  key: string;
+  papers: Paper[];
+  total: number;
+  source?: FeedResponse["source"];
+  hasMore?: boolean;
+  missing?: string[];
+};
 type PageError = { key: string; message: string };
 
 /**
@@ -32,6 +39,7 @@ export function usePaginatedPapers(
 ) {
   const [data, setData] = useState<PageData | null>(null);
   const [errorState, setErrorState] = useState<PageError | null>(null);
+  const [moreErrorState, setMoreErrorState] = useState<PageError | null>(null);
   const [moreKey, setMoreKey] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const moreControllerRef = useRef<AbortController | null>(null);
@@ -50,7 +58,19 @@ export function usePaginatedPapers(
         if (controller.signal.aborted) {
           return;
         }
-        setData({ key, papers: response.papers, total: response.totalResults, source: response.source });
+        setErrorState((previous) => (previous?.key === key ? null : previous));
+        setMoreErrorState((previous) =>
+          previous?.key === key ? null : previous,
+        );
+        setMoreKey((previous) => (previous === key ? null : previous));
+        setData({
+          key,
+          papers: response.papers,
+          total: response.totalResults,
+          source: response.source,
+          hasMore: response.hasMore,
+          missing: response.missing,
+        });
       })
       .catch((fetchError: unknown) => {
         if (controller.signal.aborted || isAbortError(fetchError)) {
@@ -75,13 +95,17 @@ export function usePaginatedPapers(
   const error = enabled && errorState?.key === key ? errorState.message : null;
   const loading = enabled && current === null && error === null;
   const loadingMore = moreKey === key;
-  const hasMore = papers.length > 0 && papers.length < total;
+  const hasMore =
+    current?.hasMore ?? (papers.length > 0 && papers.length < total);
+  const moreError =
+    enabled && moreErrorState?.key === key ? moreErrorState.message : null;
 
   const loadMore = useCallback(() => {
     moreControllerRef.current?.abort();
     const controller = new AbortController();
     moreControllerRef.current = controller;
     setMoreKey(key);
+    setMoreErrorState(null);
 
     fetchPage(papers.length, controller.signal)
       .then((response) => {
@@ -98,8 +122,9 @@ export function usePaginatedPapers(
             key,
             papers: [...previous.papers, ...fresh],
             total: response.totalResults,
-            source: previous.source === "snapshots" || response.source === "snapshots"
-              ? "snapshots" : response.source ?? previous.source,
+            source: response.source ?? previous.source,
+            hasMore: response.hasMore,
+            missing: response.missing,
           };
         });
         setMoreKey((value) => (value === key ? null : value));
@@ -109,10 +134,27 @@ export function usePaginatedPapers(
           return;
         }
         setMoreKey((value) => (value === key ? null : value));
+        setMoreErrorState({
+          key,
+          message:
+            fetchError instanceof Error ? fetchError.message : "Request failed",
+        });
       });
   }, [fetchPage, key, papers.length]);
 
   const retry = useCallback(() => setReloadToken((token) => token + 1), []);
 
-  return { papers, total, source: current?.source, loading, loadingMore, error, hasMore, loadMore, retry };
+  return {
+    papers,
+    total,
+    missing: current?.missing ?? [],
+    source: current?.source,
+    loading,
+    loadingMore,
+    error,
+    moreError,
+    hasMore,
+    loadMore,
+    retry,
+  };
 }

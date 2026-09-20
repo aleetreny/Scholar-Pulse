@@ -1,7 +1,7 @@
 # ScholarPulse
 
 Explore arXiv papers by discipline, discover promising recent work, and find
-established references. No account, hosted database or paid model is required.
+established references. Readers need no account or paid model. The static site uses a small cached search service.
 
 [Open ScholarPulse](https://aleetreny.github.io/Scholar-Pulse/)
 
@@ -9,11 +9,15 @@ established references. No account, hosted database or paid model is required.
   available at the time of the build.
 - **Newest:** chronological browsing of the same candidates.
 - **Search:** choose a discipline without entering a query, or search by topic
-  or author. **Most cited** surfaces established work; citations favor older
+  or `author:Name`. Sorting keeps the same OpenAlex catalogue. **Most cited** surfaces established work; citations favor older
   papers and are not a measure of scientific quality.
 - Paper pages explain the ranking and link to references, citations and related work.
 - Save papers, notes and reading status locally; export BibTeX or JSON.
 - English and Spanish, light and dark themes, desktop and mobile.
+
+The [reader-flow audit](docs/READER-AUDIT-2026-09-20.md) documents the search,
+pagination, metadata and library fixes. The [search service](workers/search-api/README.md)
+keeps the OpenAlex key server-side; outages never switch to a smaller catalogue.
 
 ## Ranking
 
