@@ -10,7 +10,7 @@ import { FIELDS_OF_STUDY } from "@/lib/data/openalex";
 import { searchPapers } from "@/lib/data/search";
 import { formatCount } from "@/lib/format";
 import { useT, type StringKey } from "@/lib/i18n";
-import { useRecentSearches, useTopics } from "@/lib/store";
+import { useRecentSearches } from "@/lib/store";
 import type { SearchSort } from "@/lib/types";
 import { PAGE_SIZE, usePaginatedPapers } from "@/lib/use-papers";
 
@@ -25,15 +25,26 @@ const SORT_OPTIONS: { value: SearchSort; labelKey: StringKey }[] = [
 export function SearchView() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") ?? "";
-
-  const [input, setInput] = useState(initialQuery);
-  const [query, setQuery] = useState(initialQuery.trim());
-  const [field, setField] = useState<string>(() => FIELDS_OF_STUDY.some((field) => String(field.id) === searchParams.get("field")) ? searchParams.get("field")! : "");
-  const [sort, setSort] = useState<SearchSort>(() => SORT_OPTIONS.some((option) => option.value === searchParams.get("sort")) ? searchParams.get("sort") as SearchSort : "relevance");
+  const query = (searchParams.get("q") ?? "").trim();
+  const field = FIELDS_OF_STUDY.some(
+    (field) => String(field.id) === searchParams.get("field"),
+  )
+    ? searchParams.get("field")!
+    : "";
+  const sort: SearchSort = SORT_OPTIONS.some(
+    (option) => option.value === searchParams.get("sort"),
+  )
+    ? (searchParams.get("sort") as SearchSort)
+    : "relevance";
+  const [input, setInput] = useState(query);
+  const [previousQuery, setPreviousQuery] = useState(query);
+  // URL is the executed search, including browser Back/Forward and author links.
+  if (previousQuery !== query) {
+    setPreviousQuery(query);
+    setInput(query);
+  }
   const inputRef = useRef<HTMLInputElement>(null);
   const { searches, addSearch, clearSearches } = useRecentSearches();
-  const { topics } = useTopics();
   const { t } = useT();
 
   // "author:Grace Hopper" switches to an exact author-name filter (what the
@@ -41,28 +52,35 @@ export function SearchView() {
   // it survives URL mirroring and remounts with zero state juggling.
   const authorQuery = query.match(/^author:\s*(.+)$/i)?.[1]?.trim() ?? null;
   const effectiveQuery = authorQuery ?? query;
-  const effectiveSort = !effectiveQuery && sort === "relevance" ? "citations" : sort;
+  const effectiveSort =
+    (!effectiveQuery || authorQuery !== null) && sort === "relevance"
+      ? "citations"
+      : sort;
 
-  // Debounce typing into the executed query, and mirror it into the URL so
-  // searches are shareable and survive reloads.
-  useEffect(() => {
-    const handle = window.setTimeout(() => {
-      const clean = input.trim();
-      setQuery(clean);
+  const navigate = useCallback(
+    (q: string, nextField: string, nextSort: SearchSort, replace = false) => {
       const params = new URLSearchParams();
-      if (clean) {
-        params.set("q", clean);
-      }
-      if (field) params.set("field", field);
-      if (sort !== "relevance") params.set("sort", sort);
-      router.replace(params.size ? `/search?${params}` : "/search", { scroll: false });
-    }, DEBOUNCE_MS);
+      if (q.trim()) params.set("q", q.trim());
+      if (nextField) params.set("field", nextField);
+      if (nextSort !== "relevance") params.set("sort", nextSort);
+      const href = params.size ? `/search?${params}` : "/search";
+      if (replace) router.replace(href, { scroll: false });
+      else router.push(href, { scroll: false });
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (input.trim() === query) return;
+    const handle = window.setTimeout(
+      () => navigate(input, field, sort, true),
+      DEBOUNCE_MS,
+    );
     return () => window.clearTimeout(handle);
-  }, [input, field, sort, router]);
+  }, [input, query, field, sort, navigate]);
 
   const enabled = effectiveQuery.length > 0 || field !== "";
   const queryKey = `${effectiveQuery}::${field}::${sort}::${authorQuery !== null}`;
-  const topicsKey = topics.join(",");
 
   const fetchPage = useCallback(
     (start: number, signal: AbortSignal) =>
@@ -74,19 +92,27 @@ export function SearchView() {
         PAGE_SIZE,
         signal,
         authorQuery !== null,
-        topicsKey ? topicsKey.split(",") : [],
       ),
-    [effectiveQuery, field, sort, authorQuery, topicsKey],
+    [effectiveQuery, field, sort, authorQuery],
   );
 
-  const { papers, total, source, loading, loadingMore, error, hasMore, loadMore, retry } =
-    usePaginatedPapers(fetchPage, queryKey, enabled);
+  const {
+    papers,
+    total,
+    loading,
+    loadingMore,
+    error,
+    moreError,
+    hasMore,
+    loadMore,
+    retry,
+  } = usePaginatedPapers(fetchPage, queryKey, enabled);
 
   function commitSearch() {
     const clean = input.trim();
     if (clean) {
       addSearch(clean);
-      setQuery(clean);
+      navigate(clean, field, sort);
     }
   }
 
@@ -136,15 +162,22 @@ export function SearchView() {
       </form>
 
       <div className="search-controls">
-        <div className="segmented" role="group" aria-label={t("search.sortAria")}>
+        <div
+          className="segmented"
+          role="group"
+          aria-label={t("search.sortAria")}
+        >
           {SORT_OPTIONS.map((option) => (
             <button
               key={option.value}
               type="button"
               data-active={effectiveSort === option.value}
               aria-pressed={effectiveSort === option.value}
-              onClick={() => setSort(option.value)}
-              disabled={option.value === "relevance" && !effectiveQuery}
+              onClick={() => navigate(input, field, option.value)}
+              disabled={
+                option.value === "relevance" &&
+                (!effectiveQuery || authorQuery !== null)
+              }
             >
               {t(option.labelKey)}
             </button>
@@ -154,7 +187,7 @@ export function SearchView() {
         <div className="select-wrap">
           <select
             value={field}
-            onChange={(event) => setField(event.target.value)}
+            onChange={(event) => navigate(input, event.target.value, sort)}
             aria-label={t("search.fieldAria")}
           >
             <option value="">{t("search.allFields")}</option>
@@ -174,14 +207,18 @@ export function SearchView() {
         ) : null}
       </div>
 
-      {enabled && effectiveSort === "citations" ? <p className="notice notice--quiet">{t("search.citationNote")}</p> : null}
-      {source === "snapshots" ? <p className="notice notice--quiet">{t("search.limited")}</p> : null}
+      {enabled && effectiveSort === "citations" ? (
+        <p className="page-head__sub">{t("search.citationNote")}</p>
+      ) : null}
 
       {!enabled ? (
         searches.length > 0 ? (
           <div className="recent-searches">
             <span className="recent-searches__label">
-              <Clock size={12} style={{ verticalAlign: "-2px", marginRight: 4 }} />
+              <Clock
+                size={12}
+                style={{ verticalAlign: "-2px", marginRight: 4 }}
+              />
               {t("search.recent")}
             </span>
             {searches.map((recent) => (
@@ -191,7 +228,7 @@ export function SearchView() {
                 className="topic-pill"
                 onClick={() => {
                   setInput(recent);
-                  setQuery(recent);
+                  navigate(recent, field, sort);
                 }}
               >
                 {recent}
@@ -222,7 +259,13 @@ export function SearchView() {
           title={t("search.noResultsTitle")}
           body={t("search.noResultsBody", {
             query,
-            inField: field ? t("search.inField", { field }) : "",
+            inField: field
+              ? t("search.inField", {
+                  field:
+                    FIELDS_OF_STUDY.find((item) => String(item.id) === field)
+                      ?.label ?? field,
+                })
+              : "",
           })}
         />
       ) : (
@@ -237,6 +280,9 @@ export function SearchView() {
               <PaperCard key={paper.id} paper={paper} />
             ))}
           </div>
+          {moreError ? (
+            <ErrorBox message={moreError} onRetry={loadMore} />
+          ) : null}
           {hasMore ? (
             <div className="load-more">
               <button
@@ -246,7 +292,7 @@ export function SearchView() {
                 disabled={loadingMore}
               >
                 {loadingMore ? <Loader2 className="spin" /> : null}
-                {loadingMore ? "Loading" : "Load more results"}
+                {loadingMore ? t("search.loading") : t("search.loadMore")}
               </button>
             </div>
           ) : null}

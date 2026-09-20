@@ -1,0 +1,1 @@
+{"name":"scholar-pulse-search-api","private":true,"type":"module","scripts":{"test":"node --test *.test.mjs","deploy":"wrangler deploy","check":"wrangler deploy --dry-run"},"devDependencies":{"wrangler":"^4.0.0"},"dependencies":{"fast-xml-parser":"^5.11.1"}}

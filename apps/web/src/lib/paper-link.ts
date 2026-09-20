@@ -3,6 +3,6 @@
  * path segments). Old-style ids contain a slash, so the id must always be
  * URI-encoded, and every link goes through here to keep that true.
  */
-export function paperHref(arxivId: string): string {
-  return `/paper?id=${encodeURIComponent(arxivId)}`;
+export function paperHref(arxivId: string, workId?: string): string {
+  return `/paper?id=${encodeURIComponent(arxivId)}${workId && /^W\d+$/.test(workId) ? `&work=${workId}` : ""}`;
 }

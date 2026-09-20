@@ -19,6 +19,25 @@ jobs:
         working-directory: apps/web
         env:
           PAGES_BASE_PATH: /Scholar-Pulse
+      - run: npx playwright install --with-deps chromium && npm run test:browser
+        working-directory: apps/web
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: browser-failure-traces
+          path: apps/web/test-results/
+          retention-days: 7
+  search-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: workers/search-api/package-lock.json
+      - run: npm ci && npm test && npm run check
+        working-directory: workers/search-api
   python:
     runs-on: ubuntu-latest
     steps:

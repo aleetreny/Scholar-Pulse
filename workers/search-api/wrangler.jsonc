@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "scholar-pulse-search",
+  "main": "index.mjs",
+  "account_id": "90441852398a77b41ec7859b372d5db5",
+  "compatibility_date": "2026-09-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 0.1 },
+  "ratelimits": [
+    {
+      "name": "SEARCH_LIMIT",
+      "namespace_id": "260920001",
+      "simple": { "limit": 60, "period": 60 },
+    },
+  ],
+  "vars": { "ALLOWED_ORIGIN": "https://aleetreny.github.io" },
+}

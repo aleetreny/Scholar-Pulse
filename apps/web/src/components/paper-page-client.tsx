@@ -33,5 +33,14 @@ export function PaperPageClient() {
     );
   }
 
-  return <PaperView key={arxivId} arxivId={arxivId} />;
+  const workId = /^W\d+$/.test(params.get("work") ?? "")
+    ? params.get("work")!
+    : undefined;
+  return (
+    <PaperView
+      key={`${arxivId}::${workId ?? ""}`}
+      arxivId={arxivId}
+      workId={workId}
+    />
+  );
 }

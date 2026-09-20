@@ -15,7 +15,7 @@ function citeKey(paper: Paper): string {
       .toLowerCase()
       .replace(/\\[a-z]+|[${}^_]/g, " ")
       .match(/[a-z]{3,}/)?.[0] ?? "paper";
-  return `${author || "arxiv"}${year}${firstWord}`;
+  return `${author || "arxiv"}${year}${firstWord}_${paper.id.replace(/[^a-zA-Z0-9]/g, "")}`;
 }
 
 /** Escape only characters that break BibTeX fields; keep TeX math intact. */

@@ -102,7 +102,12 @@ function RelatedPapers({ extras }: { extras: PaperExtras }) {
 
 const emptySubscribe = () => () => {};
 
-export function PaperView({ arxivId }: { arxivId: string }) {
+function recallWork(arxivId: string, workId?: string) {
+  const cached = recallPaper(arxivId);
+  return !workId || cached?.metrics?.workId === workId ? cached : null;
+}
+
+export function PaperView({ arxivId, workId }: { arxivId: string; workId?: string }) {
   const router = useRouter();
   // Results are keyed by the request they answer, so switching papers
   // presents as "loading" without imperative state resets.
@@ -120,7 +125,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
   // external-store snapshot (null on the server) keeps SSR output stable.
   const stashed = useSyncExternalStore(
     emptySubscribe,
-    () => recallPaper(arxivId),
+    () => recallWork(arxivId, workId),
     () => null,
   );
 
@@ -134,8 +139,8 @@ export function PaperView({ arxivId }: { arxivId: string }) {
     const controller = new AbortController();
 
     // Deep links have no stash; reconstruct from OpenAlex, then S2.
-    if (!recallPaper(arxivId)) {
-      getPaperFromOpenAlex(arxivId, controller.signal)
+    if (!recallWork(arxivId, workId)) {
+      getPaperFromOpenAlex(arxivId, controller.signal, workId)
         .catch((firstError: unknown) => {
           if (controller.signal.aborted) {
             throw firstError;
@@ -171,7 +176,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
       });
 
     return () => controller.abort();
-  }, [arxivId, key]);
+  }, [arxivId, key, workId]);
 
   useEffect(() => {
     if (paper) {
@@ -186,7 +191,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
       return;
     }
     const controller = new AbortController();
-    resolveWork(paper.id, paper.title, controller.signal)
+    resolveWork(paper.id, paper.title, controller.signal, paper.metrics?.workId)
       .then((work) => {
         if (!controller.signal.aborted) {
           setOaResult({ key: paper.id, work });
@@ -226,12 +231,11 @@ export function PaperView({ arxivId }: { arxivId: string }) {
 
   const saved = isSaved(paper.id);
   const bibtex = toBibtex(paper);
-  // Live first, because it is current: Semantic Scholar merges a preprint's
-  // versions so its count is the better one, then OpenAlex. The snapshot's own
-  // figure is the floor under both, and on most visits it is the only one
-  // there, since S2's anonymous pool answers a browser about one time in five.
-  // Null means nothing anywhere knows, which is not the same claim as zero.
-  const live = extras?.citationCount ?? oa?.citedByCount ?? null;
+  // Search and detail use the same index work. A different provider must not
+  // replace the count that determined the result's citation ordering.
+  const live = paper.metrics?.source === "openalex"
+    ? oa?.citedByCount ?? paper.metrics.citations
+    : extras?.citationCount ?? oa?.citedByCount ?? null;
   const citations = live ?? paper.metrics?.citations ?? null;
   const references = extras?.referenceCount ?? paper.metrics?.references ?? null;
   const measuredAt = live === null && paper.metrics ? paper.metrics.asOf : null;
@@ -278,7 +282,9 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           <span
             className="stat-chip"
             title={
-              extras?.influentialCitationCount
+              paper.metrics?.source === "openalex"
+                ? `${citations.toLocaleString()} · OpenAlex`
+                : extras?.influentialCitationCount
                 ? t("paper.influential", { n: extras.influentialCitationCount })
                 : measuredAt
                   ? t("paper.asOf", { date: formatAbsoluteDate(measuredAt, lang) })
@@ -291,7 +297,7 @@ export function PaperView({ arxivId }: { arxivId: string }) {
                 is only printed once there is a count worth printing. */}
             {citations > 0 ? (
               <>
-                <strong>{formatCount(citations)}</strong> {t("paper.citations")}
+                <strong>{formatCount(citations)}</strong> {t(citations === 1 ? "paper.citation" : "paper.citations")}
               </>
             ) : (
               t("paper.notCitedYet")
@@ -447,7 +453,8 @@ export function PaperView({ arxivId }: { arxivId: string }) {
           workId={oa?.workId ?? null}
           referencedWorks={oa?.referencedWorks ?? []}
           referenceCount={references}
-          citationCount={citations}
+          citationCount={oa?.citedByCount ?? null}
+          key={oa?.workId ?? paper.id}
         />
       ) : null}
 

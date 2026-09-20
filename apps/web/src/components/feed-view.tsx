@@ -124,7 +124,7 @@ function Feed({ topics }: { topics: string[] }) {
     [activeCategories, focus, sort],
   );
 
-  const { papers, loading, loadingMore, error, hasMore, loadMore, retry } =
+  const { papers, missing, loading, loadingMore, error, moreError, hasMore, loadMore, retry } =
     usePaginatedPapers(fetchPage, queryKey, activeCategories.length > 0);
 
   // Snapshots built before the ranking shipped carry no scores; the feed then
@@ -213,6 +213,8 @@ function Feed({ topics }: { topics: string[] }) {
         </p>
       ) : null}
 
+      {missing.length > 0 && !error ? <ErrorBox message={t("feed.loadMissing", { fields: missing.map(categoryLabel).join(", ") })} onRetry={retry} /> : null}
+
       {manifest?.refresh?.carried.some((id) => activeCategories.some((active) => canonicalCategory(active) === id)) ? (
         <p className="notice notice--quiet">{t("feed.carried")}</p>
       ) : null}
@@ -261,6 +263,7 @@ function Feed({ topics }: { topics: string[] }) {
               );
             })}
           </div>
+          {moreError ? <ErrorBox message={moreError} onRetry={loadMore} /> : null}
           {hasMore ? (
             <div className="load-more">
               <button

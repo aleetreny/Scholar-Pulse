@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { RefreshCw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -46,13 +48,14 @@ export function ErrorBox({
   message: string;
   onRetry?: () => void;
 }) {
+  const { t } = useT();
   return (
     <div className="error-box" role="alert">
       <p>{message}</p>
       {onRetry ? (
         <button type="button" className="btn btn--small" onClick={onRetry}>
           <RefreshCw />
-          Try again
+          {t("paper.retry")}
         </button>
       ) : null}
     </div>

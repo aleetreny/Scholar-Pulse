@@ -63,7 +63,7 @@ export const PaperCard = memo(function PaperCard({
 
   return (
     <Link
-      href={paperHref(paper.id)}
+      href={paperHref(paper.id, paper.metrics?.workId)}
       className="paper-card"
       data-scored={pulse ? true : undefined}
       onClick={() => stashPaper(paper)}
@@ -91,7 +91,7 @@ export const PaperCard = memo(function PaperCard({
       ) : null}
 
       <div className="paper-card__meta">
-        {paper.metrics?.citations != null ? <span className="chip">{t("paper.citationCount", { n: formatCount(paper.metrics.citations) })}</span> : null}
+        {paper.metrics?.citations != null ? <span className="chip" title={`${paper.metrics.citations.toLocaleString()} · ${paper.metrics.source === "openalex" ? "OpenAlex" : "Semantic Scholar"}`}>{t(paper.metrics.citations === 1 ? "paper.citationCountOne" : "paper.citationCount", { n: formatCount(paper.metrics.citations) })}</span> : null}
         {pulse ? <NewcomerMark pulse={pulse} /> : null}
         {paper.primaryCategory ? (
           <span className="chip" title={paper.primaryCategory}>
